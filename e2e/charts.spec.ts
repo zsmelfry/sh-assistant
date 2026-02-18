@@ -47,10 +47,11 @@ async function createHabit(page: Page, name: string, frequency: 'daily' | 'weekl
   await expect(page.getByText(statsLabel)).toBeVisible({ timeout: 10000 });
 }
 
-async function expandHistoryPanel(page: Page) {
-  const toggleBtn = page.getByText('查看历史 ▾');
-  await expect(toggleBtn).toBeVisible();
-  await toggleBtn.click();
+// HistoryPanel 默认展开，打卡后需折叠再展开以刷新热力图数据
+async function refreshHistoryPanel(page: Page) {
+  await page.getByText('收起历史 ▴').click();
+  await page.waitForTimeout(200);
+  await page.getByText('查看历史 ▾').click();
   await page.waitForTimeout(300);
 }
 
@@ -62,23 +63,26 @@ test.describe('历史图表 - 面板交互', () => {
     await waitForAppReady(page);
     await createHabit(page, '跑步');
 
-    // 验证"查看历史"按钮可见
-    const toggleBtn = page.getByText('查看历史 ▾');
-    await expect(toggleBtn).toBeVisible();
+    // 默认已展开，验证"收起历史"按钮可见
+    const collapseBtn = page.getByText('收起历史 ▴');
+    await expect(collapseBtn).toBeVisible();
 
-    // 展开
-    await toggleBtn.click();
-    await page.waitForTimeout(300);
-
-    // 热力图标题应可见
+    // 热力图标题应可见（已展开）
     await expect(page.getByText('年度打卡热力图')).toBeVisible();
 
     // 折叠
-    await page.getByText('收起历史 ▴').click();
+    await collapseBtn.click();
     await page.waitForTimeout(300);
 
     // 热力图标题应隐藏
     await expect(page.getByText('年度打卡热力图')).not.toBeVisible();
+
+    // 重新展开
+    await page.getByText('查看历史 ▾').click();
+    await page.waitForTimeout(300);
+
+    // 热力图标题应再次可见
+    await expect(page.getByText('年度打卡热力图')).toBeVisible();
   });
 });
 
@@ -89,7 +93,7 @@ test.describe('历史图表 - Daily 热力图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     // 验证热力图容器和标题可见
     await expect(page.getByText('年度打卡热力图')).toBeVisible();
@@ -114,8 +118,8 @@ test.describe('历史图表 - Daily 热力图', () => {
     await dayFive.click();
     await page.waitForTimeout(500);
 
-    // 展开历史面板
-    await expandHistoryPanel(page);
+    // 刷新热力图数据
+    await refreshHistoryPanel(page);
 
     // 热力图中应有 filled 格子
     const filledCells = page.locator('.dailyGrid .cell.filled');
@@ -133,7 +137,8 @@ test.describe('历史图表 - Daily 热力图', () => {
     await dayFive.click();
     await page.waitForTimeout(500);
 
-    await expandHistoryPanel(page);
+    // 刷新热力图数据
+    await refreshHistoryPanel(page);
 
     // 检查 filled 格子颜色 = #1A1A1A (rgb(26,26,26))
     const filledCell = page.locator('.dailyGrid .cell.filled').first();
@@ -156,7 +161,7 @@ test.describe('历史图表 - Daily 热力图', () => {
     await dayFive.click();
     await page.waitForTimeout(500);
 
-    await expandHistoryPanel(page);
+
 
     // 鼠标悬停在一个格子上
     const cell = page.locator('.dailyGrid .cell').first();
@@ -177,7 +182,7 @@ test.describe('历史图表 - Daily 热力图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     const currentYear = new Date().getFullYear();
     const heatmapSection = page.locator('.heatmap');
@@ -204,7 +209,7 @@ test.describe('历史图表 - Weekly 格子视图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '大扫除', 'weekly');
-    await expandHistoryPanel(page);
+
 
     // 验证标题为"年度周完成情况"
     await expect(page.getByText('年度周完成情况')).toBeVisible();
@@ -224,7 +229,7 @@ test.describe('历史图表 - Weekly 格子视图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '大扫除', 'weekly');
-    await expandHistoryPanel(page);
+
 
     // 鼠标悬停在一个周格子上
     const cell = page.locator('.weeklyGrid .cell').first();
@@ -248,7 +253,7 @@ test.describe('历史图表 - Monthly 格子视图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '体检', 'monthly');
-    await expandHistoryPanel(page);
+
 
     // 验证标题为"年度月完成情况"
     await expect(page.getByText('年度月完成情况')).toBeVisible();
@@ -266,7 +271,7 @@ test.describe('历史图表 - Monthly 格子视图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '体检', 'monthly');
-    await expandHistoryPanel(page);
+
 
     // 月完成格子视图应可见
     await expect(page.getByText('年度月完成情况')).toBeVisible();
@@ -285,7 +290,8 @@ test.describe('历史图表 - Monthly 格子视图', () => {
     await dayFive.click();
     await page.waitForTimeout(500);
 
-    await expandHistoryPanel(page);
+    // 刷新热力图数据
+    await refreshHistoryPanel(page);
 
     // 当前月对应的格子应为 filled
     const currentMonth = new Date().getMonth(); // 0-indexed
@@ -303,7 +309,7 @@ test.describe('历史图表 - 趋势折线图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     // 验证趋势图标题
     await expect(page.getByText('月度完成率趋势')).toBeVisible();
@@ -326,7 +332,7 @@ test.describe('历史图表 - 趋势折线图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     // 检查折线颜色 = #1A1A1A
     const line = page.locator('.trendChart .line');
@@ -339,7 +345,7 @@ test.describe('历史图表 - 趋势折线图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     // 鼠标悬停在数据点上
     const dot = page.locator('.trendChart .dot').first();
@@ -359,7 +365,7 @@ test.describe('历史图表 - 趋势折线图', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '大扫除', 'weekly');
-    await expandHistoryPanel(page);
+
 
     // 验证趋势图可见（weekly 也显示趋势图）
     await expect(page.getByText('月度完成率趋势')).toBeVisible();
@@ -383,7 +389,7 @@ test.describe('历史图表 - 黑白色调规范', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     const cssVars = await page.evaluate(() => {
       const root = getComputedStyle(document.documentElement);
@@ -414,7 +420,7 @@ test.describe('历史图表 - 响应式布局', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     // 热力图和趋势图都应可见
     await expect(page.getByText('年度打卡热力图')).toBeVisible();
@@ -430,7 +436,7 @@ test.describe('历史图表 - 响应式布局', () => {
     await page.goto('/habit-tracker');
     await waitForAppReady(page);
     await createHabit(page, '跑步');
-    await expandHistoryPanel(page);
+
 
     // 热力图容器应有 overflow-x: auto
     const heatmap = page.locator('.heatmap');
@@ -448,8 +454,8 @@ test.describe('历史图表 - 习惯切换联动', () => {
     await createHabit(page, '跑步', 'daily');
     await createHabit(page, '大扫除', 'weekly');
 
-    // 展开历史面板（当前选中"大扫除" weekly）
-    await expandHistoryPanel(page);
+    // 面板默认展开，当前选中"大扫除" weekly
+
     await expect(page.getByText('年度周完成情况')).toBeVisible();
 
     // 切换到"跑步" (daily)
