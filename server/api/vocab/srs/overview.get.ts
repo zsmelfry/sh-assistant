@@ -19,10 +19,10 @@ export default defineEventHandler(async (event) => {
   const cardStats = await db.all(sql`
     SELECT
       COUNT(*) as total,
-      SUM(CASE WHEN next_review_at <= ${now} AND repetitions > 0 THEN 1 ELSE 0 END) as due,
-      SUM(CASE WHEN repetitions = 0 THEN 1 ELSE 0 END) as new_cards,
-      SUM(CASE WHEN repetitions > 0 AND interval < 21 THEN 1 ELSE 0 END) as learning,
-      SUM(CASE WHEN interval >= 21 THEN 1 ELSE 0 END) as mature
+      COALESCE(SUM(CASE WHEN next_review_at <= ${now} AND repetitions > 0 THEN 1 ELSE 0 END), 0) as due,
+      COALESCE(SUM(CASE WHEN repetitions = 0 THEN 1 ELSE 0 END), 0) as new_cards,
+      COALESCE(SUM(CASE WHEN repetitions > 0 AND interval < 21 THEN 1 ELSE 0 END), 0) as learning,
+      COALESCE(SUM(CASE WHEN interval >= 21 THEN 1 ELSE 0 END), 0) as mature
     FROM srs_cards
     WHERE user_id = ${userId}
   `) as Array<{ total: number; due: number; new_cards: number; learning: number; mature: number }>;
