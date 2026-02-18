@@ -10,7 +10,7 @@
           用户管理
         </button>
       </div>
-      <div class="toolbarRight">
+      <div v-if="!store.hasWords" class="toolbarRight">
         <button class="toolbarBtn" @click="showImportModal = true">
           导入 CSV
         </button>

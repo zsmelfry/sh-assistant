@@ -18,13 +18,29 @@
           <!-- Model info -->
           <div class="modelInfo">
             <span>{{ definition.modelProvider }} / {{ definition.modelName }}</span>
-            <button
-              class="regenerateBtn"
-              :disabled="isRegenerating"
-              @click="handleRegenerate"
-            >
-              {{ isRegenerating ? '生成中...' : '重新生成' }}
-            </button>
+            <div class="regenerateRow">
+              <select
+                v-model="selectedProviderId"
+                class="modelSelect"
+                :disabled="isRegenerating"
+              >
+                <option :value="null">默认模型</option>
+                <option
+                  v-for="p in enabledProviders"
+                  :key="p.id"
+                  :value="p.id"
+                >
+                  {{ p.name }} ({{ p.modelName }})
+                </option>
+              </select>
+              <button
+                class="regenerateBtn"
+                :disabled="isRegenerating"
+                @click="handleRegenerate"
+              >
+                {{ isRegenerating ? '生成中...' : '重新生成' }}
+              </button>
+            </div>
           </div>
 
           <p v-if="definition.partOfSpeech" class="partOfSpeech">{{ definition.partOfSpeech }}</p>
@@ -82,9 +98,20 @@ defineEmits<{
   close: [];
 }>();
 
+const { providers, loadProviders } = useLlm();
+
 const definition = ref<Definition | null>(null);
 const isLoading = ref(false);
 const isRegenerating = ref(false);
+const selectedProviderId = ref<number | null>(null);
+
+const enabledProviders = computed(() =>
+  providers.value.filter(p => p.isEnabled),
+);
+
+onMounted(() => {
+  loadProviders();
+});
 
 const parsedExamples = computed(() => {
   if (!definition.value) return [];
@@ -117,7 +144,7 @@ async function handleRegenerate() {
   try {
     const result = await $fetch<Definition>(
       `/api/vocab/definitions/${props.word.wordId}/regenerate`,
-      { method: 'POST', body: {} },
+      { method: 'POST', body: { providerId: selectedProviderId.value } },
     );
     definition.value = result;
   } catch {
@@ -160,12 +187,41 @@ async function handleRegenerate() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   background-color: var(--color-bg-hover);
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-md);
+}
+
+.regenerateRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.modelSelect {
+  padding: 2px var(--spacing-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  max-width: 160px;
+}
+
+.modelSelect:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.modelSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .regenerateBtn {

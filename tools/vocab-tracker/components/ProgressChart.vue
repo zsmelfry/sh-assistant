@@ -39,10 +39,15 @@
       <!-- 已读面积 -->
       <path :d="readArea" class="areaRead" />
 
-      <!-- 已掌握折线 -->
-      <polyline :points="masteredLine" class="lineMastered" />
-      <!-- 已读折线 -->
-      <polyline :points="readLine" class="lineRead" />
+      <!-- 已掌握折线（或单点圆） -->
+      <template v-if="store.chartData.length === 1">
+        <circle :cx="xScale(0)" :cy="yScale(store.chartData[0].masteredCount)" r="4" class="dotMastered" />
+        <circle :cx="xScale(0)" :cy="yScale(store.chartData[0].readCount)" r="4" class="dotRead" />
+      </template>
+      <template v-else>
+        <polyline :points="masteredLine" class="lineMastered" />
+        <polyline :points="readLine" class="lineRead" />
+      </template>
 
       <!-- X 轴标签 -->
       <text
@@ -188,6 +193,14 @@ const xLabels = computed(() => {
 .areaRead {
   fill: var(--color-text-secondary);
   opacity: 0.08;
+}
+
+.dotMastered {
+  fill: var(--color-accent);
+}
+
+.dotRead {
+  fill: var(--color-text-secondary);
 }
 
 .legendMastered {

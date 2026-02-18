@@ -109,6 +109,24 @@ function handleAction(action: StatusAction) {
   width: 16px;
   height: 16px;
   cursor: pointer;
+  appearance: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-bg-primary);
+  transition: all var(--transition-fast);
+}
+
+.checkbox:checked {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.checkbox:hover:not(:checked) {
+  border-color: var(--color-text-secondary);
 }
 
 .rank {
