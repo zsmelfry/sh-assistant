@@ -72,7 +72,18 @@ export default defineEventHandler(async (event) => {
       gte(studySessions.startedAt, sevenDaysAgo),
     ));
 
-  // 5. 各学习状态统计
+  // 5. 可学新词总数（LEARNING 状态但还没有 SRS 卡片的词）
+  const availableCountResult = await db.all(sql`
+    SELECT COUNT(*) as count
+    FROM vocab_progress p
+    LEFT JOIN srs_cards s ON p.word_id = s.word_id AND s.user_id = ${userId}
+    WHERE p.user_id = ${userId}
+      AND p.learning_status = ${LEARNING_STATUS.LEARNING}
+      AND s.id IS NULL
+  `) as Array<{ count: number }>;
+  const availableLearningCount = availableCountResult[0]?.count || 0;
+
+  // 6. 各学习状态统计
   const statusCounts = await db.all(sql`
     SELECT learning_status as status, COUNT(*) as count
     FROM vocab_progress
@@ -113,5 +124,6 @@ export default defineEventHandler(async (event) => {
       reviewsCompleted: s.reviewsCompleted,
     })),
     vocabStatus: statusStats,
+    availableLearningCount,
   };
 });
