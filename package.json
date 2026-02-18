@@ -1,0 +1,32 @@
+{
+  "name": "personal-assistant-v2",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "generate": "nuxt generate",
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.11",
+    "better-sqlite3": "^11.0",
+    "date-fns": "^4.0",
+    "drizzle-orm": "^0.40",
+    "lucide-vue-next": "^0.574.0",
+    "nuxt": "^3.16",
+    "pinia": "^3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58",
+    "@types/better-sqlite3": "^7.0",
+    "drizzle-kit": "^0.31",
+    "typescript": "^5.7",
+    "vue-tsc": "^2.0"
+  }
+}
