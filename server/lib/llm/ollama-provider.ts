@@ -96,7 +96,7 @@ export class OllamaProvider extends BaseLlmProvider {
     const [name, tag] = modelName.split(':');
     const formattedName = name
       .split('-')
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toUpperCase())
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join('-');
     const formattedTag = tag
       ? tag.replace(/(\d+)([a-z]+)/i, (_m, num, unit) => `${num}${unit.toUpperCase()}`)

@@ -85,14 +85,17 @@ export abstract class BaseLlmProvider implements ILlmProvider {
   }
 
   protected withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>;
     return Promise.race([
       promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
           () => reject(new LlmError(LlmErrorType.TIMEOUT, `操作超时 (${timeoutMs}ms)`)),
           timeoutMs,
-        ),
-      ),
-    ]);
+        );
+      }),
+    ]).finally(() => {
+      clearTimeout(timer);
+    });
   }
 }

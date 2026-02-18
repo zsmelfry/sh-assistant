@@ -1,5 +1,5 @@
-import { eq, and, lte, sql, gte } from 'drizzle-orm';
-import { srsCards, reviewLogs, studySessions } from '../../../database/schemas/srs';
+import { eq, and, sql, gte } from 'drizzle-orm';
+import { reviewLogs, studySessions } from '../../../database/schemas/srs';
 import { vocabProgress, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { formatDate } from '../../../utils/date';
 
@@ -15,13 +15,23 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
   const today = formatDate(new Date());
 
-  // 1. SRS 卡片总览
-  const allCards = await db.select().from(srsCards).where(eq(srsCards.userId, userId));
-  const totalCards = allCards.length;
-  const dueCards = allCards.filter(c => c.nextReviewAt <= now && c.repetitions > 0).length;
-  const newCards = allCards.filter(c => c.repetitions === 0).length;
-  const learningCards = allCards.filter(c => c.repetitions > 0 && c.interval < 21).length;
-  const matureCards = allCards.filter(c => c.interval >= 21).length;
+  // 1. SRS 卡片总览（SQL 聚合，避免全表扫描到内存）
+  const cardStats = await db.all(sql`
+    SELECT
+      COUNT(*) as total,
+      SUM(CASE WHEN next_review_at <= ${now} AND repetitions > 0 THEN 1 ELSE 0 END) as due,
+      SUM(CASE WHEN repetitions = 0 THEN 1 ELSE 0 END) as new_cards,
+      SUM(CASE WHEN repetitions > 0 AND interval < 21 THEN 1 ELSE 0 END) as learning,
+      SUM(CASE WHEN interval >= 21 THEN 1 ELSE 0 END) as mature
+    FROM srs_cards
+    WHERE user_id = ${userId}
+  `) as Array<{ total: number; due: number; new_cards: number; learning: number; mature: number }>;
+  const stats = cardStats[0] || { total: 0, due: 0, new_cards: 0, learning: 0, mature: 0 };
+  const totalCards = stats.total;
+  const dueCards = stats.due;
+  const newCards = stats.new_cards;
+  const learningCards = stats.learning;
+  const matureCards = stats.mature;
 
   // 2. 今日会话统计
   const sessionResult = await db.select()

@@ -20,17 +20,15 @@ export default defineEventHandler(async (event) => {
 
   const now = Date.now();
 
-  // 事务: 清除所有默认标记 → 设置新默认
-  db.transaction((tx: any) => {
-    tx.update(llmProviders)
+  // 事务: 清除所有默认标记 → 设置新默认（better-sqlite3 同步事务）
+  await db.transaction(async (tx) => {
+    await tx.update(llmProviders)
       .set({ isDefault: false, updatedAt: now })
-      .where(eq(llmProviders.isDefault, true))
-      .run();
+      .where(eq(llmProviders.isDefault, true));
 
-    tx.update(llmProviders)
+    await tx.update(llmProviders)
       .set({ isDefault: true, updatedAt: now })
-      .where(eq(llmProviders.id, id))
-      .run();
+      .where(eq(llmProviders.id, id));
   });
 
   return { success: true };

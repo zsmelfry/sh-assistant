@@ -1,4 +1,4 @@
-import { eq, and, lte, sql } from 'drizzle-orm';
+import { eq, and, lte, sql, inArray } from 'drizzle-orm';
 import { srsCards, studySessions } from '../../../database/schemas/srs';
 import { vocabProgress, vocabWords, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { NEW_WORDS_PER_SESSION, MAX_REVIEWS_PER_SESSION } from '../../../utils/srs-algorithm';
@@ -80,14 +80,12 @@ export default defineEventHandler(async (event) => {
       .map(p => p.wordId);
 
     if (learningWordIds.length > 0) {
-      // 按 rank 排序取前 N 个
-      const allWordsResult = await db.select()
+      // 按 rank 排序取前 N 个（使用 SQL inArray 过滤，避免全表扫描）
+      newWords = await db.select()
         .from(vocabWords)
-        .orderBy(vocabWords.rank);
-
-      newWords = allWordsResult
-        .filter(w => learningWordIds.includes(w.id))
-        .slice(0, remainingNewWords);
+        .where(inArray(vocabWords.id, learningWordIds))
+        .orderBy(vocabWords.rank)
+        .limit(remainingNewWords);
     }
   }
 
