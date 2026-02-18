@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import type { HabitFrequency } from '~/types';
+import type { HabitFrequency } from '../types';
 import HeatmapChart from './HeatmapChart.vue';
 import TrendChart from './TrendChart.vue';
 

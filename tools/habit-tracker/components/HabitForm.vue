@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Habit, HabitFrequency } from '~/types';
+import type { Habit, HabitFrequency } from '../types';
 
 const props = withDefaults(defineProps<{
   open: boolean;

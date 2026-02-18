@@ -3,6 +3,13 @@
 </template>
 
 <script setup lang="ts">
-// Redirect is handled by routeRules in nuxt.config.ts
-// This page exists as a fallback; the route rule redirects / to /habit-tracker
+const { getAll } = useToolRegistry();
+const router = useRouter();
+
+onMounted(() => {
+  const tools = getAll();
+  if (tools.length > 0) {
+    router.replace(`/${tools[0].id}`);
+  }
+});
 </script>

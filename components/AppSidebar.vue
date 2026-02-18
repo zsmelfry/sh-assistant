@@ -20,7 +20,7 @@
         :class="{ active: currentToolId === tool.id }"
         :title="tool.name"
       >
-        <component :is="iconMap[tool.icon]" class="nav-icon" :size="18" :stroke-width="1.5" />
+        <component :is="tool.icon" class="nav-icon" :size="18" :stroke-width="1.5" />
         <span v-if="!collapsed" class="nav-label">{{ tool.name }}</span>
       </NuxtLink>
     </nav>
@@ -28,13 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import { CalendarCheck } from 'lucide-vue-next';
-import type { Component } from 'vue';
-
-const iconMap: Record<string, Component> = {
-  'calendar-check': CalendarCheck,
-};
-
 defineProps<{
   collapsed: boolean;
 }>();

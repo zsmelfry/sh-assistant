@@ -16,10 +16,5 @@ export default defineNuxtConfig({
   // 开发工具
   devtools: { enabled: true },
 
-  // 路由配置
-  routeRules: {
-    '/': { redirect: '/habit-tracker' },
-  },
-
   compatibilityDate: '2025-01-01',
 });

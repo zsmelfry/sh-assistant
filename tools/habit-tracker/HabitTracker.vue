@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import { format, subMonths, addMonths } from 'date-fns';
-import type { Habit, HabitFrequency, YearMonth } from '~/types';
+import type { Habit, HabitFrequency, YearMonth } from './types';
 
 // 使用 局部导入 避免 Nuxt 自动导入冲突（tools/ 不在 components/ 下）
 import EmptyState from './components/EmptyState.vue';

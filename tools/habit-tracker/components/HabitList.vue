@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Habit } from '~/types';
+import type { Habit } from '../types';
 import { FREQUENCY_BADGES } from '../types';
 
 defineProps<{

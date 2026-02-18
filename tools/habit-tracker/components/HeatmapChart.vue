@@ -82,8 +82,7 @@ import {
   startOfMonth,
   endOfMonth,
 } from 'date-fns';
-import type { HabitFrequency } from '~/types';
-import type { HeatmapResponse } from '~/types/api';
+import type { HabitFrequency, HeatmapResponse } from '../types';
 import ChartTooltip from './ChartTooltip.vue';
 
 const props = defineProps<{

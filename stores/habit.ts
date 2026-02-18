@@ -14,7 +14,7 @@ import {
   isSameISOWeek,
   isSameMonth,
 } from 'date-fns';
-import type { Habit, CheckIn, HabitFrequency, YearMonth } from '~/types';
+import type { Habit, CheckIn, HabitFrequency, YearMonth } from '~/tools/habit-tracker/types';
 
 export const useHabitStore = defineStore('habit', () => {
   // ===== 状态 =====

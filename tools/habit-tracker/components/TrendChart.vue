@@ -65,8 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import type { HabitFrequency } from '~/types';
-import type { TrendResponse, TrendMonth } from '~/types/api';
+import type { HabitFrequency, TrendResponse, TrendMonth } from '../types';
 import ChartTooltip from './ChartTooltip.vue';
 
 const props = defineProps<{

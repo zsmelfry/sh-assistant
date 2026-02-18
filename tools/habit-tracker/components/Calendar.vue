@@ -37,8 +37,7 @@ import {
   isSameMonth,
   isSameISOWeek,
 } from 'date-fns';
-import type { YearMonth, HabitFrequency, CheckIn } from '~/types';
-import type { CalendarDayData } from '../types';
+import type { YearMonth, HabitFrequency, CheckIn, CalendarDayData } from '../types';
 import CalendarDay from './CalendarDay.vue';
 
 const props = defineProps<{

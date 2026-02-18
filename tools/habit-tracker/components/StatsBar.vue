@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import type { HabitFrequency } from '~/types';
+import type { HabitFrequency } from '../types';
 import { STREAK_LABELS, RATE_LABELS } from '../types';
 
 const props = defineProps<{

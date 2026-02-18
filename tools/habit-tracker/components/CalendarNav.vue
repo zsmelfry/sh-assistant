@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import type { YearMonth } from '~/types';
+import type { YearMonth } from '../types';
 
 const props = defineProps<{
   month: YearMonth;

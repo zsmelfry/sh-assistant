@@ -1,4 +1,59 @@
-import type { HabitFrequency } from '~/types';
+// ===== 习惯打卡领域类型 =====
+
+export type HabitFrequency = 'daily' | 'weekly' | 'monthly';
+
+export type YearMonth = string; // "YYYY-MM"
+
+export interface Habit {
+  id: string;
+  name: string;
+  frequency: HabitFrequency;
+  archived: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CheckIn {
+  id: string;
+  habitId: string;
+  date: string;
+  createdAt: number;
+}
+
+// ===== API 响应类型 =====
+
+export interface ToggleResponse {
+  checked: boolean;
+  checkin?: {
+    id: string;
+    habitId: string;
+    date: string;
+    createdAt: number;
+  };
+}
+
+export interface StatsResponse {
+  streak: number;
+  monthlyRate: number;
+  allDates: string[];
+}
+
+export interface HeatmapResponse {
+  dates: string[];
+}
+
+export interface TrendMonth {
+  month: string;
+  total: number;
+  completed: number;
+  rate: number;
+}
+
+export interface TrendResponse {
+  months: TrendMonth[];
+}
+
+// ===== UI 类型 =====
 
 export interface CalendarDayData {
   date: string;         // YYYY-MM-DD
@@ -14,6 +69,8 @@ export interface FormData {
   name: string;
   frequency: HabitFrequency;
 }
+
+// ===== 常量映射 =====
 
 export const FREQUENCY_LABELS: Record<HabitFrequency, string> = {
   daily: '每天',
