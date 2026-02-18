@@ -1,0 +1,144 @@
+<template>
+  <div class="vocabTracker">
+    <!-- 顶部工具栏 -->
+    <div class="toolbar">
+      <div class="userInfo">
+        <span v-if="store.currentUser" class="currentUserName">
+          {{ store.currentUser.nickname }}
+        </span>
+        <button class="toolbarBtn" @click="showUserModal = true">
+          用户管理
+        </button>
+      </div>
+      <button class="toolbarBtn" @click="showImportModal = true">
+        导入 CSV
+      </button>
+    </div>
+
+    <!-- 无用户状态 -->
+    <div v-if="!store.hasUsers" class="emptyState">
+      <p class="emptyTitle">欢迎使用法语词汇学习工具</p>
+      <p class="emptyHint">请先创建一个用户开始学习</p>
+      <button class="primaryBtn" @click="showUserModal = true">
+        创建用户
+      </button>
+    </div>
+
+    <!-- 无词汇状态 -->
+    <div v-else-if="!store.hasWords && store.filter === 'all' && !store.searchQuery" class="emptyState">
+      <p class="emptyTitle">词库为空</p>
+      <p class="emptyHint">请先导入 CSV 词汇文件</p>
+      <button class="primaryBtn" @click="showImportModal = true">
+        导入 CSV
+      </button>
+    </div>
+
+    <!-- 主内容 -->
+    <template v-else>
+      <StatsPanel />
+      <ProgressChart />
+      <VocabList />
+    </template>
+
+    <!-- 模态框 -->
+    <UserModal :open="showUserModal" @close="showUserModal = false" />
+    <ImportModal :open="showImportModal" @close="showImportModal = false" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import StatsPanel from './components/StatsPanel.vue';
+import ProgressChart from './components/ProgressChart.vue';
+import VocabList from './components/VocabList.vue';
+import UserModal from './components/UserModal.vue';
+import ImportModal from './components/ImportModal.vue';
+
+const store = useVocabStore();
+
+const showUserModal = ref(false);
+const showImportModal = ref(false);
+
+onMounted(() => {
+  store.initialize();
+});
+</script>
+
+<style scoped>
+.vocabTracker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.currentUserName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.toolbarBtn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.toolbarBtn:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-xl) 0;
+  gap: var(--spacing-sm);
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.emptyHint {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.primaryBtn {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-accent);
+  color: var(--color-accent-inverse);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.primaryBtn:hover {
+  opacity: 0.85;
+}
+</style>

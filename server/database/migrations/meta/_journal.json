@@ -8,6 +8,13 @@
       "when": 1771406609777,
       "tag": "0000_overrated_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771411888889,
+      "tag": "0001_luxuriant_stark_industries",
+      "breakpoints": true
     }
   ]
 }
