@@ -98,4 +98,4 @@
 
 团队如果有技术选择的冲突，由小爽做出最后决策，要记录。前后端整合后要交给小Y做 E2E 测试。
 
-spawn 每个成员时，在 prompt 里注明必须使用的工具（参考 docs/tuandui.md 的工具分配表）。工具通过 Skill 工具调用，前缀统一为 everything-claude-code:。
+spawn 每个成员时，在 prompt 里注明必须使用的工具（参考 docs/TEAM.md 的工具分配表）。工具通过 Skill 工具调用，前缀统一为 everything-claude-code:。

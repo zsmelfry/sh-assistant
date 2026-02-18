@@ -77,6 +77,32 @@
 - **理由**: B2 是用户可见 bug（频率变更后图表不刷新），M5 是死代码，M6 是简单性能优化，M7 是防重复点击的 UX 问题。M8 竞态条件 MVP 可接受，L 级别不影响功能。
 - **影响**: 小F 需修复 4 个问题后进入 E2E 测试
 
+### DEC-008: french-words 整合 MVP 范围
+
+- **日期**: 2026-02-18
+- **状态**: ✅ 已决策
+- **提出者**: 小F（前端开发，研究分析）
+- **决策者**: 小爽
+- **决策**: MVP 只整合核心词汇追踪功能，暂缓扩展功能
+- **MVP 包含**: VocabList, VocabItem, FilterBar, Pagination, StatsPanel, ProgressChart(改SVG), UserModal, ImportModal, BatchActionBar
+- **暂缓(v3)**: SRS 背单词模块、LLM 释义/聊天、TTS 发音、笔记功能
+- **多用户**: 保留（PRD 核心需求）
+- **理由**: 先交付核心价值（词汇追踪+进度可视化），扩展功能复杂度高且非核心
+- **影响**: 减少迁移工作量约 50%
+
+### DEC-009: 执行插件化架构重构 R1-R3
+
+- **日期**: 2026-02-18
+- **状态**: ✅ 已决策
+- **提出者**: 小M（架构师）
+- **决策者**: 小爽
+- **决策**: 在整合 french-words 之前，先执行 R1-R3 三项重构
+- **R1**: ToolDefinition.icon 改为 Component 类型，AppSidebar 零改动新增工具
+- **R2**: pages/index.vue 动态重定向到第一个注册工具，移除硬编码
+- **R3**: Habit/CheckIn 类型迁移到 tools/habit-tracker/types.ts，全局类型纯净
+- **理由**: 重构工作量小，但能显著降低后续新增工具的摩擦。在加第二个工具前做最合适。
+- **影响**: 需要小F执行重构，完成后再开始 french-words 整合
+
 ---
 
 *后续决策将按 DEC-XXX 格式追加记录。*
