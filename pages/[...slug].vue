@@ -11,7 +11,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const router = useRouter();
-const { get } = useToolRegistry();
+const { get, getAll } = useToolRegistry();
 
 const toolId = computed(() => {
   const slug = route.params.slug;
@@ -26,10 +26,11 @@ const toolComponent = computed(() =>
     : null
 );
 
-// Redirect to default tool if tool not found
+// Redirect to first registered tool if current tool not found
 watch(toolId, (id) => {
   if (id && !get(id)) {
-    router.replace('/habit-tracker');
+    const all = getAll();
+    router.replace(all.length > 0 ? `/${all[0].id}` : '/');
   }
 }, { immediate: true });
 </script>
