@@ -10,15 +10,17 @@
           用户管理
         </button>
       </div>
-      <button class="toolbarBtn" @click="showImportModal = true">
-        导入 CSV
-      </button>
+      <div class="toolbarRight">
+        <button class="toolbarBtn" @click="showImportModal = true">
+          导入 CSV
+        </button>
+      </div>
     </div>
 
     <!-- 初始化错误 -->
     <div v-if="initError" class="emptyState">
       <p class="errorMsg">{{ initError }}</p>
-      <button class="primaryBtn" @click="location.reload()">刷新页面</button>
+      <button class="primaryBtn" @click="handleReload">刷新页面</button>
     </div>
 
     <!-- 无用户状态 -->
@@ -31,7 +33,7 @@
     </div>
 
     <!-- 无词汇状态 -->
-    <div v-else-if="!store.hasWords && store.filter === 'all' && !store.searchQuery" class="emptyState">
+    <div v-else-if="!store.hasWords && store.filter === 'all' && !store.searchQuery && activeTab === 'vocab'" class="emptyState">
       <p class="emptyTitle">词库为空</p>
       <p class="emptyHint">请先导入 CSV 词汇文件</p>
       <button class="primaryBtn" @click="showImportModal = true">
@@ -39,11 +41,37 @@
       </button>
     </div>
 
-    <!-- 主内容 -->
+    <!-- 主内容（有用户有词汇） -->
     <template v-else>
-      <StatsPanel />
-      <ProgressChart />
-      <VocabList />
+      <!-- Tab 切换 -->
+      <div class="mainTabs">
+        <button
+          class="mainTab"
+          :class="{ active: activeTab === 'vocab' }"
+          @click="activeTab = 'vocab'"
+        >
+          词汇列表
+        </button>
+        <button
+          class="mainTab"
+          :class="{ active: activeTab === 'study' }"
+          @click="activeTab = 'study'"
+        >
+          学习模式
+        </button>
+      </div>
+
+      <!-- 词汇列表 Tab -->
+      <template v-if="activeTab === 'vocab'">
+        <StatsPanel />
+        <ProgressChart />
+        <VocabList />
+      </template>
+
+      <!-- 学习模式 Tab -->
+      <template v-else>
+        <StudyView />
+      </template>
     </template>
 
     <!-- 模态框 -->
@@ -58,12 +86,18 @@ import ProgressChart from './components/ProgressChart.vue';
 import VocabList from './components/VocabList.vue';
 import UserModal from './components/UserModal.vue';
 import ImportModal from './components/ImportModal.vue';
+import StudyView from './components/StudyView.vue';
 
 const store = useVocabStore();
 
+const activeTab = ref<'vocab' | 'study'>('vocab');
 const showUserModal = ref(false);
 const showImportModal = ref(false);
 const initError = ref('');
+
+function handleReload() {
+  globalThis.location.reload();
+}
 
 onMounted(async () => {
   try {
@@ -90,6 +124,12 @@ onMounted(async () => {
   align-items: center;
 }
 
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .userInfo {
   display: flex;
   align-items: center;
@@ -114,6 +154,37 @@ onMounted(async () => {
 }
 
 .toolbarBtn:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.mainTabs {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mainTab {
+  padding: var(--spacing-xs) var(--spacing-lg);
+  border: none;
+  background: var(--color-bg-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.mainTab:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.mainTab.active {
+  background-color: var(--color-accent);
+  color: var(--color-accent-inverse);
+}
+
+.mainTab:hover:not(.active) {
   background-color: var(--color-bg-hover);
 }
 
