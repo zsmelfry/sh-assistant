@@ -49,6 +49,7 @@
           <span class="intervalText">间隔 {{ item.interval }}天</span>
           <span class="nextReview">下次 {{ formatNextReview(item.nextReviewAt) }}</span>
         </div>
+        <button class="detailBtn" @click.stop="openDetail(item)">详情</button>
       </div>
 
       <!-- Pagination -->
@@ -379,6 +380,24 @@ onMounted(loadCards);
 .pageInfo {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.detailBtn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.detailBtn:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
 }
 
 .emptyState {
