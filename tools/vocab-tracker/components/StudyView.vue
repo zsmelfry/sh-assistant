@@ -124,7 +124,7 @@ const chatWord = computed(() => studyStore.currentCard?.word || '');
 const cannotStudy = computed(() => {
   const o = studyStore.overview;
   if (!o) return true;
-  return o.cards.due === 0 && o.cards.new === 0;
+  return o.cards.due === 0 && o.cards.new === 0 && o.availableLearningCount === 0;
 });
 
 onMounted(async () => {
