@@ -15,8 +15,14 @@
       </button>
     </div>
 
+    <!-- 初始化错误 -->
+    <div v-if="initError" class="emptyState">
+      <p class="errorMsg">{{ initError }}</p>
+      <button class="primaryBtn" @click="location.reload()">刷新页面</button>
+    </div>
+
     <!-- 无用户状态 -->
-    <div v-if="!store.hasUsers" class="emptyState">
+    <div v-else-if="!store.hasUsers" class="emptyState">
       <p class="emptyTitle">欢迎使用法语词汇学习工具</p>
       <p class="emptyHint">请先创建一个用户开始学习</p>
       <button class="primaryBtn" @click="showUserModal = true">
@@ -57,9 +63,14 @@ const store = useVocabStore();
 
 const showUserModal = ref(false);
 const showImportModal = ref(false);
+const initError = ref('');
 
-onMounted(() => {
-  store.initialize();
+onMounted(async () => {
+  try {
+    await store.initialize();
+  } catch {
+    initError.value = '加载数据失败，请刷新页面重试。';
+  }
 });
 </script>
 
@@ -140,5 +151,10 @@ onMounted(() => {
 
 .primaryBtn:hover {
   opacity: 0.85;
+}
+
+.errorMsg {
+  font-size: 14px;
+  color: var(--color-danger);
 }
 </style>

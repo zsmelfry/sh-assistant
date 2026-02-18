@@ -181,7 +181,7 @@ function handleClose() {
 
 .error {
   margin-top: var(--spacing-sm);
-  color: #DC2626;
+  color: var(--color-danger);
   font-size: 13px;
 }
 

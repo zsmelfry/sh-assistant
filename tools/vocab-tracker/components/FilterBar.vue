@@ -66,6 +66,10 @@ function clearSearch() {
 watch(() => store.searchQuery, (val) => {
   localSearch.value = val;
 });
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+});
 </script>
 
 <style scoped>

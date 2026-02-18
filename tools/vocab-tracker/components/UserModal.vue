@@ -84,7 +84,7 @@ async function handleCreate() {
   }
 }
 
-async function handleSwitch(userId: string) {
+async function handleSwitch(userId: number) {
   await store.switchUser(userId);
 }
 
@@ -158,9 +158,9 @@ async function handleDelete() {
 }
 
 .userBtnDanger:hover:not(:disabled) {
-  color: #DC2626;
-  border-color: #DC2626;
-  background-color: #FEF2F2;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background-color: var(--color-danger-bg);
 }
 
 .createSection {
