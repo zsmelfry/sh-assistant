@@ -22,6 +22,13 @@
       "when": 1771422249527,
       "tag": "0002_lovely_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771422906094,
+      "tag": "0003_productive_energizer",
+      "breakpoints": true
     }
   ]
 }
