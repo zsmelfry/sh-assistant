@@ -24,10 +24,25 @@
         <span v-if="!collapsed" class="nav-label">{{ tool.name }}</span>
       </NuxtLink>
     </nav>
+
+    <div class="sidebar-footer">
+      <button
+        class="settings-btn"
+        title="LLM 模型设置"
+        @click="showLlmSettings = true"
+      >
+        <Settings :size="18" :stroke-width="1.5" />
+        <span v-if="!collapsed" class="nav-label">模型设置</span>
+      </button>
+    </div>
+
+    <LlmSettings :open="showLlmSettings" @close="showLlmSettings = false" />
   </aside>
 </template>
 
 <script setup lang="ts">
+import { Settings } from 'lucide-vue-next';
+
 defineProps<{
   collapsed: boolean;
 }>();
@@ -40,6 +55,7 @@ const route = useRoute();
 const { getAll } = useToolRegistry();
 
 const tools = computed(() => getAll());
+const showLlmSettings = ref(false);
 
 const currentToolId = computed(() => {
   const slug = route.params.slug;
@@ -134,5 +150,30 @@ const currentToolId = computed(() => {
 .nav-label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sidebar-footer {
+  padding: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.settings-btn:hover {
+  background-color: var(--color-bg-hover);
 }
 </style>
