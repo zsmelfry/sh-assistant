@@ -1,0 +1,65 @@
+import { eq } from 'drizzle-orm';
+import { llmProviders } from '../../../database/schemas/llm';
+
+const VALID_PROVIDERS = ['claude', 'ollama', 'openai'];
+
+export default defineEventHandler(async (event) => {
+  const id = Number(getRouterParam(event, 'id'));
+  if (!id || isNaN(id)) {
+    throw createError({ statusCode: 400, message: '无效的 provider ID' });
+  }
+
+  const body = await readBody(event);
+  const { provider, name, modelName, endpoint, apiKey, isEnabled, params } = body;
+
+  // 校验可选字段
+  if (provider !== undefined && !VALID_PROVIDERS.includes(provider)) {
+    throw createError({ statusCode: 400, message: `provider 必须是 ${VALID_PROVIDERS.join(', ')} 之一` });
+  }
+  if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
+    throw createError({ statusCode: 400, message: 'name 不能为空' });
+  }
+  if (modelName !== undefined && (typeof modelName !== 'string' || modelName.trim().length === 0)) {
+    throw createError({ statusCode: 400, message: 'modelName 不能为空' });
+  }
+  if (params !== undefined && params !== null && typeof params !== 'string') {
+    throw createError({ statusCode: 400, message: 'params 必须是 JSON 字符串' });
+  }
+  if (params) {
+    try {
+      JSON.parse(params);
+    } catch {
+      throw createError({ statusCode: 400, message: 'params 不是有效的 JSON' });
+    }
+  }
+
+  const db = useDB();
+
+  // 检查 provider 存在
+  const existing = await db.select().from(llmProviders).where(eq(llmProviders.id, id)).limit(1);
+  if (existing.length === 0) {
+    throw createError({ statusCode: 404, message: 'Provider 不存在' });
+  }
+
+  // 构建更新对象
+  const updates: Record<string, unknown> = { updatedAt: Date.now() };
+  if (provider !== undefined) updates.provider = provider.trim();
+  if (name !== undefined) updates.name = name.trim();
+  if (modelName !== undefined) updates.modelName = modelName.trim();
+  if (endpoint !== undefined) updates.endpoint = endpoint?.trim() || null;
+  if (apiKey !== undefined) updates.apiKey = apiKey || null;
+  if (isEnabled !== undefined) updates.isEnabled = !!isEnabled;
+  if (params !== undefined) updates.params = params || '{}';
+
+  const result = await db.update(llmProviders)
+    .set(updates)
+    .where(eq(llmProviders.id, id))
+    .returning();
+
+  // 脱敏
+  const updated = result[0];
+  return {
+    ...updated,
+    apiKey: updated.apiKey ? `****${updated.apiKey.slice(-4)}` : null,
+  };
+});

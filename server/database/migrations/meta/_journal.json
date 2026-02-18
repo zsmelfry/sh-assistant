@@ -15,6 +15,13 @@
       "when": 1771411888889,
       "tag": "0001_luxuriant_stark_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771422249527,
+      "tag": "0002_lovely_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }
