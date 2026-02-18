@@ -1,5 +1,5 @@
-import { vocabUsers, vocabProgress, vocabWords, vocabSettings } from '../../database/schemas/vocab';
-import { eq } from 'drizzle-orm';
+import { vocabUsers, vocabSettings } from '../../database/schemas/vocab';
+import { initProgressForUser } from '../../utils/vocab-progress';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -21,20 +21,7 @@ export default defineEventHandler(async (event) => {
   const user = result[0];
 
   // 为新用户初始化所有词汇的 progress
-  const allWords = await db.select({ id: vocabWords.id }).from(vocabWords);
-  if (allWords.length > 0) {
-    const batchSize = 500;
-    for (let i = 0; i < allWords.length; i += batchSize) {
-      const batch = allWords.slice(i, i + batchSize).map(w => ({
-        userId: user.id,
-        wordId: w.id,
-        learningStatus: 'unread',
-        isRead: false,
-        isMastered: false,
-      }));
-      await db.insert(vocabProgress).values(batch);
-    }
-  }
+  await initProgressForUser(db, user.id);
 
   // 设置为当前用户
   await db.insert(vocabSettings)

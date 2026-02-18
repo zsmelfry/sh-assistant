@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { vocabWords, vocabProgress, vocabUsers } from '../../database/schemas/vocab';
+import { initProgressForUsersSync } from '../../utils/vocab-progress';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -42,39 +43,23 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB();
+  const batchSize = 500;
 
   // 事务：清空旧数据 → 插入新词 → 重建所有用户的 progress
-  // better-sqlite3 事务是同步的，不能用 async 回调
-  db.transaction((tx) => {
-    // 清空旧数据（级联删除 progress 和 statusHistory）
+  db.transaction((tx: any) => {
+    // 清空旧数据
     tx.delete(vocabProgress).run();
     tx.run(sql`DELETE FROM vocab_status_history`);
     tx.delete(vocabWords).run();
 
     // 批量插入新词
-    const batchSize = 500;
     for (let i = 0; i < words.length; i += batchSize) {
-      const batch = words.slice(i, i + batchSize);
-      tx.insert(vocabWords).values(batch).run();
+      tx.insert(vocabWords).values(words.slice(i, i + batchSize)).run();
     }
 
-    // 为所有已有用户初始化 progress（默认 UNREAD）
+    // 为所有已有用户初始化 progress
     const users = tx.select().from(vocabUsers).all();
-    if (users.length > 0) {
-      const allWords = tx.select({ id: vocabWords.id }).from(vocabWords).all();
-      for (const user of users) {
-        for (let i = 0; i < allWords.length; i += batchSize) {
-          const batch = allWords.slice(i, i + batchSize).map(w => ({
-            userId: user.id,
-            wordId: w.id,
-            learningStatus: 'unread' as const,
-            isRead: false,
-            isMastered: false,
-          }));
-          tx.insert(vocabProgress).values(batch).run();
-        }
-      }
-    }
+    initProgressForUsersSync(tx, users.map((u: any) => u.id));
   });
 
   return { imported: words.length };

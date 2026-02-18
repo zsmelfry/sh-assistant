@@ -1,5 +1,12 @@
-import { eq, sql, like, count } from 'drizzle-orm';
-import { vocabWords, vocabProgress, LEARNING_STATUS } from '../../database/schemas/vocab';
+import { sql, like, count } from 'drizzle-orm';
+import { vocabWords, LEARNING_STATUS } from '../../database/schemas/vocab';
+
+const STATUS_MAP: Record<string, string> = {
+  unread: LEARNING_STATUS.UNREAD,
+  toLearn: LEARNING_STATUS.TO_LEARN,
+  learning: LEARNING_STATUS.LEARNING,
+  mastered: LEARNING_STATUS.MASTERED,
+};
 
 export default defineEventHandler(async (event) => {
   const db = useDB();
@@ -10,123 +17,70 @@ export default defineEventHandler(async (event) => {
   const page = Math.max(1, Number(query.page) || 1);
   const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 50));
   const search = (query.search as string) || '';
-
   const offset = (page - 1) * pageSize;
 
-  // 构建基础查询 - 左连接 progress
-  if (userId) {
-    // 带用户进度的查询
-    let whereConditions: any[] = [];
-
-    if (search) {
-      whereConditions.push(like(vocabWords.word, `%${search}%`));
-    }
-
-    // 状态过滤需要子查询
-    if (filter !== 'all') {
-      const statusMap: Record<string, string> = {
-        unread: LEARNING_STATUS.UNREAD,
-        toLearn: LEARNING_STATUS.TO_LEARN,
-        learning: LEARNING_STATUS.LEARNING,
-        mastered: LEARNING_STATUS.MASTERED,
-      };
-      const targetStatus = statusMap[filter];
-
-      if (targetStatus === LEARNING_STATUS.UNREAD) {
-        // UNREAD = 没有 progress 记录或者 status 为 unread
-        const rows = await db.all(sql`
-          SELECT w.id, w.rank, w.word,
-                 p.id as progress_id, p.learning_status, p.is_read, p.is_mastered,
-                 p.first_interacted_at, p.mastered_at, p.note
-          FROM vocab_words w
-          LEFT JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}
-          WHERE (p.learning_status IS NULL OR p.learning_status = ${targetStatus})
-          ${search ? sql`AND w.word LIKE ${'%' + search + '%'}` : sql``}
-          ORDER BY w.rank ASC
-          LIMIT ${pageSize} OFFSET ${offset}
-        `);
-
-        const totalResult = await db.all(sql`
-          SELECT COUNT(*) as count
-          FROM vocab_words w
-          LEFT JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}
-          WHERE (p.learning_status IS NULL OR p.learning_status = ${targetStatus})
-          ${search ? sql`AND w.word LIKE ${'%' + search + '%'}` : sql``}
-        `);
-
-        return {
-          words: rows.map(formatWordWithProgress),
-          total: (totalResult[0] as any)?.count || 0,
-          page,
-          pageSize,
-        };
-      } else {
-        // 非 UNREAD 状态必须有 progress 记录
-        const rows = await db.all(sql`
-          SELECT w.id, w.rank, w.word,
-                 p.id as progress_id, p.learning_status, p.is_read, p.is_mastered,
-                 p.first_interacted_at, p.mastered_at, p.note
-          FROM vocab_words w
-          INNER JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}
-          WHERE p.learning_status = ${targetStatus}
-          ${search ? sql`AND w.word LIKE ${'%' + search + '%'}` : sql``}
-          ORDER BY w.rank ASC
-          LIMIT ${pageSize} OFFSET ${offset}
-        `);
-
-        const totalResult = await db.all(sql`
-          SELECT COUNT(*) as count
-          FROM vocab_words w
-          INNER JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}
-          WHERE p.learning_status = ${targetStatus}
-          ${search ? sql`AND w.word LIKE ${'%' + search + '%'}` : sql``}
-        `);
-
-        return {
-          words: rows.map(formatWordWithProgress),
-          total: (totalResult[0] as any)?.count || 0,
-          page,
-          pageSize,
-        };
-      }
-    }
-
-    // 无状态过滤 - 全部词汇 + 进度
-    const rows = await db.all(sql`
-      SELECT w.id, w.rank, w.word,
-             p.id as progress_id, p.learning_status, p.is_read, p.is_mastered,
-             p.first_interacted_at, p.mastered_at, p.note
-      FROM vocab_words w
-      LEFT JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}
-      ${search ? sql`WHERE w.word LIKE ${'%' + search + '%'}` : sql``}
-      ORDER BY w.rank ASC
-      LIMIT ${pageSize} OFFSET ${offset}
-    `);
-
-    const totalResult = await db.all(sql`
-      SELECT COUNT(*) as count FROM vocab_words w
-      ${search ? sql`WHERE w.word LIKE ${'%' + search + '%'}` : sql``}
-    `);
-
+  // 无用户 - 只返回词汇列表（不含 progress）
+  if (!userId) {
+    const where = search ? like(vocabWords.word, `%${search}%`) : undefined;
+    const [words, totalResult] = await Promise.all([
+      db.select().from(vocabWords).where(where).orderBy(vocabWords.rank).limit(pageSize).offset(offset),
+      db.select({ count: count() }).from(vocabWords).where(where),
+    ]);
     return {
-      words: rows.map(formatWordWithProgress),
-      total: (totalResult[0] as any)?.count || 0,
+      words: words.map(w => ({ ...w, progress: null })),
+      total: totalResult[0]?.count || 0,
       page,
       pageSize,
     };
   }
 
-  // 无用户 - 只返回词汇列表
-  const where = search ? like(vocabWords.word, `%${search}%`) : undefined;
+  // 有用户 - 动态构建 SQL
+  const targetStatus = filter !== 'all' ? STATUS_MAP[filter] : null;
 
-  const [words, totalResult] = await Promise.all([
-    db.select().from(vocabWords).where(where).orderBy(vocabWords.rank).limit(pageSize).offset(offset),
-    db.select({ count: count() }).from(vocabWords).where(where),
+  // JOIN 类型：UNREAD 或无过滤用 LEFT JOIN，其他状态用 INNER JOIN
+  const joinType = (!targetStatus || targetStatus === LEARNING_STATUS.UNREAD) ? 'LEFT' : 'INNER';
+
+  // WHERE 条件片段
+  const conditions: ReturnType<typeof sql>[] = [];
+  if (targetStatus === LEARNING_STATUS.UNREAD) {
+    conditions.push(sql`(p.learning_status IS NULL OR p.learning_status = ${targetStatus})`);
+  } else if (targetStatus) {
+    conditions.push(sql`p.learning_status = ${targetStatus}`);
+  }
+  if (search) {
+    conditions.push(sql`w.word LIKE ${'%' + search + '%'}`);
+  }
+
+  const whereClause = conditions.length > 0
+    ? sql`WHERE ${sql.join(conditions, sql` AND `)}`
+    : sql``;
+
+  const joinClause = joinType === 'LEFT'
+    ? sql`LEFT JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}`
+    : sql`INNER JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}`;
+
+  const [rows, totalResult] = await Promise.all([
+    db.all(sql`
+      SELECT w.id, w.rank, w.word,
+             p.id as progress_id, p.learning_status, p.is_read, p.is_mastered,
+             p.first_interacted_at, p.mastered_at, p.note
+      FROM vocab_words w
+      ${joinClause}
+      ${whereClause}
+      ORDER BY w.rank ASC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `),
+    db.all(sql`
+      SELECT COUNT(*) as count
+      FROM vocab_words w
+      ${joinClause}
+      ${whereClause}
+    `),
   ]);
 
   return {
-    words: words.map(w => ({ ...w, progress: null })),
-    total: totalResult[0]?.count || 0,
+    words: rows.map(formatWordWithProgress),
+    total: (totalResult[0] as any)?.count || 0,
     page,
     pageSize,
   };

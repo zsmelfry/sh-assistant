@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
   const db = useDB();
   const now = Date.now();
   const uid = Number(userId);
+  const numWordIds = wordIds.map(Number);
 
   // 验证用户
   const user = await db.select().from(vocabUsers).where(eq(vocabUsers.id, uid)).limit(1);
@@ -32,75 +33,102 @@ export default defineEventHandler(async (event) => {
     .from(vocabProgress)
     .where(and(
       eq(vocabProgress.userId, uid),
-      inArray(vocabProgress.wordId, wordIds.map(Number)),
+      inArray(vocabProgress.wordId, numWordIds),
     ));
 
   const progressMap = new Map(existingProgress.map(p => [p.wordId, p]));
 
-  let updated = 0;
+  // 预计算：分组
+  const toInsert: any[] = [];
+  const toUpdate: { id: number; newStatus: LearningStatus; setFirstInteract: boolean; setMastered: boolean }[] = [];
   const historyEntries: any[] = [];
 
-  // better-sqlite3 事务是同步的
-  db.transaction((tx) => {
-    for (const wid of wordIds) {
-      const wordId = Number(wid);
-      const existing = progressMap.get(wordId);
-      const currentStatus = (existing?.learningStatus || LEARNING_STATUS.UNREAD) as LearningStatus;
-      const newStatus = transitionStatus(currentStatus, action);
+  for (const wordId of numWordIds) {
+    const existing = progressMap.get(wordId);
+    const currentStatus = (existing?.learningStatus || LEARNING_STATUS.UNREAD) as LearningStatus;
+    const newStatus = transitionStatus(currentStatus, action);
 
-      if (newStatus === currentStatus && existing) continue;
+    if (newStatus === currentStatus && existing) continue;
 
-      const flags = deriveFlags(newStatus);
-      const firstInteract = isFirstInteraction(currentStatus, newStatus);
+    const flags = deriveFlags(newStatus);
+    const firstInteract = isFirstInteraction(currentStatus, newStatus);
 
-      if (!existing) {
-        tx.insert(vocabProgress).values({
-          userId: uid,
-          wordId,
-          learningStatus: newStatus,
-          isRead: flags.isRead,
-          isMastered: flags.isMastered,
-          firstInteractedAt: firstInteract ? now : null,
-          masteredAt: flags.isMastered ? now : null,
-        }).run();
-      } else {
-        const updates: any = {
-          learningStatus: newStatus,
-          isRead: flags.isRead,
-          isMastered: flags.isMastered,
-        };
-        if (firstInteract && !existing.firstInteractedAt) {
-          updates.firstInteractedAt = now;
-        }
-        if (flags.isMastered && !existing.masteredAt) {
-          updates.masteredAt = now;
-        }
-        if (!flags.isMastered) {
-          updates.masteredAt = null;
-        }
-
-        tx.update(vocabProgress)
-          .set(updates)
-          .where(eq(vocabProgress.id, existing.id))
-          .run();
-      }
-
-      historyEntries.push({
+    if (!existing) {
+      toInsert.push({
         userId: uid,
         wordId,
-        previousStatus: currentStatus,
-        newStatus,
-        changedAt: now,
+        learningStatus: newStatus,
+        isRead: flags.isRead,
+        isMastered: flags.isMastered,
+        firstInteractedAt: firstInteract ? now : null,
+        masteredAt: flags.isMastered ? now : null,
       });
-      updated++;
+    } else {
+      toUpdate.push({
+        id: existing.id,
+        newStatus,
+        setFirstInteract: firstInteract && !existing.firstInteractedAt,
+        setMastered: flags.isMastered && !existing.masteredAt,
+      });
     }
 
-    // 批量插入历史
-    if (historyEntries.length > 0) {
-      const batchSize = 500;
-      for (let i = 0; i < historyEntries.length; i += batchSize) {
-        tx.insert(vocabStatusHistory).values(historyEntries.slice(i, i + batchSize)).run();
+    historyEntries.push({
+      userId: uid,
+      wordId,
+      previousStatus: currentStatus,
+      newStatus,
+      changedAt: now,
+    });
+  }
+
+  const updated = toInsert.length + toUpdate.length;
+  if (updated === 0) return { updated: 0, total: wordIds.length };
+
+  const batchSize = 500;
+
+  db.transaction((tx: any) => {
+    // 批量 INSERT 新 progress
+    for (let i = 0; i < toInsert.length; i += batchSize) {
+      tx.insert(vocabProgress).values(toInsert.slice(i, i + batchSize)).run();
+    }
+
+    // 批量 UPDATE：按目标状态分组，每组一条 UPDATE
+    if (toUpdate.length > 0) {
+      const byStatus = new Map<string, number[]>();
+      for (const item of toUpdate) {
+        const key = item.newStatus;
+        if (!byStatus.has(key)) byStatus.set(key, []);
+        byStatus.get(key)!.push(item.id);
       }
+
+      for (const [status, ids] of byStatus) {
+        const flags = deriveFlags(status as LearningStatus);
+        for (let i = 0; i < ids.length; i += batchSize) {
+          tx.update(vocabProgress)
+            .set({
+              learningStatus: status,
+              isRead: flags.isRead,
+              isMastered: flags.isMastered,
+              masteredAt: flags.isMastered ? now : null,
+            })
+            .where(inArray(vocabProgress.id, ids.slice(i, i + batchSize)))
+            .run();
+        }
+      }
+
+      // 补充 firstInteractedAt（只对需要的记录）
+      const needFirstInteract = toUpdate.filter(u => u.setFirstInteract).map(u => u.id);
+      for (let i = 0; i < needFirstInteract.length; i += batchSize) {
+        tx.update(vocabProgress)
+          .set({ firstInteractedAt: now })
+          .where(inArray(vocabProgress.id, needFirstInteract.slice(i, i + batchSize)))
+          .run();
+      }
+    }
+
+    // 批量 INSERT 历史
+    for (let i = 0; i < historyEntries.length; i += batchSize) {
+      tx.insert(vocabStatusHistory).values(historyEntries.slice(i, i + batchSize)).run();
     }
   });
 
