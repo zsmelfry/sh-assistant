@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { llmProviders } from '../../../database/schemas/llm';
+import { llmProviders } from '../../../../database/schemas/llm';
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'));
