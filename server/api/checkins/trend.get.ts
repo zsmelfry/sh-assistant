@@ -25,6 +25,35 @@ export default defineEventHandler(async (event) => {
 
   const habit = habitRows[0];
   const now = new Date();
+
+  // Calculate the full date range for all months
+  const startTarget = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+  const startDate = `${startTarget.getFullYear()}-${String(startTarget.getMonth() + 1).padStart(2, '0')}-01`;
+  const endDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const endMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const endDate = `${endMonthStr}-${String(endDaysInMonth).padStart(2, '0')}`;
+
+  // Single query for all checkins in the range
+  const allRows = await db.select({ date: checkins.date })
+    .from(checkins)
+    .where(
+      and(
+        eq(checkins.habitId, habitId),
+        gte(checkins.date, startDate),
+        lte(checkins.date, endDate),
+      ),
+    );
+
+  // Group dates by month (YYYY-MM)
+  const datesByMonth = new Map<string, Set<string>>();
+  for (const row of allRows) {
+    const monthKey = row.date.slice(0, 7); // YYYY-MM
+    if (!datesByMonth.has(monthKey)) {
+      datesByMonth.set(monthKey, new Set());
+    }
+    datesByMonth.get(monthKey)!.add(row.date);
+  }
+
   const result: Array<{ month: string; total: number; completed: number; rate: number }> = [];
 
   for (let i = months - 1; i >= 0; i--) {
@@ -33,21 +62,7 @@ export default defineEventHandler(async (event) => {
     const month = targetDate.getMonth(); // 0-based
     const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const startDate = `${monthStr}-01`;
-    const endDate = `${monthStr}-${String(daysInMonth).padStart(2, '0')}`;
-
-    const rows = await db.select({ date: checkins.date })
-      .from(checkins)
-      .where(
-        and(
-          eq(checkins.habitId, habitId),
-          gte(checkins.date, startDate),
-          lte(checkins.date, endDate),
-        ),
-      );
-
-    const checkinDates = new Set(rows.map(r => r.date));
+    const checkinDates = datesByMonth.get(monthStr) ?? new Set<string>();
 
     if (habit.frequency === 'daily') {
       const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
@@ -60,7 +75,6 @@ export default defineEventHandler(async (event) => {
         rate: total > 0 ? Math.round((completed / total) * 100) : 0,
       });
     } else if (habit.frequency === 'weekly') {
-      // B1 修复：使用 weekOverlapsMonth 判断周是否与目标月有交集
       const weekStart = getWeekStart(new Date(year, month, 1));
       let totalWeeks = 0;
       let completedWeeks = 0;
