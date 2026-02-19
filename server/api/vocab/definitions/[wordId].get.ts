@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { definitions } from '../../../database/schemas/srs';
 import { vocabWords } from '../../../database/schemas/vocab';
+import type { TranslateResult } from '../../../lib/llm';
 
 export default defineEventHandler(async (event) => {
   const wordId = Number(getRouterParam(event, 'wordId'));
@@ -38,16 +39,7 @@ export default defineEventHandler(async (event) => {
     const translateResult = await $fetch('/api/llm/translate', {
       method: 'POST',
       body: { word },
-    }) as {
-      definition: string;
-      partOfSpeech: string;
-      examples: Array<{ sentence: string; translation: string }>;
-      synonyms: string;
-      antonyms: string;
-      wordFamily: string;
-      collocations: string;
-      meta: { provider: string; modelName: string; timestamp: string };
-    };
+    }) as TranslateResult;
 
     // 缓存到数据库
     const now = Date.now();

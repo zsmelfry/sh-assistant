@@ -6,6 +6,7 @@ export type {
   ChatResponse,
   HealthStatus,
   ProviderType,
+  TranslateResult,
 } from './types';
 
 export {

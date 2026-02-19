@@ -24,6 +24,18 @@ export interface ChatResponse {
   };
 }
 
+/** 翻译 API 响应 */
+export interface TranslateResult {
+  definition: string;
+  partOfSpeech: string;
+  examples: Array<{ sentence: string; translation: string }>;
+  synonyms: string;
+  antonyms: string;
+  wordFamily: string;
+  collocations: string;
+  meta: { provider: string; modelName: string; timestamp: string };
+}
+
 /** Provider 健康状态 */
 export interface HealthStatus {
   available: boolean;
