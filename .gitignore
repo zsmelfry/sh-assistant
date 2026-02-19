@@ -33,3 +33,6 @@ e2e-screenshots
 *.log
 
 french-words
+
+# PM2 logs
+logs/
