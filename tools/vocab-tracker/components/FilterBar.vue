@@ -75,15 +75,9 @@ onUnmounted(() => {
 <style scoped>
 .filterBar {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: var(--spacing-sm);
-}
-
-@media (min-width: 640px) {
-  .filterBar {
-    flex-direction: row;
-    align-items: center;
-  }
 }
 
 .searchBox {
@@ -146,5 +140,28 @@ onUnmounted(() => {
   background-color: var(--color-accent);
   color: var(--color-accent-inverse);
   border-color: var(--color-accent);
+}
+
+@media (max-width: 768px) {
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchBox {
+    max-width: 100%;
+  }
+  .searchInput {
+    min-height: var(--touch-target-min);
+  }
+  .filterBtn {
+    min-height: var(--touch-target-min);
+  }
+  .filterBtn:active {
+    background-color: var(--color-bg-hover);
+  }
+  .clearBtn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
 }
 </style>

@@ -35,6 +35,8 @@ import type { DomainWithStats, OverviewStats } from '../types';
 import GlobalProgress from './GlobalProgress.vue';
 import DomainCard from './DomainCard.vue';
 
+const isMobile = useIsMobile();
+
 const props = defineProps<{
   domains: DomainWithStats[];
   stats: OverviewStats | null;
@@ -51,6 +53,7 @@ const emit = defineEmits<{
 const dragId = ref<number | null>(null);
 
 function onDragStart(e: DragEvent, id: number) {
+  if (isMobile.value) return;
   dragId.value = id;
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move';
@@ -58,12 +61,14 @@ function onDragStart(e: DragEvent, id: number) {
 }
 
 function onDragOver(e: DragEvent) {
+  if (isMobile.value) return;
   if (e.dataTransfer) {
     e.dataTransfer.dropEffect = 'move';
   }
 }
 
 function onDrop(_e: DragEvent, targetId: number) {
+  if (isMobile.value) return;
   if (dragId.value === null || dragId.value === targetId) return;
 
   const items = [...props.domains];
@@ -102,5 +107,14 @@ function onDrop(_e: DragEvent, targetId: number) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .overviewPage {
+    padding: var(--spacing-md);
+  }
+  .domainGrid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

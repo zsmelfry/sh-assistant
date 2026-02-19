@@ -79,4 +79,14 @@ function handleClick() {
 .day.outside {
   visibility: hidden;
 }
+
+@media (max-width: 768px) {
+  .day {
+    min-height: var(--touch-target-min);
+    font-size: 14px;
+  }
+  .day:active:not(.Future):not(.outside) {
+    background-color: var(--color-bg-hover);
+  }
+}
 </style>

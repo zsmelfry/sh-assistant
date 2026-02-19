@@ -167,4 +167,36 @@ function handleAction(action: StatusAction) {
   color: var(--color-accent-inverse);
   border-color: var(--color-accent);
 }
+
+@media (max-width: 768px) {
+  .vocabItem {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+  }
+  .rank {
+    min-width: auto;
+  }
+  .word {
+    flex-basis: 100%;
+    order: -1;
+    font-size: 16px;
+  }
+  .actions {
+    flex-wrap: wrap;
+  }
+  .actionBtn {
+    min-height: var(--touch-target-min);
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
+  .checkbox {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+  .actionBtn:active {
+    background-color: var(--color-accent);
+    color: var(--color-accent-inverse);
+    border-color: var(--color-accent);
+  }
+}
 </style>

@@ -296,4 +296,15 @@ function hideTooltip() {
   width: auto;
   height: 14px;
 }
+
+@media (max-width: 768px) {
+  .navBtn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    font-size: 14px;
+  }
+  .navBtn:active {
+    background-color: var(--color-bg-hover);
+  }
+}
 </style>

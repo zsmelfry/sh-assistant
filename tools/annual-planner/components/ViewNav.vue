@@ -57,4 +57,15 @@ defineEmits<{
   color: var(--color-text-primary);
   border-bottom-color: var(--color-accent);
 }
+
+@media (max-width: 768px) {
+  .navTab {
+    min-height: var(--touch-target-min);
+    flex: 1;
+    text-align: center;
+  }
+  .navTab:active {
+    color: var(--color-text-primary);
+  }
+}
 </style>

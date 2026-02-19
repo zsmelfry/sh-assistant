@@ -177,4 +177,21 @@ async function handleDelete() {
   flex: 1;
   min-width: 0;
 }
+
+@media (max-width: 768px) {
+  .habitTracker {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .mainContent {
+    padding: 0;
+  }
+  .contentColumns {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  .calendarColumn {
+    width: 100%;
+  }
+}
 </style>

@@ -304,13 +304,25 @@ async function handleStartSession() {
   cursor: not-allowed;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .studyLayout {
     flex-direction: column;
+  }
+  .subTab {
+    min-height: var(--touch-target-min);
+  }
+  .subTab:active:not(.active) {
+    background-color: var(--color-bg-hover);
+  }
+  .startBtn {
+    min-height: var(--touch-target-min);
+    width: 100%;
+  }
+  .retryBtn {
+    min-height: var(--touch-target-min);
   }
 }
 </style>

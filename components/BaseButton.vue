@@ -74,4 +74,10 @@ defineEmits<{
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+  .btn {
+    min-height: var(--touch-target-min);
+  }
+}
 </style>

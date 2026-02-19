@@ -89,4 +89,13 @@ function navigateToFilter(f: FilterType) {
   color: var(--color-text-secondary);
   margin-top: 2px;
 }
+
+@media (max-width: 768px) {
+  .statCard {
+    min-height: var(--touch-target-min);
+  }
+  .statCard:active {
+    background-color: var(--color-bg-hover);
+  }
+}
 </style>

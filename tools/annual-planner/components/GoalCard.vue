@@ -5,7 +5,7 @@
       completed: isFullyCompleted,
       stagnant: goal.isStagnant && !isFullyCompleted,
     }"
-    draggable="true"
+    :draggable="!isMobile"
     @dragstart="$emit('dragstart', $event)"
     @dragover.prevent="$emit('dragover', $event)"
     @drop="$emit('drop', $event)"
@@ -60,6 +60,8 @@
 
 <script setup lang="ts">
 import type { GoalWithDetails } from '../types';
+
+const isMobile = useIsMobile();
 import PriorityBadge from './PriorityBadge.vue';
 import StagnantBadge from './StagnantBadge.vue';
 import TagBadge from './TagBadge.vue';
@@ -213,5 +215,25 @@ const progressPercent = computed(() => {
   font-size: 12px;
   color: var(--color-text-secondary);
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .goalCard {
+    cursor: default;
+    -webkit-user-drag: none;
+  }
+  .actions {
+    opacity: 1;
+  }
+  .actionBtn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .actionBtn:active {
+    background-color: var(--color-bg-hover);
+  }
 }
 </style>

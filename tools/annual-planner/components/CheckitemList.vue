@@ -4,7 +4,7 @@
       v-for="item in checkitems"
       :key="item.id"
       class="checkitemRow"
-      draggable="true"
+      :draggable="!isMobile"
       @dragstart="onDragStart($event, item.id)"
       @dragover.prevent="onDragOver($event, item.id)"
       @drop="onDrop($event, item.id)"
@@ -58,6 +58,8 @@
 
 <script setup lang="ts">
 import type { PlannerCheckitem } from '../types';
+
+const isMobile = useIsMobile();
 import CheckitemInput from './CheckitemInput.vue';
 
 const props = defineProps<{
@@ -204,5 +206,29 @@ function onDrop(_e: DragEvent, targetId: number) {
 
 .addBtn:hover {
   color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .checkitemRow {
+    cursor: default;
+    -webkit-user-drag: none;
+    min-height: var(--touch-target-min);
+    padding: var(--spacing-xs) 0;
+  }
+  .deleteBtn {
+    opacity: 1;
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .checkbox {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+  .addBtn {
+    min-height: var(--touch-target-min);
+  }
 }
 </style>

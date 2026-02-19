@@ -48,6 +48,8 @@ import type { DomainWithStats, GoalWithDetails } from '../types';
 import GoalCard from './GoalCard.vue';
 import EmptyState from './EmptyState.vue';
 
+const isMobile = useIsMobile();
+
 const props = defineProps<{
   domain: DomainWithStats;
   goals: GoalWithDetails[];
@@ -76,6 +78,7 @@ function handleAddCheckitem(goalId: number, content: string) {
 const dragGoalId = ref<number | null>(null);
 
 function onGoalDragStart(e: DragEvent, id: number) {
+  if (isMobile.value) return;
   dragGoalId.value = id;
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move';
@@ -83,12 +86,14 @@ function onGoalDragStart(e: DragEvent, id: number) {
 }
 
 function onGoalDragOver(e: DragEvent) {
+  if (isMobile.value) return;
   if (e.dataTransfer) {
     e.dataTransfer.dropEffect = 'move';
   }
 }
 
 function onGoalDrop(_e: DragEvent, targetId: number) {
+  if (isMobile.value) return;
   if (dragGoalId.value === null || dragGoalId.value === targetId) return;
 
   const items = [...props.goals];
@@ -154,5 +159,27 @@ function onGoalDrop(_e: DragEvent, targetId: number) {
 .goalList {
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .domainDetailPage {
+    padding: var(--spacing-md);
+  }
+  .pageHeader {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+  .domainName {
+    font-size: 18px;
+    flex-basis: 100%;
+    order: -1;
+  }
+  .backBtn {
+    min-height: var(--touch-target-min);
+  }
+  .headerRight {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
 }
 </style>

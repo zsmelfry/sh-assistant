@@ -28,6 +28,10 @@
   --sidebar-width: 200px;
   --sidebar-width-collapsed: 56px;
 
+  /* 移动端 */
+  --bottom-nav-height: 56px;
+  --touch-target-min: 44px;
+
   /* 危险色 */
   --color-danger: #DC2626;
   --color-danger-bg: #FEF2F2;

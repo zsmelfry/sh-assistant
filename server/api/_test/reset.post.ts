@@ -1,5 +1,6 @@
 import { useDB } from '~/server/database';
 import {
+  users,
   habits, checkins,
   vocabStatusHistory, vocabProgress, vocabWords, vocabUsers, vocabSettings,
   reviewLogs, srsCards, definitions, studySessions,
@@ -9,6 +10,8 @@ import {
 
 export default defineEventHandler(async () => {
   const db = useDB();
+  // auth
+  await db.delete(users);
   // habit-tracker
   await db.delete(checkins);
   await db.delete(habits);

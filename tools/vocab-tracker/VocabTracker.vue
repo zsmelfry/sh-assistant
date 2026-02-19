@@ -241,4 +241,27 @@ onMounted(async () => {
   font-size: 14px;
   color: var(--color-danger);
 }
+
+@media (max-width: 768px) {
+  .vocabTracker {
+    padding: var(--spacing-md);
+  }
+  .mainTabs {
+    display: flex;
+    width: 100%;
+  }
+  .mainTab {
+    flex: 1;
+    min-height: var(--touch-target-min);
+    padding: var(--spacing-sm);
+    font-size: 13px;
+  }
+  .toolbarBtn {
+    min-height: var(--touch-target-min);
+  }
+  .primaryBtn {
+    min-height: var(--touch-target-min);
+    width: 100%;
+  }
+}
 </style>

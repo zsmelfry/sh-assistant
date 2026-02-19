@@ -57,4 +57,17 @@ const rateDisplay = computed(() => {
   font-size: 13px;
   color: var(--color-text-secondary);
 }
+
+@media (max-width: 768px) {
+  .statsBar {
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+  }
+  .statValue {
+    font-size: 20px;
+  }
+  .statLabel {
+    font-size: 12px;
+  }
+}
 </style>

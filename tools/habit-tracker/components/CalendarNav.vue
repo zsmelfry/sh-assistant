@@ -62,4 +62,14 @@ const displayTitle = computed(() => {
   min-width: 120px;
   text-align: center;
 }
+
+@media (max-width: 768px) {
+  .navBtn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+  .navBtn:active {
+    background-color: var(--color-bg-hover);
+  }
+}
 </style>

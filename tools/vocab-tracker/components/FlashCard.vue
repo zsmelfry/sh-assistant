@@ -417,4 +417,19 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 .rateLabel {
   font-size: 13px;
 }
+
+@media (max-width: 768px) {
+  .flashCardContainer {
+    max-width: 100%;
+  }
+  .rateBtn {
+    min-height: var(--touch-target-min);
+  }
+  .chatBtn {
+    min-height: var(--touch-target-min);
+  }
+  .chatBtn:active {
+    background-color: var(--color-bg-hover);
+  }
+}
 </style>

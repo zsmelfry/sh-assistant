@@ -34,6 +34,14 @@
         <Settings :size="18" :stroke-width="1.5" />
         <span v-if="!collapsed" class="nav-label">模型设置</span>
       </button>
+      <button
+        class="settings-btn logout-btn"
+        title="登出"
+        @click="handleLogout"
+      >
+        <LogOut :size="18" :stroke-width="1.5" />
+        <span v-if="!collapsed" class="nav-label">登出</span>
+      </button>
     </div>
 
     <LlmSettings :open="showLlmSettings" @close="showLlmSettings = false" />
@@ -41,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { Settings, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { Settings, ChevronLeft, ChevronRight, LogOut } from 'lucide-vue-next';
 
 defineProps<{
   collapsed: boolean;
@@ -54,8 +62,13 @@ defineEmits<{
 const route = useRoute();
 const { getAll } = useToolRegistry();
 
+const { logout } = useAuth();
 const tools = computed(() => getAll());
 const showLlmSettings = ref(false);
+
+function handleLogout() {
+  logout();
+}
 
 const currentToolId = computed(() => {
   const slug = route.params.slug;
@@ -175,5 +188,15 @@ const currentToolId = computed(() => {
 
 .settings-btn:hover {
   background-color: var(--color-bg-hover);
+}
+
+.logout-btn {
+  margin-top: var(--spacing-xs);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
 }
 </style>

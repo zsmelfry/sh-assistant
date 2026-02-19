@@ -174,4 +174,45 @@ defineEmits<{
 .actionBtn:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
+
+@media (max-width: 768px) {
+  .habitList {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .listItems {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    -webkit-overflow-scrolling: touch;
+  }
+  .listItems {
+    scroll-snap-type: x mandatory;
+  }
+  .habitItem {
+    flex-shrink: 0;
+    min-height: var(--touch-target-min);
+    padding: var(--spacing-sm) var(--spacing-md);
+    scroll-snap-align: start;
+  }
+  .habitItem:active {
+    background-color: var(--color-bg-hover);
+  }
+  .habitActions {
+    opacity: 1;
+  }
+  .actionBtn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .newBtn {
+    min-height: var(--touch-target-min);
+  }
+}
 </style>

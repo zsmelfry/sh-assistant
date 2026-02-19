@@ -4,7 +4,7 @@ module.exports = {
     script: '.output/server/index.mjs',
     cwd: __dirname,
     node_args: '--env-file .env.production.local',
-    env: { NODE_ENV: 'production' },
+    env: { NODE_ENV: 'production', HOST: '0.0.0.0' },
     max_restarts: 10,
     min_uptime: '10s',
     error_file: './logs/pm2-error.log',

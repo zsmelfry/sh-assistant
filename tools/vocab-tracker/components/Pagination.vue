@@ -90,16 +90,10 @@ function handleJump() {
 <style scoped>
 .pagination {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
   gap: var(--spacing-sm);
-}
-
-@media (min-width: 640px) {
-  .pagination {
-    flex-direction: row;
-    justify-content: space-between;
-  }
 }
 
 .rangeText {
@@ -188,5 +182,22 @@ function handleJump() {
 
 .jumpBtn:hover {
   background-color: var(--color-bg-hover);
+}
+
+@media (max-width: 768px) {
+  .pagination {
+    flex-direction: column;
+  }
+  .pageBtn {
+    min-width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+  .jumpBox {
+    display: none;
+  }
+  .pageControls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 </style>

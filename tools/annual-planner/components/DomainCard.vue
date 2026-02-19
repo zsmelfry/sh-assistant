@@ -1,7 +1,7 @@
 <template>
   <div
     class="domainCard"
-    draggable="true"
+    :draggable="!isMobile"
     @dragstart="$emit('dragstart', $event)"
     @dragover.prevent="$emit('dragover', $event)"
     @drop="$emit('drop', $event)"
@@ -33,6 +33,8 @@
 
 <script setup lang="ts">
 import type { DomainWithStats } from '../types';
+
+const isMobile = useIsMobile();
 
 defineProps<{
   domain: DomainWithStats;
@@ -128,5 +130,25 @@ defineEmits<{
 .completionText {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .domainCard {
+    -webkit-user-drag: none;
+    min-height: var(--touch-target-min);
+  }
+  .domainCard:active {
+    background-color: var(--color-bg-hover);
+  }
+  .actions {
+    opacity: 1;
+  }
+  .actionBtn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 </style>
