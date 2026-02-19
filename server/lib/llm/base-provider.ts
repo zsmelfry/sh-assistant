@@ -55,27 +55,6 @@ export abstract class BaseLlmProvider implements ILlmProvider {
     return prompt;
   }
 
-  /** 解析 JSON 响应（容错处理） */
-  protected parseJsonResponse(text: string): unknown {
-    const cleaned = text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new LlmError(
-        LlmErrorType.INVALID_RESPONSE,
-        `响应中未找到 JSON: ${text.slice(0, 200)}`,
-      );
-    }
-    try {
-      return JSON.parse(jsonMatch[0]);
-    } catch (error) {
-      throw new LlmError(
-        LlmErrorType.INVALID_RESPONSE,
-        `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
-        error,
-      );
-    }
-  }
-
   protected normalizeOptions(options?: ChatOptions): Required<ChatOptions> {
     return {
       temperature: options?.temperature ?? this.defaultTemperature,
