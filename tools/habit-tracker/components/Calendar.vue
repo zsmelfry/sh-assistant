@@ -146,7 +146,4 @@ const calendarDays = computed((): CalendarDayData[] => {
   gap: 2px;
 }
 
-.gridWeekly .day {
-  /* Weekly 频率下的 grid 视觉提示 */
-}
 </style>
