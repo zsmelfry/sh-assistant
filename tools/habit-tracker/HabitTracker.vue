@@ -22,24 +22,30 @@
           :frequency="store.selectedFrequency"
         />
 
-        <CalendarNav
-          :month="store.currentMonth"
-          @prev="prevMonth"
-          @next="nextMonth"
-        />
+        <div class="contentColumns">
+          <div class="calendarColumn">
+            <CalendarNav
+              :month="store.currentMonth"
+              @prev="prevMonth"
+              @next="nextMonth"
+            />
 
-        <Calendar
-          :month="store.currentMonth"
-          :frequency="store.selectedFrequency"
-          :check-ins="store.checkIns"
-          :all-check-in-dates="store.allCheckInDates"
-          @toggle="store.toggleCheckIn($event)"
-        />
+            <Calendar
+              :month="store.currentMonth"
+              :frequency="store.selectedFrequency"
+              :check-ins="store.checkIns"
+              :all-check-in-dates="store.allCheckInDates"
+              @toggle="store.toggleCheckIn($event)"
+            />
+          </div>
 
-        <HistoryPanel
-          :habit-id="store.selectedHabitId!"
-          :frequency="store.selectedFrequency"
-        />
+          <div class="chartsColumn">
+            <HistoryPanel
+              :habit-id="store.selectedHabitId!"
+              :frequency="store.selectedFrequency"
+            />
+          </div>
+        </div>
       </div>
     </template>
 
@@ -153,5 +159,22 @@ async function handleDelete() {
   flex: 1;
   padding: 0 var(--spacing-lg);
   overflow-y: auto;
+}
+
+.contentColumns {
+  display: flex;
+  gap: var(--spacing-xl);
+  flex: 1;
+  min-height: 0;
+}
+
+.calendarColumn {
+  width: 340px;
+  flex-shrink: 0;
+}
+
+.chartsColumn {
+  flex: 1;
+  min-width: 0;
 }
 </style>

@@ -112,8 +112,7 @@ const calendarDays = computed((): CalendarDayData[] => {
 
 <style scoped>
 .calendar {
-  max-width: 400px;
-  margin: 0 auto;
+  max-width: 100%;
 }
 
 .monthBadge {

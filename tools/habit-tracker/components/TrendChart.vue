@@ -24,7 +24,7 @@
         :key="point.month"
         :cx="point.x"
         :cy="point.y"
-        r="4"
+        r="3"
         class="dot"
         @mouseenter="showTooltip(point, $event)"
         @mouseleave="hideTooltip"
@@ -73,9 +73,9 @@ const props = defineProps<{
   frequency: HabitFrequency;
 }>();
 
-const width = 500;
-const height = 200;
-const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+const width = 700;
+const height = 220;
+const padding = { top: 20, right: 20, bottom: 30, left: 36 };
 
 const tooltip = reactive({
   visible: false,
@@ -173,7 +173,6 @@ function hideTooltip() {
 
 .trendChart {
   width: 100%;
-  max-width: 500px;
   height: auto;
 }
 
@@ -190,7 +189,7 @@ function hideTooltip() {
 .line {
   fill: none;
   stroke: var(--color-chart-fill);
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
 
 .dot {
@@ -199,11 +198,11 @@ function hideTooltip() {
 }
 
 .dot:hover {
-  r: 6;
+  r: 4;
 }
 
 .axisLabel {
-  font-size: 11px;
+  font-size: 9px;
   fill: var(--color-text-secondary);
 }
 </style>

@@ -203,10 +203,10 @@ function hideTooltip() {
   background: none;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,9 +217,9 @@ function hideTooltip() {
 }
 
 .yearLabel {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  min-width: 50px;
+  min-width: 40px;
   text-align: center;
 }
 

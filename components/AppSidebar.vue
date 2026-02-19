@@ -7,7 +7,7 @@
         :aria-label="collapsed ? '展开侧边栏' : '折叠侧边栏'"
         @click="$emit('toggle')"
       >
-        {{ collapsed ? '▶' : '◀' }}
+        <component :is="collapsed ? ChevronRight : ChevronLeft" :size="14" :stroke-width="1.5" />
       </button>
     </div>
 
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { Settings } from 'lucide-vue-next';
+import { Settings, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 
 defineProps<{
   collapsed: boolean;
