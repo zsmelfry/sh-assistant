@@ -36,9 +36,11 @@ export default defineEventHandler(async (event) => {
   const word = wordResult[0].word;
 
   try {
+    const authHeader = getRequestHeader(event, 'authorization');
     const translateResult = await $fetch('/api/llm/translate', {
       method: 'POST',
       body: { word },
+      headers: authHeader ? { authorization: authHeader } : {},
     }) as TranslateResult;
 
     // 缓存到数据库

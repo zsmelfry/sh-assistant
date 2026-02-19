@@ -6,7 +6,7 @@
       <div class="progressBarOuter">
         <div
           class="progressBarInner"
-          :style="{ height: `${progress.percentage}%` }"
+          :style="{ '--progress': `${progress.percentage}%` }"
         ></div>
       </div>
       <span class="progressText">{{ progress.current }}/{{ progress.total }}</span>
@@ -71,9 +71,10 @@ const progress = computed(() => studyStore.progress);
   position: absolute;
   bottom: 0;
   width: 8px;
+  height: var(--progress);
   background-color: var(--color-accent);
   border-radius: 4px;
-  transition: height 300ms ease;
+  transition: height 300ms ease, width 300ms ease;
 }
 
 .progressText {
@@ -98,5 +99,34 @@ const progress = computed(() => studyStore.progress);
 
 .statReview {
   color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .progressPanel {
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+  }
+  .progressCard {
+    flex-direction: row;
+    flex: 1;
+    align-items: center;
+  }
+  .progressBarOuter {
+    width: 100%;
+    height: 8px;
+    flex: 1;
+  }
+  .progressBarInner {
+    width: var(--progress);
+    height: 8px;
+    bottom: 0;
+    left: 0;
+  }
+  .statsCard {
+    flex-direction: row;
+    gap: var(--spacing-md);
+    flex-shrink: 0;
+  }
 }
 </style>

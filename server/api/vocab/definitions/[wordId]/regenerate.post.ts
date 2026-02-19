@@ -29,9 +29,11 @@ export default defineEventHandler(async (event) => {
       translateBody.providerId = Number(providerId);
     }
 
+    const authHeader = getRequestHeader(event, 'authorization');
     const translateResult = await $fetch('/api/llm/translate', {
       method: 'POST',
       body: translateBody,
+      headers: authHeader ? { authorization: authHeader } : {},
     }) as TranslateResult;
 
     const now = Date.now();

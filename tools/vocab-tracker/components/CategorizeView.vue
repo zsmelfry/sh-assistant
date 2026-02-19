@@ -454,4 +454,43 @@ onMounted(() => loadWords());
 .batchBtnPrimary:hover {
   opacity: 0.85;
 }
+
+@media (max-width: 768px) {
+  .catItem {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+  }
+  .word {
+    flex-basis: 100%;
+    order: -1;
+    font-size: 16px;
+  }
+  .rank {
+    order: -1;
+  }
+  .itemActions {
+    flex-wrap: wrap;
+  }
+  .catBtn {
+    min-height: var(--touch-target-min);
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
+  .catBtn:active {
+    background-color: var(--color-bg-hover);
+  }
+  .catBtnPrimary:active {
+    opacity: 0.85;
+  }
+  .batchBar {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  .batchBtn {
+    min-height: var(--touch-target-min);
+  }
+  .pageBtn {
+    min-height: var(--touch-target-min);
+  }
+}
 </style>
