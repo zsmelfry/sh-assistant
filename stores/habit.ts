@@ -11,8 +11,6 @@ import {
   subMonths,
   getISOWeek,
   getYear,
-  isSameISOWeek,
-  isSameMonth,
 } from 'date-fns';
 import type { Habit, CheckIn, HabitFrequency, YearMonth } from '~/tools/habit-tracker/types';
 
