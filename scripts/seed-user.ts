@@ -65,21 +65,22 @@ async function main() {
     .where(eq(users.username, username))
     .limit(1);
 
-  if (existing.length > 0) {
-    console.error(`Error: user "${username}" already exists.`);
-    process.exit(1);
-  }
-
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const now = Date.now();
 
-  await db.insert(users).values({
-    username,
-    passwordHash,
-    createdAt: now,
-  });
-
-  console.log(`User "${username}" created successfully.`);
+  if (existing.length > 0) {
+    await db.update(users)
+      .set({ passwordHash })
+      .where(eq(users.username, username));
+    console.log(`User "${username}" password updated.`);
+  } else {
+    await db.insert(users).values({
+      username,
+      passwordHash,
+      createdAt: now,
+    });
+    console.log(`User "${username}" created successfully.`);
+  }
 }
 
 main().catch((err) => {
