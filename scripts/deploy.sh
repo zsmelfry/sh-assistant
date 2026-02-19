@@ -2,13 +2,14 @@
 set -euo pipefail
 
 PROD_DB="./data/assistant.db"
+BACKUP_DIR="./data/backups"
 JOURNAL="./server/database/migrations/meta/_journal.json"
 
-echo "=== 1/4 Building ==="
+echo "=== 1/5 Building ==="
 npm run build
 
 echo ""
-echo "=== 2/4 Checking migration compatibility ==="
+echo "=== 2/5 Checking migration compatibility ==="
 # Extract tags from _journal.json
 JOURNAL_TAGS=$(node -e "
   const j = require('./$JOURNAL');
@@ -44,11 +45,49 @@ else
 fi
 
 echo ""
-echo "=== 3/4 Running migrations on production DB ==="
+echo "=== 3/5 Backing up and dry-run migration ==="
+if [ -f "$PROD_DB" ]; then
+  mkdir -p "$BACKUP_DIR"
+  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  BACKUP_FILE="$BACKUP_DIR/assistant_${TIMESTAMP}.db"
+  DRY_RUN_DB="$BACKUP_DIR/_dry_run.db"
+
+  # Backup production DB (including WAL/SHM files if present)
+  cp "$PROD_DB" "$BACKUP_FILE"
+  [ -f "${PROD_DB}-wal" ] && cp "${PROD_DB}-wal" "${BACKUP_FILE}-wal"
+  [ -f "${PROD_DB}-shm" ] && cp "${PROD_DB}-shm" "${BACKUP_FILE}-shm"
+  echo "Backup saved to $BACKUP_FILE"
+
+  # Dry-run: migrate a copy to catch SQL errors before touching the real DB
+  cp "$PROD_DB" "$DRY_RUN_DB"
+  [ -f "${PROD_DB}-wal" ] && cp "${PROD_DB}-wal" "${DRY_RUN_DB}-wal"
+  [ -f "${PROD_DB}-shm" ] && cp "${PROD_DB}-shm" "${DRY_RUN_DB}-shm"
+
+  echo "Running dry-run migration on copy..."
+  if DATABASE_PATH="$DRY_RUN_DB" npx drizzle-kit migrate; then
+    echo "Dry-run migration succeeded."
+  else
+    echo "ERROR: Dry-run migration failed. Production DB is untouched."
+    echo "Backup is at $BACKUP_FILE"
+    rm -f "$DRY_RUN_DB" "${DRY_RUN_DB}-wal" "${DRY_RUN_DB}-shm"
+    exit 1
+  fi
+  rm -f "$DRY_RUN_DB" "${DRY_RUN_DB}-wal" "${DRY_RUN_DB}-shm"
+
+  # Prune old backups, keep the latest 5
+  ls -1t "$BACKUP_DIR"/assistant_*.db 2>/dev/null | tail -n +6 | while read -r old; do
+    rm -f "$old" "${old}-wal" "${old}-shm"
+  done
+else
+  echo "No production DB to backup — skipping."
+fi
+
+echo ""
+echo "=== 4/5 Running migrations on production DB ==="
 DATABASE_PATH="$PROD_DB" npx drizzle-kit migrate
 
 echo ""
-echo "=== 4/4 Restarting PM2 ==="
+echo "=== 5/5 Restarting PM2 ==="
 if pm2 describe personal-assistant > /dev/null 2>&1; then
   pm2 restart ecosystem.config.cjs
   echo "PM2 process restarted."
