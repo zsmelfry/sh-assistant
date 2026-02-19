@@ -12,7 +12,7 @@ function buildTranslateSystemPrompt(): string {
 2. 字段说明：
    - definition: 简洁的中文释义（一句话）
    - partOfSpeech: 词性（如 "n." / "v." / "adj." 等）
-   - examples: 数组格式，包含 3 个实用例句（每个例句包含 sentence 和 translation）
+   - examples: 数组格式，包含 3 个实用例句（每个例句包含 sentence 和 translation。难度从简单到复杂递进。第3个例句如果这个词能自然地用在足球语境中，就用足球相关的句子；如果不自然就用其他场景）
    - synonyms: 同义词（如有）
    - antonyms: 反义词（如有）
    - wordFamily: 词族/派生词（如有）
