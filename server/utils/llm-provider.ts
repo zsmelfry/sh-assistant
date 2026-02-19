@@ -7,7 +7,7 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
  * Resolve and instantiate an LLM provider from DB config.
  * Looks up by providerId, or falls back to the default provider.
  */
-export async function resolveProvider(db: BetterSQLite3Database, providerId?: number | string) {
+export async function resolveProvider(db: BetterSQLite3Database<any>, providerId?: number | string) {
   let providerConfig;
 
   if (providerId) {

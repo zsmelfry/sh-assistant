@@ -139,8 +139,6 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 <style scoped>
 .flashCardContainer {
   width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
 }
 
 .cardMeta {
@@ -173,7 +171,7 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
   font-family: monospace;
 }
 
-/* Card flip */
+/* Card flip — grid stacking technique */
 .cardWrapper {
   perspective: 1000px;
   cursor: pointer;
@@ -183,14 +181,8 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
   cursor: default;
 }
 
-.cardWrapper:not(.hasContent) {
-  aspect-ratio: 3 / 2;
-}
-
 .cardInner {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  display: grid;
   transition: transform 500ms;
   transform-style: preserve-3d;
 }
@@ -200,8 +192,7 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 }
 
 .cardFace {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   backface-visibility: hidden;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -212,6 +203,7 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 200px;
 }
 
 .cardBack {
@@ -221,7 +213,6 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 }
 
 .cardBack.visible {
-  position: relative;
   pointer-events: auto;
   min-height: 200px;
 }
@@ -384,9 +375,8 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 
 .rateBtn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs);
+  justify-content: center;
   padding: var(--spacing-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
@@ -419,9 +409,6 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 }
 
 @media (max-width: 768px) {
-  .flashCardContainer {
-    max-width: 100%;
-  }
   .rateBtn {
     min-height: var(--touch-target-min);
   }

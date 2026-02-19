@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { definitions } from '../../../../database/schemas/srs';
 import { vocabWords } from '../../../../database/schemas/vocab';
-import type { TranslateResult } from '../../../../lib/llm';
+import { translateWord } from '../../../../utils/translate-word';
 
 export default defineEventHandler(async (event) => {
   const wordId = Number(getRouterParam(event, 'wordId'));
@@ -22,19 +22,11 @@ export default defineEventHandler(async (event) => {
 
   const word = wordResult[0].word;
 
-  // 调用 LLM translate API（可指定 provider）
+  // 直接调用翻译逻辑（不走 HTTP）
   try {
-    const translateBody: Record<string, unknown> = { word };
-    if (providerId) {
-      translateBody.providerId = Number(providerId);
-    }
-
-    const authHeader = getRequestHeader(event, 'authorization');
-    const translateResult = await $fetch('/api/llm/translate', {
-      method: 'POST',
-      body: translateBody,
-      headers: authHeader ? { authorization: authHeader } : {},
-    }) as TranslateResult;
+    const translateResult = await translateWord(db, word, {
+      providerId: providerId ? Number(providerId) : undefined,
+    });
 
     const now = Date.now();
 
