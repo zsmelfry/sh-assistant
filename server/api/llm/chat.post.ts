@@ -1,7 +1,6 @@
-import { eq } from 'drizzle-orm';
-import { llmProviders } from '../../database/schemas/llm';
-import { ProviderFactory, LlmError } from '../../lib/llm';
+import { LlmError } from '../../lib/llm';
 import type { ChatMessage } from '../../lib/llm';
+import { resolveProvider } from '../../utils/llm-provider';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -40,30 +39,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB();
+  const { provider, config: providerConfig } = await resolveProvider(db, providerId);
 
-  // 获取 provider 配置
-  let providerConfig;
-  if (providerId) {
-    const result = await db.select().from(llmProviders).where(eq(llmProviders.id, Number(providerId))).limit(1);
-    if (result.length === 0) {
-      throw createError({ statusCode: 404, message: '指定的 Provider 不存在' });
-    }
-    providerConfig = result[0];
-  } else {
-    const result = await db.select().from(llmProviders).where(eq(llmProviders.isDefault, true)).limit(1);
-    if (result.length === 0) {
-      throw createError({ statusCode: 400, message: '未配置默认 LLM Provider，请先在设置中配置' });
-    }
-    providerConfig = result[0];
-  }
-
-  if (!providerConfig.isEnabled) {
-    throw createError({ statusCode: 400, message: '该 Provider 已被禁用' });
-  }
-
-  // 创建 provider 实例并调用
   try {
-    const provider = ProviderFactory.fromDbConfig(providerConfig);
     const content = await provider.chat(messages as ChatMessage[], options);
 
     return {

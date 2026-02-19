@@ -1,7 +1,6 @@
-import { eq } from 'drizzle-orm';
-import { llmProviders } from '../../database/schemas/llm';
-import { ProviderFactory, LlmError } from '../../lib/llm';
+import { LlmError } from '../../lib/llm';
 import type { ChatMessage } from '../../lib/llm';
+import { resolveProvider } from '../../utils/llm-provider';
 
 /** 构建翻译系统提示词 */
 function buildTranslateSystemPrompt(): string {
@@ -82,26 +81,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB();
-
-  // 获取 provider 配置
-  let providerConfig;
-  if (providerId) {
-    const result = await db.select().from(llmProviders).where(eq(llmProviders.id, Number(providerId))).limit(1);
-    if (result.length === 0) {
-      throw createError({ statusCode: 404, message: '指定的 Provider 不存在' });
-    }
-    providerConfig = result[0];
-  } else {
-    const result = await db.select().from(llmProviders).where(eq(llmProviders.isDefault, true)).limit(1);
-    if (result.length === 0) {
-      throw createError({ statusCode: 400, message: '未配置默认 LLM Provider' });
-    }
-    providerConfig = result[0];
-  }
-
-  if (!providerConfig.isEnabled) {
-    throw createError({ statusCode: 400, message: '该 Provider 已被禁用' });
-  }
+  const { provider, config: providerConfig } = await resolveProvider(db, providerId);
 
   // 构建翻译 messages
   const messages: ChatMessage[] = [
@@ -110,7 +90,6 @@ export default defineEventHandler(async (event) => {
   ];
 
   try {
-    const provider = ProviderFactory.fromDbConfig(providerConfig);
     const rawContent = await provider.chat(messages, {
       temperature: options?.temperature ?? 0.5,
       maxTokens: options?.maxTokens ?? 2000,
