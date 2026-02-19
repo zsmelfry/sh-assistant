@@ -3,7 +3,7 @@
     <!-- 热力图（所有频率都显示） -->
     <div class="section">
       <h4 class="sectionTitle">
-        {{ frequency === 'daily' ? '年度打卡热力图' : frequency === 'weekly' ? '年度周完成情况' : '年度月完成情况' }}
+        {{ sectionTitle }}
       </h4>
       <HeatmapChart
         :habit-id="habitId"
@@ -30,10 +30,18 @@ import type { HabitFrequency } from '../types';
 import HeatmapChart from './HeatmapChart.vue';
 import TrendChart from './TrendChart.vue';
 
-defineProps<{
+const props = defineProps<{
   habitId: string;
   frequency: HabitFrequency;
 }>();
+
+const SECTION_TITLES: Record<HabitFrequency, string> = {
+  daily: '年度打卡热力图',
+  weekly: '年度周完成情况',
+  monthly: '年度月完成情况',
+};
+
+const sectionTitle = computed(() => SECTION_TITLES[props.frequency]);
 </script>
 
 <style scoped>
