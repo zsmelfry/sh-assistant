@@ -153,21 +153,37 @@ function toggleSelectAll() {
 async function categorizeOne(wordId: number, action: StatusAction) {
   if (!store.currentUserId) return;
 
+  // Save state for rollback
+  const prevWords = localWords.value;
+  const prevSelected = selectedIds.value;
+  const prevCount = categorizedCount.value;
+  const prevTotal = unreadTotal.value;
+
   // Optimistic removal
+  const newSelected = new Set(selectedIds.value);
+  newSelected.delete(wordId);
   localWords.value = localWords.value.filter(w => w.id !== wordId);
-  selectedIds.value = new Set([...selectedIds.value].filter(id => id !== wordId));
+  selectedIds.value = newSelected;
   categorizedCount.value++;
   unreadTotal.value--;
 
-  await $fetch('/api/vocab/progress/status', {
-    method: 'POST',
-    body: { userId: store.currentUserId, wordId, action },
-  });
+  try {
+    await $fetch('/api/vocab/progress/status', {
+      method: 'POST',
+      body: { userId: store.currentUserId, wordId, action },
+    });
 
-  // Auto-reload when list is empty and there are more words
-  if (localWords.value.length === 0 && unreadTotal.value > 0) {
-    currentPage.value = 1;
-    await loadWords();
+    // Auto-reload when list is empty and there are more words
+    if (localWords.value.length === 0 && unreadTotal.value > 0) {
+      currentPage.value = 1;
+      await loadWords();
+    }
+  } catch {
+    // Rollback on failure
+    localWords.value = prevWords;
+    selectedIds.value = prevSelected;
+    categorizedCount.value = prevCount;
+    unreadTotal.value = prevTotal;
   }
 }
 
@@ -175,23 +191,36 @@ async function batchAction(action: StatusAction) {
   if (!store.currentUserId || selectedIds.value.size === 0) return;
 
   const ids = Array.from(selectedIds.value);
-  const idSet = new Set(ids);
+
+  // Save state for rollback
+  const prevWords = localWords.value;
+  const prevSelected = selectedIds.value;
+  const prevCount = categorizedCount.value;
+  const prevTotal = unreadTotal.value;
 
   // Optimistic removal
-  localWords.value = localWords.value.filter(w => !idSet.has(w.id));
+  localWords.value = localWords.value.filter(w => !selectedIds.value.has(w.id));
   categorizedCount.value += ids.length;
   unreadTotal.value -= ids.length;
   selectedIds.value = new Set();
 
-  await $fetch('/api/vocab/progress/batch', {
-    method: 'POST',
-    body: { userId: store.currentUserId, wordIds: ids, action },
-  });
+  try {
+    await $fetch('/api/vocab/progress/batch', {
+      method: 'POST',
+      body: { userId: store.currentUserId, wordIds: ids, action },
+    });
 
-  // Auto-reload when list is empty and there are more words
-  if (localWords.value.length === 0 && unreadTotal.value > 0) {
-    currentPage.value = 1;
-    await loadWords();
+    // Auto-reload when list is empty and there are more words
+    if (localWords.value.length === 0 && unreadTotal.value > 0) {
+      currentPage.value = 1;
+      await loadWords();
+    }
+  } catch {
+    // Rollback on failure
+    localWords.value = prevWords;
+    selectedIds.value = prevSelected;
+    categorizedCount.value = prevCount;
+    unreadTotal.value = prevTotal;
   }
 }
 
