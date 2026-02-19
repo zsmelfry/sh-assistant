@@ -5,11 +5,35 @@ PROD_DB="./data/assistant.db"
 BACKUP_DIR="./data/backups"
 JOURNAL="./server/database/migrations/meta/_journal.json"
 
-echo "=== 1/5 Building ==="
+echo "=== 1/6 Stopping dev server ==="
+# Kill any running Nuxt dev server to prevent it from overwriting
+# the production manifest in .nuxt/dist/server/ with dev-mode entries.
+# (The dev server watches .nuxt/ and will clobber client.manifest.mjs
+#  during the build, causing the production HTML to reference
+#  non-existent @vite/client paths → white screen.)
+DEV_PIDS=$(lsof -ti :3000 2>/dev/null || true)
+if [ -n "$DEV_PIDS" ]; then
+  echo "Killing dev server (PIDs: $DEV_PIDS)..."
+  echo "$DEV_PIDS" | xargs kill 2>/dev/null || true
+  sleep 1
+  # Force kill if still running
+  REMAINING=$(lsof -ti :3000 2>/dev/null || true)
+  if [ -n "$REMAINING" ]; then
+    echo "Force killing remaining processes..."
+    echo "$REMAINING" | xargs kill -9 2>/dev/null || true
+    sleep 1
+  fi
+  echo "Dev server stopped."
+else
+  echo "No dev server running on port 3000."
+fi
+
+echo ""
+echo "=== 2/6 Building ==="
 npm run build
 
 echo ""
-echo "=== 2/5 Checking migration compatibility ==="
+echo "=== 3/6 Checking migration compatibility ==="
 # Extract tags from _journal.json
 JOURNAL_TAGS=$(node -e "
   const j = require('./$JOURNAL');
@@ -45,7 +69,7 @@ else
 fi
 
 echo ""
-echo "=== 3/5 Backing up and dry-run migration ==="
+echo "=== 4/6 Backing up and dry-run migration ==="
 if [ -f "$PROD_DB" ]; then
   mkdir -p "$BACKUP_DIR"
   TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -83,11 +107,11 @@ else
 fi
 
 echo ""
-echo "=== 4/5 Running migrations on production DB ==="
+echo "=== 5/6 Running migrations on production DB ==="
 DATABASE_PATH="$PROD_DB" npx drizzle-kit migrate
 
 echo ""
-echo "=== 5/5 Restarting PM2 ==="
+echo "=== 6/6 Restarting PM2 ==="
 if pm2 describe personal-assistant > /dev/null 2>&1; then
   pm2 restart ecosystem.config.cjs
   echo "PM2 process restarted."
