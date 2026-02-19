@@ -172,8 +172,8 @@ const width = 600;
 const height = 250;
 const padding = { top: 30, right: 20, bottom: 30, left: 45 };
 
-const chartW = computed(() => width - padding.left - padding.right);
-const chartH = computed(() => height - padding.top - padding.bottom);
+const chartW = width - padding.left - padding.right;
+const chartH = height - padding.top - padding.bottom;
 
 const chartMode = ref<'cumulative' | 'daily'>('cumulative');
 const hoverIndex = ref<number | null>(null);
@@ -215,12 +215,12 @@ const yTicks = computed(() => {
 
 function xScale(i: number): number {
   const len = displayData.value.length;
-  if (len <= 1) return padding.left + chartW.value / 2;
-  return padding.left + (i / (len - 1)) * chartW.value;
+  if (len <= 1) return padding.left + chartW / 2;
+  return padding.left + (i / (len - 1)) * chartW;
 }
 
 function yScale(val: number): number {
-  return padding.top + chartH.value - (val / maxValue.value) * chartH.value;
+  return padding.top + chartH - (val / maxValue.value) * chartH;
 }
 
 const masteredLine = computed(() =>
@@ -246,8 +246,8 @@ const tooltipW = 96;
 
 function hitArea(i: number) {
   const len = displayData.value.length;
-  if (len <= 1) return { x: padding.left, w: chartW.value };
-  const step = chartW.value / (len - 1);
+  if (len <= 1) return { x: padding.left, w: chartW };
+  const step = chartW / (len - 1);
   if (i === 0) return { x: padding.left, w: step / 2 };
   if (i === len - 1) return { x: xScale(i) - step / 2, w: step / 2 };
   return { x: xScale(i) - step / 2, w: step };
