@@ -32,6 +32,14 @@
   --color-danger: #DC2626;
   --color-danger-bg: #FEF2F2;
 
+  /* 警告色（停滞） */
+  --color-warning: #ea580c;
+  --color-warning-bg: #fff7ed;
+
+  /* 成功色（已完成） */
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+
   /* 图表 (REQ-3) */
   --color-chart-fill: #1A1A1A;
   --color-chart-empty: #EAEAEA;

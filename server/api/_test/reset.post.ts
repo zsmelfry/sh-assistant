@@ -4,6 +4,7 @@ import {
   vocabStatusHistory, vocabProgress, vocabWords, vocabUsers, vocabSettings,
   reviewLogs, srsCards, definitions, studySessions,
   llmProviders,
+  plannerGoalTags, plannerCheckitems, plannerGoals, plannerDomains, plannerTags,
 } from '~/server/database/schema';
 
 export default defineEventHandler(async () => {
@@ -24,5 +25,11 @@ export default defineEventHandler(async () => {
   await db.delete(vocabSettings);
   // LLM
   await db.delete(llmProviders);
+  // planner (child tables first)
+  await db.delete(plannerGoalTags);
+  await db.delete(plannerCheckitems);
+  await db.delete(plannerGoals);
+  await db.delete(plannerDomains);
+  await db.delete(plannerTags);
   return { success: true };
 });
