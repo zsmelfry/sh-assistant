@@ -59,6 +59,13 @@
         >
           学习模式
         </button>
+        <button
+          class="mainTab"
+          :class="{ active: activeTab === 'categorize' }"
+          @click="activeTab = 'categorize'"
+        >
+          快速分类
+        </button>
       </div>
 
       <!-- 词汇列表 Tab -->
@@ -69,8 +76,13 @@
       </template>
 
       <!-- 学习模式 Tab -->
-      <template v-else>
+      <template v-else-if="activeTab === 'study'">
         <StudyView />
+      </template>
+
+      <!-- 快速分类 Tab -->
+      <template v-else-if="activeTab === 'categorize'">
+        <CategorizeView />
       </template>
     </template>
 
@@ -87,10 +99,11 @@ import VocabList from './components/VocabList.vue';
 import UserModal from './components/UserModal.vue';
 import ImportModal from './components/ImportModal.vue';
 import StudyView from './components/StudyView.vue';
+import CategorizeView from './components/CategorizeView.vue';
 
 const store = useVocabStore();
 
-const activeTab = ref<'vocab' | 'study'>('vocab');
+const activeTab = ref<'vocab' | 'study' | 'categorize'>('vocab');
 const showUserModal = ref(false);
 const showImportModal = ref(false);
 const initError = ref('');
