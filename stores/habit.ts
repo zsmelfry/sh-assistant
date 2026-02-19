@@ -127,9 +127,6 @@ export const useHabitStore = defineStore('habit', () => {
         method: 'POST',
         body: { habitId: selectedHabitId.value, date },
       });
-      // 成功后重新加载确保数据一致
-      await loadCheckIns();
-      await loadAllDates();
     } catch {
       // 失败回滚：重新加载服务端数据
       await loadCheckIns();
