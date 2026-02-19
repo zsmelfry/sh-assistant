@@ -24,13 +24,6 @@ export interface ChatResponse {
   };
 }
 
-export interface TranslateOptions {
-  providerId?: number;
-  temperature?: number;
-  maxTokens?: number;
-  timeout?: number;
-}
-
 export interface TranslateResponse {
   definition: string;
   partOfSpeech: string;
@@ -114,7 +107,7 @@ export function useLlm() {
     }
   }
 
-  async function translate(word: string, options?: TranslateOptions): Promise<TranslateResponse> {
+  async function translate(word: string, options?: ChatOptions): Promise<TranslateResponse> {
     loading.value = true;
     error.value = null;
     try {
