@@ -95,3 +95,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* 防止 iOS Safari 点击输入框时自动缩放（font-size < 16px 会触发） */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 禁止双击缩放 */
+html {
+  touch-action: manipulation;
+}

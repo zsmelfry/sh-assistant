@@ -55,9 +55,14 @@ export class ClaudeProvider extends BaseLlmProvider {
       let stdout = '';
       let stderr = '';
 
+      // Strip CLAUDECODE env var so the CLI doesn't reject "nested session"
+      const env = { ...process.env };
+      delete env.CLAUDECODE;
+
       const proc = spawn('claude', args, {
         timeout,
         stdio: ['pipe', 'pipe', 'pipe'],
+        env,
       });
 
       proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
