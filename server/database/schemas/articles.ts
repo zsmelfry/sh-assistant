@@ -12,9 +12,11 @@ export const articles = sqliteTable('articles', {
   excerpt: text('excerpt'),
   publishedAt: integer('published_at', { mode: 'number' }),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
+  lastReadAt: integer('last_read_at', { mode: 'number' }),  // 最后阅读时间（Unix ms）
 }, (table) => [
   uniqueIndex('idx_articles_url').on(table.url),
   index('idx_articles_created_at').on(table.createdAt),
+  index('idx_articles_last_read_at').on(table.lastReadAt),
 ]);
 
 // ===== 翻译缓存表 =====

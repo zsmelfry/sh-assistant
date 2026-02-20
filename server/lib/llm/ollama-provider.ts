@@ -91,6 +91,66 @@ export class OllamaProvider extends BaseLlmProvider {
     }
   }
 
+  protected async *_chatStream(
+    messages: ChatMessage[],
+    options: Required<ChatOptions>,
+  ): AsyncIterable<string> {
+    const prompt = this.formatMessages(messages);
+
+    const response = await fetch(`${this.endpoint}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: this.modelName,
+        prompt,
+        stream: true,
+        options: {
+          temperature: options.temperature,
+          num_predict: options.maxTokens,
+        },
+      }),
+      signal: AbortSignal.timeout(options.timeout),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new LlmError(
+        response.status === 404 ? LlmErrorType.MODEL_NOT_FOUND : LlmErrorType.NETWORK_ERROR,
+        `Ollama API 错误 (${response.status}): ${errorText}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new LlmError(LlmErrorType.INVALID_RESPONSE, 'Ollama 返回空的 response body');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        // Ollama streams NDJSON — each line is a JSON object with { response: string, done: boolean }
+        for (const line of text.split('\n')) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line) as { response: string; done: boolean };
+            if (data.response) {
+              yield data.response;
+            }
+          } catch {
+            // Skip malformed lines
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
   /** 格式化显示名称 (e.g. 'qwen3-vl:30b' → 'Qwen3-VL 30B') */
   static formatDisplayName(modelName: string): string {
     const [name, tag] = modelName.split(':');

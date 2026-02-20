@@ -13,6 +13,21 @@
     <p v-if="bookmark.excerpt" class="cardExcerpt">
       {{ bookmark.excerpt }}
     </p>
+
+    <p v-if="bookmark.bookmark.notes" class="cardNotes">
+      {{ bookmark.bookmark.notes }}
+    </p>
+
+    <div v-if="bookmark.tags && bookmark.tags.length > 0" class="cardTags">
+      <span
+        v-for="tag in bookmark.tags"
+        :key="tag.id"
+        class="cardTag"
+      >
+        <span class="cardTagDot" :style="{ backgroundColor: tag.color || '#999' }" />
+        {{ tag.name }}
+      </span>
+    </div>
   </button>
 </template>
 
@@ -107,6 +122,42 @@ function formatDate(ts: number): string {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.cardNotes {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-left: 2px solid var(--color-border);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.cardTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background-color: var(--color-bg-hover);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.cardTagDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

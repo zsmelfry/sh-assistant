@@ -37,6 +37,7 @@ export type TranslateMode = 'full' | 'summary' | 'both';
 /** POST /api/articles/fetch 直接返回 Article（含可选 bookmark 字段） */
 export interface ArticleWithBookmark extends Article {
   bookmark?: ArticleBookmark | null;
+  tags?: { id: number; name: string; color: string | null }[];
 }
 
 /** GET /api/articles/:id/translations 返回按类型索引的翻译 */
@@ -62,6 +63,7 @@ export interface BookmarkListItem {
     bookmarkedAt: number;
     notes: string | null;
   };
+  tags: { id: number; name: string; color: string | null }[];
 }
 
 export interface BookmarkListResponse {
@@ -71,10 +73,37 @@ export interface BookmarkListResponse {
   limit: number;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  color: string | null;
+  createdAt: number;
+}
+
 // ===== UI 类型 =====
 
 export type ViewMode = 'reading' | 'bookmarks';
 
-export type PanelTab = 'full' | 'summary';
+export type PanelTab = 'full' | 'summary' | 'notes' | 'chat';
 
 export type BookmarkSortBy = 'bookmarkedAt' | 'publishedAt';
+
+// ===== 聊天类型 =====
+
+export interface ChatMessage {
+  id: number;
+  articleId: number;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: number;
+}
+
+export interface ChatResponse {
+  userMessage: ChatMessage;
+  assistantMessage: ChatMessage;
+  meta: {
+    provider: string;
+    modelName: string;
+    timestamp: string;
+  };
+}

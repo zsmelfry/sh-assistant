@@ -50,6 +50,46 @@ export class ClaudeProvider extends BaseLlmProvider {
     }
   }
 
+  protected async *_chatStream(
+    messages: ChatMessage[],
+    options: Required<ChatOptions>,
+  ): AsyncIterable<string> {
+    const prompt = this.formatMessages(messages);
+
+    const env = { ...process.env };
+    delete env.CLAUDECODE;
+
+    const proc = spawn('claude', ['-p', '-', '--model', this.model, '--output-format', 'text'], {
+      timeout: options.timeout,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env,
+    });
+
+    let stderr = '';
+    proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+
+    proc.stdin.write(prompt);
+    proc.stdin.end();
+
+    // Yield stdout chunks as they arrive
+    for await (const chunk of proc.stdout) {
+      yield (chunk as Buffer).toString();
+    }
+
+    // Wait for process to close and check exit code
+    const code = await new Promise<number | null>((resolve) => {
+      proc.on('close', resolve);
+    });
+
+    if (code !== 0) {
+      throw new LlmError(
+        LlmErrorType.INVALID_RESPONSE,
+        `claude CLI 退出码 ${code}: ${stderr}`,
+        new Error(stderr),
+      );
+    }
+  }
+
   private execClaude(args: string[], stdin: string, timeout: number): Promise<string> {
     return new Promise((resolve, reject) => {
       let stdout = '';

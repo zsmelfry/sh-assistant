@@ -14,7 +14,19 @@
       </header>
 
       <!-- 正文内容 -->
-      <div class="articleContent" v-html="article.content" />
+      <div class="articleContent" v-html="article.content" @mouseup="handleSelection" />
+
+      <!-- 浮动工具栏 (Teleport to body) -->
+      <Teleport to="body">
+        <div
+          v-if="showToolbar"
+          class="selectionToolbar"
+          :style="toolbarStyle"
+        >
+          <button class="toolbarBtn" @mousedown.prevent="handleQuickTranslate">翻译</button>
+          <button class="toolbarBtn" @mousedown.prevent="handleAskAi">提问</button>
+        </div>
+      </Teleport>
     </template>
 
     <!-- 空状态 -->
@@ -32,6 +44,13 @@ const props = defineProps<{
   article: Article | null;
 }>();
 
+const emit = defineEmits<{
+  quickTranslate: [text: string];
+  askAi: [text: string];
+}>();
+
+const store = useArticleReaderStore();
+
 const hasMeta = computed(() =>
   props.article?.siteName || props.article?.author || props.article?.publishedAt,
 );
@@ -39,6 +58,70 @@ const hasMeta = computed(() =>
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('zh-CN');
 }
+
+// ===== Text selection toolbar =====
+const showToolbar = ref(false);
+const toolbarPos = ref({ x: 0, y: 0 });
+const selectedText = ref('');
+
+const toolbarStyle = computed(() => ({
+  position: 'fixed' as const,
+  left: `${toolbarPos.value.x}px`,
+  top: `${toolbarPos.value.y}px`,
+  transform: 'translateX(-50%)',
+  zIndex: 9999,
+}));
+
+function handleSelection() {
+  const selection = window.getSelection();
+  const text = selection?.toString().trim();
+  if (!text || text.length < 2) {
+    showToolbar.value = false;
+    return;
+  }
+
+  selectedText.value = text;
+  const range = selection!.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+
+  toolbarPos.value = {
+    x: rect.left + rect.width / 2,
+    y: rect.top - 8,
+  };
+  showToolbar.value = true;
+}
+
+function handleQuickTranslate() {
+  if (!selectedText.value || !props.article) return;
+  showToolbar.value = false;
+
+  // Send as chat message asking for translation
+  store.sendChatMessage(`请翻译以下文本：\n\n"${selectedText.value}"`);
+  // Notify parent to switch to chat tab
+  emit('quickTranslate', selectedText.value);
+}
+
+function handleAskAi() {
+  if (!selectedText.value || !props.article) return;
+  showToolbar.value = false;
+
+  // Send as chat message asking about the text
+  store.sendChatMessage(`请解释以下文本：\n\n"${selectedText.value}"`);
+  emit('askAi', selectedText.value);
+}
+
+// Hide toolbar when clicking elsewhere
+function handleClickOutside() {
+  showToolbar.value = false;
+}
+
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleClickOutside);
+});
 </script>
 
 <style scoped>
@@ -224,6 +307,46 @@ function formatDate(ts: number): string {
   }
   .articleContent {
     font-size: 14px;
+  }
+}
+</style>
+
+<!-- Unscoped styles for the Teleported toolbar -->
+<style>
+.selectionToolbar {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--color-accent);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: fadeInDown 0.15s ease;
+}
+
+.selectionToolbar .toolbarBtn {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-accent-inverse);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.15s;
+}
+
+.selectionToolbar .toolbarBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
 </style>

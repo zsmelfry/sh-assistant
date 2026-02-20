@@ -1,6 +1,6 @@
-import { eq, desc, like, or, sql, count } from 'drizzle-orm';
+import { eq, desc, like, or, and, sql, count } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { articles, articleBookmarks, articleTranslations } from '~/server/database/schema';
+import { articles, articleBookmarks, articleTranslations, articleTagMap, articleTags } from '~/server/database/schema';
 
 /** 转义 LIKE 通配符，防止用户输入 % 或 _ 导致意外匹配 */
 function escapeLikePattern(s: string): string {
@@ -16,6 +16,12 @@ export default defineEventHandler(async (event) => {
   const search = (query.search as string) || '';
   const sort = query.sort === 'publishedAt' ? 'publishedAt' : 'bookmarkedAt';
 
+  // Parse tagIds — supports ?tagIds=1,2,3
+  const rawTagIds = (query.tagIds as string) || '';
+  const tagIds = rawTagIds
+    ? rawTagIds.split(',').map(Number).filter(n => !isNaN(n) && n > 0)
+    : [];
+
   const db = useDB();
 
   // 基础查询：bookmarks JOIN articles
@@ -29,6 +35,22 @@ export default defineEventHandler(async (event) => {
       )
     : undefined;
 
+  // Tag filter: articles must have ALL specified tags (intersection)
+  const tagCondition = tagIds.length > 0
+    ? sql`${articles.id} IN (
+        SELECT ${articleTagMap.articleId}
+        FROM ${articleTagMap}
+        WHERE ${articleTagMap.tagId} IN (${sql.join(tagIds.map(id => sql`${id}`), sql`, `)})
+        GROUP BY ${articleTagMap.articleId}
+        HAVING COUNT(DISTINCT ${articleTagMap.tagId}) = ${tagIds.length}
+      )`
+    : undefined;
+
+  // Combine all conditions
+  const whereConditions = searchConditions && tagCondition
+    ? and(searchConditions, tagCondition)
+    : searchConditions || tagCondition || undefined;
+
   // 排序字段
   const orderBy = sort === 'publishedAt'
     ? desc(articles.publishedAt)
@@ -39,8 +61,8 @@ export default defineEventHandler(async (event) => {
     .from(articleBookmarks)
     .innerJoin(articles, eq(articleBookmarks.articleId, articles.id));
 
-  if (searchConditions) {
-    totalQuery.where(searchConditions);
+  if (whereConditions) {
+    totalQuery.where(whereConditions);
   }
 
   const totalResult = await totalQuery;
@@ -65,8 +87,8 @@ export default defineEventHandler(async (event) => {
     .limit(limit)
     .offset(offset);
 
-  if (searchConditions) {
-    listQuery.where(searchConditions);
+  if (whereConditions) {
+    listQuery.where(whereConditions);
   }
 
   const rows = await listQuery;
@@ -88,11 +110,32 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Batch load tags for each article
+  let tagsMap: Record<number, { id: number; name: string; color: string | null }[]> = {};
+
+  if (articleIds.length > 0) {
+    const tagRows = await db.select({
+      articleId: articleTagMap.articleId,
+      tagId: articleTags.id,
+      tagName: articleTags.name,
+      tagColor: articleTags.color,
+    })
+      .from(articleTagMap)
+      .innerJoin(articleTags, eq(articleTagMap.tagId, articleTags.id))
+      .where(sql`${articleTagMap.articleId} IN (${sql.join(articleIds.map(id => sql`${id}`), sql`, `)})`);
+
+    for (const t of tagRows) {
+      if (!tagsMap[t.articleId]) tagsMap[t.articleId] = [];
+      tagsMap[t.articleId].push({ id: t.tagId, name: t.tagName, color: t.tagColor });
+    }
+  }
+
   return {
     bookmarks: rows.map(r => ({
       ...r.article,
       bookmark: r.bookmark,
       summary: summaryMap[r.article.id] || null,
+      tags: tagsMap[r.article.id] || [],
     })),
     total: totalResult[0]?.count || 0,
     page,

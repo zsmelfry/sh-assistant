@@ -49,6 +49,7 @@ export interface ILlmProvider {
   getModelName(): string;
   isAvailable(): Promise<boolean>;
   chat(messages: ChatMessage[], options?: ChatOptions): Promise<string>;
+  chatStream(messages: ChatMessage[], options?: ChatOptions): AsyncIterable<string>;
 }
 
 /** 错误类型 */

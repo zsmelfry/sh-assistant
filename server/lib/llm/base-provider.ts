@@ -14,6 +14,10 @@ export abstract class BaseLlmProvider implements ILlmProvider {
     messages: ChatMessage[],
     options: Required<ChatOptions>,
   ): Promise<string>;
+  protected abstract _chatStream(
+    messages: ChatMessage[],
+    options: Required<ChatOptions>,
+  ): AsyncIterable<string>;
 
   async isAvailable(): Promise<boolean> {
     try {
@@ -36,6 +40,20 @@ export abstract class BaseLlmProvider implements ILlmProvider {
       throw new LlmError(
         LlmErrorType.INVALID_RESPONSE,
         `聊天失败: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
+    }
+  }
+
+  async *chatStream(messages: ChatMessage[], options?: ChatOptions): AsyncIterable<string> {
+    const opts = this.normalizeOptions(options);
+    try {
+      yield* this._chatStream(messages, opts);
+    } catch (error) {
+      if (error instanceof LlmError) throw error;
+      throw new LlmError(
+        LlmErrorType.INVALID_RESPONSE,
+        `流式聊天失败: ${error instanceof Error ? error.message : String(error)}`,
         error,
       );
     }

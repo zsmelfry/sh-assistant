@@ -7,6 +7,9 @@ import type {
   TranslationsResponse,
   TranslateResponse,
   BookmarkListResponse,
+  Tag,
+  ChatMessage,
+  ChatResponse,
 } from '~/tools/article-reader/types';
 
 export const useArticleReaderStore = defineStore('article-reader', () => {
@@ -28,6 +31,13 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
     summary: false,
   });
   const bookmarkLoading = ref(false);
+  const notes = ref('');
+  const notesSaving = ref(false);
+  const articleTagIds = ref<number[]>([]);
+
+  // ===== 标签状态 =====
+  const tags = ref<Tag[]>([]);
+  const selectedFilterTagIds = ref<number[]>([]);
 
   // ===== 收藏库状态 =====
   const bookmarks = ref<BookmarkListItem[]>([]);
@@ -55,6 +65,10 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
       // C5: Extract bookmark status from article response instead of separate endpoint
       isBookmarked.value = !!res.bookmark;
       bookmarkId.value = res.bookmark?.id ?? null;
+      notes.value = res.bookmark?.notes || '';
+      articleTagIds.value = (res.tags || []).map(t => t.id);
+      chatMessages.value = [];
+      chatError.value = null;
 
       await loadTranslations();
     } catch (e: any) {
@@ -108,6 +122,7 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
         });
         isBookmarked.value = false;
         bookmarkId.value = null;
+        notes.value = '';
       } else {
         const res = await $fetch<{ id: number }>(
           `/api/articles/${currentArticle.value.id}/bookmark`,
@@ -119,6 +134,138 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
     } finally {
       bookmarkLoading.value = false;
     }
+  }
+
+  async function saveNotes(content: string) {
+    if (!currentArticle.value || !isBookmarked.value) return;
+    notesSaving.value = true;
+    try {
+      await $fetch(`/api/articles/${currentArticle.value.id}/bookmark`, {
+        method: 'PATCH',
+        body: { notes: content },
+      });
+      notes.value = content;
+    } finally {
+      notesSaving.value = false;
+    }
+  }
+
+  // ===== 标签操作 =====
+
+  async function loadTags() {
+    tags.value = await $fetch<Tag[]>('/api/article-tags');
+  }
+
+  async function createTag(name: string, color?: string) {
+    const tag = await $fetch<Tag>('/api/article-tags', {
+      method: 'POST',
+      body: { name, color: color || null },
+    });
+    tags.value = [...tags.value, tag].sort((a, b) => a.name.localeCompare(b.name));
+    return tag;
+  }
+
+  async function updateTag(id: number, data: { name?: string; color?: string | null }) {
+    const tag = await $fetch<Tag>(`/api/article-tags/${id}`, {
+      method: 'PATCH',
+      body: data,
+    });
+    tags.value = tags.value.map(t => t.id === id ? tag : t);
+    return tag;
+  }
+
+  async function deleteTag(id: number) {
+    await $fetch(`/api/article-tags/${id}`, { method: 'DELETE' });
+    tags.value = tags.value.filter(t => t.id !== id);
+    selectedFilterTagIds.value = selectedFilterTagIds.value.filter(tid => tid !== id);
+  }
+
+  async function setArticleTags(articleId: number, tagIds: number[]) {
+    const result = await $fetch<Tag[]>(`/api/articles/${articleId}/tags`, {
+      method: 'PUT',
+      body: { tagIds },
+    });
+    articleTagIds.value = result.map(t => t.id);
+    return result;
+  }
+
+  // ===== 聊天状态 =====
+  const chatMessages = ref<ChatMessage[]>([]);
+  const chatLoading = ref(false);
+  const chatError = ref<string | null>(null);
+
+  // ===== 聊天操作 =====
+
+  async function loadChatHistory() {
+    if (!currentArticle.value) return;
+    try {
+      chatMessages.value = await $fetch<ChatMessage[]>(
+        `/api/articles/${currentArticle.value.id}/chats`,
+      );
+    } catch {
+      chatMessages.value = [];
+    }
+  }
+
+  async function sendChatMessage(message: string) {
+    if (!currentArticle.value || !message.trim()) return;
+    chatLoading.value = true;
+    chatError.value = null;
+
+    // Optimistically add user message
+    const tempUserMsg: ChatMessage = {
+      id: -Date.now(),
+      articleId: currentArticle.value.id,
+      role: 'user',
+      content: message.trim(),
+      createdAt: Date.now(),
+    };
+    chatMessages.value = [...chatMessages.value, tempUserMsg];
+
+    try {
+      const res = await $fetch<ChatResponse>(
+        `/api/articles/${currentArticle.value.id}/chat`,
+        {
+          method: 'POST',
+          body: { message: message.trim() },
+        },
+      );
+      // Replace temp message with real one and add assistant response
+      chatMessages.value = [
+        ...chatMessages.value.filter(m => m.id !== tempUserMsg.id),
+        res.userMessage,
+        res.assistantMessage,
+      ];
+    } catch (e: any) {
+      // Remove temp message on error
+      chatMessages.value = chatMessages.value.filter(m => m.id !== tempUserMsg.id);
+      chatError.value = e?.data?.message || e?.message || 'AI 回复失败';
+    } finally {
+      chatLoading.value = false;
+    }
+  }
+
+  async function clearChat() {
+    if (!currentArticle.value) return;
+    try {
+      await $fetch(`/api/articles/${currentArticle.value.id}/chats`, {
+        method: 'DELETE',
+      });
+      chatMessages.value = [];
+    } catch {
+      // Silently fail
+    }
+  }
+
+  function toggleFilterTag(tagId: number) {
+    const idx = selectedFilterTagIds.value.indexOf(tagId);
+    if (idx === -1) {
+      selectedFilterTagIds.value = [...selectedFilterTagIds.value, tagId];
+    } else {
+      selectedFilterTagIds.value = selectedFilterTagIds.value.filter(id => id !== tagId);
+    }
+    bookmarksPage.value = 1;
+    loadBookmarks();
   }
 
   // ===== 收藏库操作 =====
@@ -133,6 +280,9 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
           limit: bookmarksLimit.value,
           sort: bookmarkSort.value,
           search: bookmarksSearch.value || undefined,
+          tagIds: selectedFilterTagIds.value.length > 0
+            ? selectedFilterTagIds.value.join(',')
+            : undefined,
         },
       });
       bookmarks.value = res.bookmarks;
@@ -151,6 +301,10 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
       translations.value = { full: null, summary: null };
       isBookmarked.value = !!res.bookmark;
       bookmarkId.value = res.bookmark?.id ?? null;
+      notes.value = res.bookmark?.notes || '';
+      articleTagIds.value = (res.tags || []).map(t => t.id);
+      chatMessages.value = [];
+      chatError.value = null;
       currentView.value = 'reading';
 
       await loadTranslations();
@@ -180,13 +334,22 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
     // 阅读状态
     currentArticle, translations, isBookmarked, bookmarkId,
     fetchLoading, fetchError, translating, bookmarkLoading,
+    notes, notesSaving,
+    // 标签状态
+    tags, selectedFilterTagIds, articleTagIds,
     // 收藏库状态
     bookmarks, bookmarksTotal, bookmarksPage, bookmarksLimit,
     bookmarkSort, bookmarksSearch, bookmarksLoading,
     // 阅读操作
     fetchArticle, loadTranslations, translateArticle,
     // 收藏操作
-    toggleBookmark,
+    toggleBookmark, saveNotes,
+    // 标签操作
+    loadTags, createTag, updateTag, deleteTag, setArticleTags, toggleFilterTag,
+    // 聊天状态
+    chatMessages, chatLoading, chatError,
+    // 聊天操作
+    loadChatHistory, sendChatMessage, clearChat,
     // 收藏库操作
     loadBookmarks, openBookmarkedArticle, setBookmarkSort, setBookmarksSearch,
   };

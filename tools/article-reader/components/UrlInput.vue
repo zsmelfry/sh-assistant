@@ -30,6 +30,9 @@
       </button>
     </form>
 
+    <!-- Tag selector — shown when article is loaded -->
+    <TagSelector v-if="store.currentArticle" />
+
     <div v-if="store.fetchError" class="errorBanner">
       {{ store.fetchError }}
     </div>
@@ -38,6 +41,7 @@
 
 <script setup lang="ts">
 import { Star, StarOff } from 'lucide-vue-next';
+import TagSelector from './TagSelector.vue';
 
 const store = useArticleReaderStore();
 const urlInput = ref('');

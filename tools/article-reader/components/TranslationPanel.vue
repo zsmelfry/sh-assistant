@@ -16,10 +16,34 @@
       >
         精简概括
       </button>
+      <button
+        class="panelTab"
+        :class="{ active: activeTab === 'notes' }"
+        @click="activeTab = 'notes'"
+      >
+        笔记
+      </button>
+      <button
+        class="panelTab"
+        :class="{ active: activeTab === 'chat' }"
+        @click="activeTab = 'chat'"
+      >
+        AI 聊天
+      </button>
+    </div>
+
+    <!-- 聊天 tab -->
+    <div v-if="activeTab === 'chat'" class="panelBody">
+      <ChatPanel />
+    </div>
+
+    <!-- 笔记 tab -->
+    <div v-else-if="activeTab === 'notes'" class="panelBody">
+      <NoteEditor />
     </div>
 
     <!-- 翻译内容区 -->
-    <div class="panelBody">
+    <div v-else class="panelBody">
       <!-- 当前 tab 有内容 -->
       <div v-if="currentContent" class="translationContent" v-html="renderedContent" />
 
@@ -34,7 +58,7 @@
         <p class="errorMsg">{{ translateError }}</p>
         <button
           class="translateBtn"
-          @click="handleTranslate(activeTab)"
+          @click="handleTranslate(activeTab as 'full' | 'summary')"
         >
           重试
         </button>
@@ -49,7 +73,7 @@
           <button
             class="translateBtn"
             :disabled="store.translating.full || store.translating.summary"
-            @click="handleTranslate(activeTab)"
+            @click="handleTranslate(activeTab as 'full' | 'summary')"
           >
             {{ activeTab === 'full' ? '翻译全文' : '生成概括' }}
           </button>
@@ -66,11 +90,11 @@
     </div>
 
     <!-- 底部：已有翻译时可重新翻译 -->
-    <div v-if="currentContent && !isTranslating" class="panelFooter">
+    <div v-if="activeTab !== 'notes' && activeTab !== 'chat' && currentContent && !isTranslating" class="panelFooter">
       <button
         class="retranslateBtn"
         :disabled="store.translating.full || store.translating.summary"
-        @click="handleTranslate(activeTab)"
+        @click="handleTranslate(activeTab as 'full' | 'summary')"
       >
         重新{{ activeTab === 'full' ? '翻译' : '概括' }}
       </button>
@@ -80,17 +104,20 @@
 
 <script setup lang="ts">
 import type { PanelTab } from '../types';
+import NoteEditor from './NoteEditor.vue';
+import ChatPanel from './ChatPanel.vue';
 
 const store = useArticleReaderStore();
-const activeTab = ref<PanelTab>('full');
+const activeTab = defineModel<PanelTab>('activeTab', { default: 'full' });
 const translateError = ref<string | null>(null);
 
 const currentContent = computed(() => store.translations[activeTab.value]);
 const otherContent = computed(() => store.translations[activeTab.value === 'full' ? 'summary' : 'full']);
 const isTranslating = computed(() => store.translating[activeTab.value]);
 
-// Auto-trigger translation when switching to a tab with no content
+// Auto-trigger translation when switching to a translation tab with no content
 watch(activeTab, (tab) => {
+  if (tab === 'notes' || tab === 'chat') return;
   if (!store.translations[tab] && !store.translating[tab] && store.currentArticle) {
     handleTranslate(tab);
   }
@@ -111,7 +138,7 @@ const renderedContent = computed(() => {
     .join('');
 });
 
-async function handleTranslate(type: PanelTab) {
+async function handleTranslate(type: 'full' | 'summary') {
   translateError.value = null;
   try {
     await store.translateArticle(type);
