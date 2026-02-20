@@ -10,14 +10,29 @@
 
 | 文件 | 说明 |
 |------|------|
-| [PRD.md](PRD.md) | 产品需求文档 v2.0 (Nuxt 3 + SQLite) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 技术架构文档 v2.0 |
+| [LLM-ARCHITECTURE.md](LLM-ARCHITECTURE.md) | LLM 集成架构 v1.0 |
 | [DECISIONS.md](DECISIONS.md) | 技术决策记录 (ADR) |
-| [E2E-TEST-PLAN.md](E2E-TEST-PLAN.md) | E2E 测试计划 |
 | [TEAM.md](TEAM.md) | 团队结构与分工 |
-| [PLUGIN-ARCHITECTURE-ANALYSIS.md](PLUGIN-ARCHITECTURE-ANALYSIS.md) | 插件化架构深度分析 |
 
 ## 归档文档
+
+### v2 — Nuxt 3 + SQLite 全栈重构（已完成）
+
+| 文件 | 说明 |
+|------|------|
+| [archive/v2/PRD-v2.0.md](archive/v2/PRD-v2.0.md) | v2.0 PRD（Nuxt 3 迁移 + SQLite + 图表） |
+| [archive/v2/E2E-TEST-PLAN.md](archive/v2/E2E-TEST-PLAN.md) | 习惯打卡 E2E 测试计划 |
+| [archive/v2/PLUGIN-ARCHITECTURE-ANALYSIS.md](archive/v2/PLUGIN-ARCHITECTURE-ANALYSIS.md) | 插件化架构深度分析 |
+| [archive/v2/annual-planner-architecture.md](archive/v2/annual-planner-architecture.md) | 年度规划器技术架构 |
+| [archive/v2/annual-planner-requirements.md](archive/v2/annual-planner-requirements.md) | 年度规划器功能需求 |
+| [archive/v2/annual-planner-spec.md](archive/v2/annual-planner-spec.md) | 年度规划器产品规格 |
+| [archive/v2/article-reader-prd.md](archive/v2/article-reader-prd.md) | 文章阅读器 PRD（P0-P2 全部完成） |
+| [archive/v2/article-reader-p0-spec.md](archive/v2/article-reader-p0-spec.md) | 文章阅读器 P0 MVP 规格 |
+| [archive/v2/mobile-auth-requirements.md](archive/v2/mobile-auth-requirements.md) | LAN 认证 + 移动适配需求 |
+| [archive/v2/mobile-auth-architecture.md](archive/v2/mobile-auth-architecture.md) | LAN 认证 + 移动适配架构 |
+
+### v1 — React + IndexedDB 前端 SPA（已废弃）
 
 | 文件 | 说明 |
 |------|------|

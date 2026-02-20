@@ -4,22 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLite. Currently has two tool modules: **Habit Tracker** (日历打卡) and **Vocab Tracker** (法语词汇学习). The app uses a monochrome black/white design system.
+A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLite. Uses a monochrome black/white design system with JWT authentication for LAN access.
+
+**Tool modules:** Habit Tracker (日历打卡), Vocab Tracker (法语词汇), Annual Planner (年度计划), Article Reader (文章阅读)
 
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (http://localhost:3000)
+npm run dev          # Start dev server (http://localhost:3000, binds 0.0.0.0)
 npm run build        # Production build
-npm run preview      # Preview production build
+npm run deploy       # Full deploy: build + DB backup + migrate + PM2 restart
 
 # Database (Drizzle ORM + SQLite)
 npm run db:generate  # Generate migration from schema changes
 npm run db:migrate   # Apply migrations
 npm run db:studio    # Open Drizzle Studio GUI
+npm run db:seed-user # Create initial user (reads .env)
+
+# Production (PM2)
+npm run prod:start   # Start PM2 process
+npm run prod:stop    # Stop PM2 process
+npm run prod:logs    # View PM2 logs
 
 # E2E Tests (Playwright)
-npx playwright test                    # Run all tests (starts dev server automatically)
+npx playwright test                    # Run all tests (auto-starts dev server)
 npx playwright test e2e/habit-tracker  # Run single test file
 npx playwright test -g "test name"     # Run test by name
 ```
@@ -42,24 +50,41 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 
 **API routes** use Nuxt file-based routing with method suffix convention: `index.get.ts`, `toggle.post.ts`, `[id].delete.ts`.
 
+**Middleware chain** (numbered prefixes control execution order):
+- `00.cache-control.ts` — Asset cache headers
+- `01.log.ts` — Request logging
+- `02.auth.ts` — JWT validation (whitelists `/api/_test/*` and `/api/auth/login`)
+- `03.test-guard.ts` — Blocks test endpoints in production
+
 **Database:** SQLite via `better-sqlite3` + Drizzle ORM, WAL mode, foreign keys enabled.
-- Schema: `server/database/schema.ts`
+- Schema split into files under `server/database/schemas/` (auth, habits, vocab, llm, srs, planner, articles)
 - Migrations: `server/database/migrations/`
 - Singleton connection: `server/database/index.ts` exports `useDB()`
 - DB file: `./data/assistant.db` (configurable via `DATABASE_PATH` env var)
 
 **Key API groups:**
-- `/api/habits` + `/api/checkins` — Habit CRUD and checkin management
-- `/api/vocab` — User management, word import/list, progress tracking, SRS spaced repetition
-- `/api/llm` — Provider CRUD, model discovery, chat, and French→Chinese translation
-- `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`)
+- `/api/auth` — Login (JWT, 365-day expiry)
+- `/api/habits` + `/api/checkins` — Habit CRUD, checkin management, heatmap/trend data
+- `/api/vocab` — Word import/list, progress tracking, SRS spaced repetition
+- `/api/planner` — Domains, goals, check items, tags, stats (overview/by-domain/by-tag)
+- `/api/articles` + `/api/bookmarks` + `/api/article-tags` — Article fetch/translate/chat, bookmarks, tags
+- `/api/llm` — Provider CRUD, model discovery, chat, translation
+- `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`, blocked in production)
 
 ### Frontend
 
 - **State:** Pinia stores in `stores/` using Composition API style (`defineStore('id', () => { ... })`)
-- **Routing:** `pages/index.vue` redirects to first tool; `pages/[...slug].vue` renders the matched tool component
+- **Routing:** `pages/index.vue` redirects to first tool; `pages/[...slug].vue` renders the matched tool component; `pages/login.vue` for auth
 - **Layout:** `layouts/default.vue` with collapsible sidebar (`AppSidebar.vue`)
 - **Styling:** CSS variables in `assets/css/variables.css`, all components use `<style scoped>`
+- **Auth:** `composables/useAuth.ts` manages JWT in localStorage; `plugins/auth.client.ts` attaches token to all `$fetch` requests and redirects to `/login` on 401
+
+**Shared composables:**
+- `useToolRegistry` — Tool registration/retrieval
+- `useAuth` — Login, logout, token management
+- `useLlm` — LLM provider management, chat, translation
+- `useTts` — Web Speech API wrapper (French voice preference)
+- `useIsMobile` — Responsive breakpoint detection (768px)
 
 ### LLM Integration
 
@@ -68,14 +93,22 @@ Providers are pluggable via `server/lib/llm/`:
 - **Ollama:** REST API at `http://localhost:11434` (must be running locally)
 - **OpenAI:** Schema and UI exist but factory throws — not implemented yet
 
-LLM vocab definitions are cached in the `definitions` table (never invalidated).
+Supports streaming via SSE (used in article translation). Vocab definitions are cached in the `definitions` table (never invalidated).
+
+### Deployment
+
+PM2-based production setup. Config in `ecosystem.config.cjs`, deploy script in `scripts/deploy.sh`.
+- Build output: `.output/server/index.mjs`
+- DB backups: `./data/backups/` (keeps latest 5)
+- Logs: `./logs/pm2-*.log`
+- Env: `.env.production.local` for production secrets (`JWT_SECRET`, `DATABASE_PATH`)
 
 ## Key Conventions
 
 - **DB access:** Always call `useDB()` inside the handler function, never at module level
-- **API error pattern:** Validate input → check existence (throw 404) → then mutate. Use `createError({ statusCode, message })`.
+- **API error pattern:** Validate input → check existence (throw 404) → then mutate. Use `createError({ statusCode, message })`
 - **Timestamps:** Unix milliseconds (integer) for timestamps, `YYYY-MM-DD` strings for dates
-- **IDs:** UUID strings for habits/checkins, auto-increment integers for vocab/SRS tables
+- **IDs:** UUID strings for habits/checkins, auto-increment integers for vocab/SRS/planner/articles
 - **Optimistic updates:** Habit checkin toggling updates UI immediately, then syncs with server
 - **Reactivity:** `Set<number>` state (e.g. `selectedWordIds`) must be replaced, not mutated, to trigger Vue reactivity
 - **Batch DB operations:** Use synchronous transactions with 500-row chunks
