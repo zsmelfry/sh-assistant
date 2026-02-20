@@ -6,6 +6,7 @@ import {
   reviewLogs, srsCards, definitions, studySessions,
   llmProviders,
   plannerGoalTags, plannerCheckitems, plannerGoals, plannerDomains, plannerTags,
+  articleChats, articleTagMap, articleTags, articleTranslations, articleBookmarks, articles,
 } from '~/server/database/schema';
 
 export default defineEventHandler(async () => {
@@ -28,6 +29,13 @@ export default defineEventHandler(async () => {
   await db.delete(vocabSettings);
   // LLM
   await db.delete(llmProviders);
+  // article-reader (child tables first)
+  await db.delete(articleChats);
+  await db.delete(articleTagMap);
+  await db.delete(articleTags);
+  await db.delete(articleTranslations);
+  await db.delete(articleBookmarks);
+  await db.delete(articles);
   // planner (child tables first)
   await db.delete(plannerGoalTags);
   await db.delete(plannerCheckitems);

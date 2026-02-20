@@ -21,21 +21,26 @@
     "prod:status": "pm2 status"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@pinia/nuxt": "^0.11",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.0",
     "date-fns": "^4.0",
     "drizzle-orm": "^0.40",
+    "jsdom": "^28.1.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-vue-next": "^0.574.0",
     "nuxt": "^3.16",
-    "pinia": "^3.0"
+    "pinia": "^3.0",
+    "sanitize-html": "^2.17.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.0",
+    "@types/jsdom": "^27.0.0",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/sanitize-html": "^2.16.0",
     "drizzle-kit": "^0.31",
     "typescript": "^5.7",
     "vue-tsc": "^2.0"

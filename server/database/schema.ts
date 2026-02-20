@@ -5,3 +5,4 @@ export * from './schemas/vocab';
 export * from './schemas/llm';
 export * from './schemas/srs';
 export * from './schemas/planner';
+export * from './schemas/articles';
