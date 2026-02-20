@@ -9,6 +9,7 @@
       @keydown.enter="handleSubmit"
       @keydown.escape="$emit('cancel')"
     />
+    <button class="cancelBtn" title="取消" @click="$emit('cancel')">&times;</button>
   </div>
 </template>
 
@@ -35,11 +36,14 @@ function handleSubmit() {
 
 <style scoped>
 .checkitemInput {
-  padding: var(--spacing-xs) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0 var(--spacing-xs);
 }
 
 .input {
-  width: 100%;
+  width: 260px;
   padding: var(--spacing-xs) var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -50,5 +54,20 @@ function handleSubmit() {
 
 .input:focus {
   border-color: var(--color-accent);
+}
+
+.cancelBtn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0 var(--spacing-xs);
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.cancelBtn:hover {
+  color: var(--color-text-primary);
 }
 </style>

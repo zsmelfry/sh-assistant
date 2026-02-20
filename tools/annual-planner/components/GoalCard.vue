@@ -102,7 +102,6 @@ const progressPercent = computed(() => {
   padding: var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-sm);
   cursor: grab;
   transition: all var(--transition-fast);
 }

@@ -157,8 +157,9 @@ function onGoalDrop(_e: DragEvent, targetId: number) {
 }
 
 .goalList {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-md);
 }
 
 @media (max-width: 768px) {
@@ -180,6 +181,9 @@ function onGoalDrop(_e: DragEvent, targetId: number) {
   .headerRight {
     flex-wrap: wrap;
     gap: var(--spacing-sm);
+  }
+  .goalList {
+    grid-template-columns: 1fr;
   }
 }
 </style>
