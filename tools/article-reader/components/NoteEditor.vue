@@ -9,26 +9,49 @@
     <!-- Editor -->
     <template v-else>
       <div class="editorHeader">
+        <div class="modeTabs">
+          <button
+            class="modeTab"
+            :class="{ active: mode === 'edit' }"
+            @click="mode = 'edit'"
+          >编辑</button>
+          <button
+            class="modeTab"
+            :class="{ active: mode === 'preview' }"
+            @click="mode = 'preview'"
+          >预览</button>
+        </div>
         <span class="saveStatus">
           <template v-if="store.notesSaving">保存中...</template>
           <template v-else-if="saved">已保存</template>
         </span>
       </div>
       <textarea
+        v-if="mode === 'edit'"
         ref="textareaRef"
         v-model="draft"
         class="editorTextarea"
-        placeholder="在这里写笔记...支持 Markdown 格式"
+        placeholder="在这里写笔记..."
         @input="handleInput"
+      />
+      <div
+        v-else
+        class="previewContent"
+        v-html="renderedMarkdown"
       />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked';
+
 const store = useArticleReaderStore();
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const draft = ref(store.notes);
+const mode = ref<'edit' | 'preview'>('edit');
+
+const renderedMarkdown = computed(() => marked.parse(draft.value || '') as string);
 const saved = ref(false);
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let savedTimer: ReturnType<typeof setTimeout> | null = null;
@@ -94,10 +117,36 @@ onUnmounted(() => {
 /* Editor header */
 .editorHeader {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding-bottom: var(--spacing-sm);
   min-height: 24px;
+}
+
+.modeTabs {
+  display: flex;
+  gap: 2px;
+  background: var(--color-bg-sidebar);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.modeTab {
+  padding: 3px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all var(--transition-fast);
+}
+
+.modeTab.active {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .saveStatus {
@@ -128,6 +177,112 @@ onUnmounted(() => {
 
 .editorTextarea::placeholder {
   color: var(--color-text-disabled);
+}
+
+/* Preview content */
+.previewContent {
+  flex: 1;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-primary);
+}
+
+.previewContent:empty::before {
+  content: '暂无内容';
+  color: var(--color-text-disabled);
+}
+
+.previewContent :deep(h1),
+.previewContent :deep(h2),
+.previewContent :deep(h3),
+.previewContent :deep(h4) {
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.previewContent :deep(h1) { font-size: 1.4em; }
+.previewContent :deep(h2) { font-size: 1.25em; }
+.previewContent :deep(h3) { font-size: 1.1em; }
+
+.previewContent :deep(p) {
+  margin-bottom: 0.8em;
+}
+
+.previewContent :deep(blockquote) {
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.previewContent :deep(pre) {
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-sm);
+  background: var(--color-bg-sidebar);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: 13px;
+}
+
+.previewContent :deep(code) {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+}
+
+.previewContent :deep(:not(pre) > code) {
+  padding: 1px 4px;
+  background: var(--color-bg-sidebar);
+  border-radius: 3px;
+}
+
+.previewContent :deep(ul),
+.previewContent :deep(ol) {
+  margin-bottom: 0.8em;
+  padding-left: 1.5em;
+}
+
+.previewContent :deep(li) {
+  margin-bottom: 0.3em;
+}
+
+.previewContent :deep(hr) {
+  margin: var(--spacing-md) 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.previewContent :deep(a) {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.previewContent :deep(strong) {
+  font-weight: 600;
+}
+
+.previewContent :deep(table) {
+  width: 100%;
+  margin: var(--spacing-sm) 0;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.previewContent :deep(th),
+.previewContent :deep(td) {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.previewContent :deep(th) {
+  background: var(--color-bg-sidebar);
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {

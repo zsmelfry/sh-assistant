@@ -24,7 +24,31 @@
           :style="toolbarStyle"
         >
           <button class="toolbarBtn" @mousedown.prevent="handleQuickTranslate">翻译</button>
-          <button class="toolbarBtn" @mousedown.prevent="handleAskAi">提问</button>
+          <button class="toolbarBtn" @mousedown.prevent.stop="handleAskAi">提问</button>
+        </div>
+
+        <!-- 提问输入面板 -->
+        <div
+          v-if="showAskPanel"
+          ref="askPanelRef"
+          class="askPanel"
+          :style="askPanelStyle"
+          @mousedown.stop
+        >
+          <div class="askQuote">{{ selectedText }}</div>
+          <textarea
+            ref="askTextareaRef"
+            v-model="askPrompt"
+            class="askInput"
+            rows="3"
+            placeholder="输入你的问题..."
+            @keydown.enter.meta.prevent="handleSendAsk"
+            @keydown.enter.ctrl.prevent="handleSendAsk"
+          />
+          <div class="askActions">
+            <button class="askBtn askBtnCancel" @click="closeAskPanel">取消</button>
+            <button class="askBtn askBtnSend" @click="handleSendAsk">发送</button>
+          </div>
         </div>
       </Teleport>
     </template>
@@ -101,17 +125,56 @@ function handleQuickTranslate() {
   emit('quickTranslate', selectedText.value);
 }
 
+// ===== Ask panel =====
+const showAskPanel = ref(false);
+const askPrompt = ref('');
+const askPanelRef = ref<HTMLElement | null>(null);
+const askTextareaRef = ref<HTMLTextAreaElement | null>(null);
+const askPanelPos = ref({ x: 0, y: 0 });
+
+const askPanelStyle = computed(() => ({
+  position: 'fixed' as const,
+  left: `${askPanelPos.value.x}px`,
+  top: `${askPanelPos.value.y}px`,
+  transform: 'translateX(-50%)',
+  zIndex: 9999,
+}));
+
 function handleAskAi() {
   if (!selectedText.value || !props.article) return;
   showToolbar.value = false;
 
-  // Send as chat message asking about the text
-  store.sendChatMessage(`请解释以下文本：\n\n"${selectedText.value}"`);
+  // Position the ask panel where the toolbar was
+  askPanelPos.value = { ...toolbarPos.value };
+  askPrompt.value = '请解释这段话背后的逻辑和深层含义';
+  showAskPanel.value = true;
+
+  nextTick(() => {
+    askTextareaRef.value?.focus();
+    askTextareaRef.value?.select();
+  });
+}
+
+function handleSendAsk() {
+  if (!askPrompt.value.trim() || !selectedText.value) return;
+  const message = `${askPrompt.value.trim()}\n\n"${selectedText.value}"`;
+  store.sendChatMessage(message);
+  showAskPanel.value = false;
   emit('askAi', selectedText.value);
 }
 
-// Hide toolbar when clicking elsewhere
-function handleClickOutside() {
+function closeAskPanel() {
+  showAskPanel.value = false;
+}
+
+// Hide toolbar / ask panel when clicking elsewhere
+function handleClickOutside(e: MouseEvent) {
+  if (showAskPanel.value) {
+    if (askPanelRef.value && !askPanelRef.value.contains(e.target as Node)) {
+      showAskPanel.value = false;
+    }
+    return;
+  }
   showToolbar.value = false;
 }
 
@@ -348,5 +411,87 @@ onUnmounted(() => {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* 提问输入面板 */
+.askPanel {
+  width: 380px;
+  max-width: 90vw;
+  padding: var(--spacing-md);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  animation: fadeInDown 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.askQuote {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-sidebar);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  max-height: 80px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.askInput {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.askInput:focus {
+  border-color: var(--color-accent);
+}
+
+.askInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.askActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-xs);
+}
+
+.askBtn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.askBtn:hover {
+  opacity: 0.8;
+}
+
+.askBtnCancel {
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-secondary);
+}
+
+.askBtnSend {
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
 }
 </style>
