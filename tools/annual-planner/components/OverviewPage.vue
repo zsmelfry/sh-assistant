@@ -27,19 +27,36 @@
         @drop="onDrop($event, domain.id)"
       />
     </div>
+
+    <div v-if="domainGoalStats.length > 0" class="goalsByDomain">
+      <h2 class="sectionTitle">目标总览</h2>
+      <div class="groupList">
+        <GroupCard
+          v-for="stat in domainGoalStats"
+          :key="stat.id"
+          :name="stat.name"
+          :goal-count="stat.goalCount"
+          :completion-rate="stat.completionRate"
+          :goals="mapDomainGoals(stat.goals)"
+          empty-text="暂无目标"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { DomainWithStats, OverviewStats } from '../types';
+import type { DomainWithStats, DomainGoalStats, OverviewStats } from '../types';
 import GlobalProgress from './GlobalProgress.vue';
 import DomainCard from './DomainCard.vue';
+import GroupCard from './GroupCard.vue';
 
 const isMobile = useIsMobile();
 
 const props = defineProps<{
   domains: DomainWithStats[];
   stats: OverviewStats | null;
+  domainGoalStats: DomainGoalStats[];
 }>();
 
 const emit = defineEmits<{
@@ -49,6 +66,15 @@ const emit = defineEmits<{
   deleteDomain: [domain: DomainWithStats];
   reorderDomains: [items: { id: number; sortOrder: number }[]];
 }>();
+
+function mapDomainGoals(goals: DomainGoalStats['goals']) {
+  return goals.map(g => ({
+    id: g.id,
+    title: g.title,
+    badge: g.tagNames || undefined,
+    completionRate: g.completionRate,
+  }));
+}
 
 const dragId = ref<number | null>(null);
 
@@ -106,6 +132,20 @@ function onDrop(_e: DragEvent, targetId: number) {
 .domainGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.goalsByDomain {
+  margin-top: var(--spacing-xl);
+}
+
+.goalsByDomain .sectionTitle {
+  margin-bottom: var(--spacing-md);
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
 }
 

@@ -4,9 +4,9 @@ import type {
   DomainWithStats,
   GoalWithDetails,
   PlannerTag,
-  PlannerCheckitem,
   OverviewStats,
   TagStats,
+  DomainGoalStats,
   CreateGoalData,
   UpdateGoalData,
 } from '~/tools/annual-planner/types';
@@ -20,6 +20,7 @@ export const usePlannerStore = defineStore('planner', () => {
   const tags = ref<PlannerTag[]>([]);
   const overviewStats = ref<OverviewStats | null>(null);
   const tagStats = ref<TagStats[]>([]);
+  const domainGoalStats = ref<DomainGoalStats[]>([]);
   const loading = ref(false);
 
   // ===== 计算属性 =====
@@ -29,10 +30,16 @@ export const usePlannerStore = defineStore('planner', () => {
     return domains.value.find(d => d.id === view.domainId) ?? null;
   });
 
-  const globalCompletionRate = computed(() => {
-    if (!overviewStats.value) return 0;
-    return overviewStats.value.globalCompletionRate;
-  });
+  const globalCompletionRate = computed(() =>
+    overviewStats.value?.globalCompletionRate ?? 0,
+  );
+
+  // ===== 辅助 =====
+  async function reloadCurrentDomainGoals(): Promise<void> {
+    if (currentView.value.type === 'domain') {
+      await loadGoals(currentView.value.domainId);
+    }
+  }
 
   // ===== 导航 =====
   function navigateTo(view: PlannerView) {
@@ -41,6 +48,9 @@ export const usePlannerStore = defineStore('planner', () => {
       loadGoals(view.domainId);
     } else if (view.type === 'tags') {
       loadTagStats();
+    } else if (view.type === 'overview') {
+      loadOverview();
+      loadDomainGoalStats();
     }
   }
 
@@ -97,6 +107,7 @@ export const usePlannerStore = defineStore('planner', () => {
     }
     await loadDomains();
     await loadOverview();
+    await loadDomainGoalStats();
   }
 
   // ===== 目标操作 =====
@@ -120,17 +131,13 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'PUT',
       body: data,
     });
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentDomainGoals();
     await loadDomains();
   }
 
   async function deleteGoal(id: number) {
     await $fetch(`/api/planner/goals/${id}`, { method: 'DELETE' });
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentDomainGoals();
     await loadDomains();
   }
 
@@ -155,9 +162,7 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'POST',
       body: { goalId, content },
     });
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentDomainGoals();
     await loadDomains();
   }
 
@@ -166,16 +171,12 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'PUT',
       body: { content },
     });
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentDomainGoals();
   }
 
   async function deleteCheckitem(id: number) {
     await $fetch(`/api/planner/checkitems/${id}`, { method: 'DELETE' });
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentDomainGoals();
     await loadDomains();
   }
 
@@ -200,9 +201,7 @@ export const usePlannerStore = defineStore('planner', () => {
       await loadDomains();
     } catch {
       // Rollback on failure
-      if (currentView.value.type === 'domain') {
-        await loadGoals(currentView.value.domainId);
-      }
+      await reloadCurrentDomainGoals();
       await loadDomains();
     }
   }
@@ -212,9 +211,7 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'PUT',
       body: { items },
     });
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentDomainGoals();
   }
 
   // ===== 标签操作 =====
@@ -228,7 +225,18 @@ export const usePlannerStore = defineStore('planner', () => {
       body: { name },
     });
     await loadTags();
+    if (currentView.value.type === 'tags') {
+      await loadTagStats();
+    }
     return tag;
+  }
+
+  async function reloadCurrentViewAfterTagChange(): Promise<void> {
+    if (currentView.value.type === 'tags') {
+      await loadTagStats();
+    } else {
+      await reloadCurrentDomainGoals();
+    }
   }
 
   async function updateTag(id: number, name: string) {
@@ -237,17 +245,13 @@ export const usePlannerStore = defineStore('planner', () => {
       body: { name },
     });
     await loadTags();
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentViewAfterTagChange();
   }
 
   async function deleteTag(id: number) {
     await $fetch(`/api/planner/tags/${id}`, { method: 'DELETE' });
     await loadTags();
-    if (currentView.value.type === 'domain') {
-      await loadGoals(currentView.value.domainId);
-    }
+    await reloadCurrentViewAfterTagChange();
   }
 
   // ===== 统计 =====
@@ -260,9 +264,13 @@ export const usePlannerStore = defineStore('planner', () => {
     tagStats.value = await $fetch<TagStats[]>('/api/planner/stats/by-tag');
   }
 
+  async function loadDomainGoalStats() {
+    domainGoalStats.value = await $fetch<DomainGoalStats[]>('/api/planner/stats/by-domain');
+  }
+
   return {
     // 状态
-    domains, currentView, goals, tags, overviewStats, tagStats, loading,
+    domains, currentView, goals, tags, overviewStats, tagStats, domainGoalStats, loading,
     // 计算属性
     currentDomain, globalCompletionRate,
     // 导航
@@ -278,6 +286,6 @@ export const usePlannerStore = defineStore('planner', () => {
     // 标签操作
     loadTags, createTag, updateTag, deleteTag,
     // 统计
-    loadOverview, loadTagStats,
+    loadOverview, loadTagStats, loadDomainGoalStats,
   };
 });

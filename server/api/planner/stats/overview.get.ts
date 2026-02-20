@@ -3,6 +3,7 @@ import { useDB } from '~/server/database';
 import {
   plannerDomains, plannerGoals, plannerCheckitems,
 } from '~/server/database/schema';
+import { completionRate, aggregateCheckitemCounts } from '~/server/utils/planner-stats';
 
 const STAGNANT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -29,14 +30,11 @@ export default defineEventHandler(async () => {
 
   const domains = domainRows.map((r) => ({
     ...r,
-    completionRate: r.totalCheckitems > 0
-      ? Math.round((r.completedCheckitems / r.totalCheckitems) * 100)
-      : 0,
+    completionRate: completionRate(r.completedCheckitems, r.totalCheckitems),
   }));
 
   const totalGoals = domains.reduce((sum, d) => sum + d.goalCount, 0);
-  const totalCheckitems = domains.reduce((sum, d) => sum + d.totalCheckitems, 0);
-  const completedCheckitems = domains.reduce((sum, d) => sum + d.completedCheckitems, 0);
+  const totals = aggregateCheckitemCounts(domains);
 
   // Stagnant goal detection
   const fourteenDaysAgo = Date.now() - STAGNANT_THRESHOLD_MS;
@@ -56,11 +54,8 @@ export default defineEventHandler(async () => {
 
   return {
     totalGoals,
-    totalCheckitems,
-    completedCheckitems,
-    globalCompletionRate: totalCheckitems > 0
-      ? Math.round((completedCheckitems / totalCheckitems) * 100)
-      : 0,
+    ...totals,
+    globalCompletionRate: completionRate(totals.completedCheckitems, totals.totalCheckitems),
     stagnantGoalCount,
     domains,
   };

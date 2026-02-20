@@ -1,40 +1,42 @@
 <template>
-  <div class="tagGroupCard">
+  <div class="groupCard">
     <div class="cardHeader">
-      <h3 class="tagName">{{ tagStat.name }}</h3>
-      <span class="stat">{{ tagStat.goalCount }} 个目标</span>
-      <span class="stat">{{ Math.round(tagStat.completionRate) }}%</span>
+      <h3 class="groupName">{{ name }}</h3>
+      <span class="stat">{{ goalCount }} 个目标</span>
+      <span class="stat">{{ Math.round(completionRate) }}%</span>
     </div>
 
     <div class="progressBar">
-      <div class="progressFill" :style="{ width: tagStat.completionRate + '%' }" />
+      <div class="progressFill" :style="{ width: completionRate + '%' }" />
     </div>
 
-    <div v-if="tagStat.goals.length > 0" class="goalList">
+    <div v-if="goals.length > 0" class="goalList">
       <div
-        v-for="goal in tagStat.goals"
+        v-for="goal in goals"
         :key="goal.id"
         class="goalRow"
       >
         <span class="goalTitle">{{ goal.title }}</span>
-        <span class="domainName">{{ goal.domainName }}</span>
+        <span v-if="goal.badge" class="badgeLabel">{{ goal.badge }}</span>
         <span class="goalRate">{{ Math.round(goal.completionRate) }}%</span>
       </div>
     </div>
-    <p v-else class="emptyHint">暂无关联目标</p>
+    <p v-else class="emptyHint">{{ emptyText ?? '暂无目标' }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { TagStats } from '../types';
-
 defineProps<{
-  tagStat: TagStats;
+  name: string;
+  goalCount: number;
+  completionRate: number;
+  goals: { id: number; title: string; badge?: string; completionRate: number }[];
+  emptyText?: string;
 }>();
 </script>
 
 <style scoped>
-.tagGroupCard {
+.groupCard {
   padding: var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -48,7 +50,7 @@ defineProps<{
   margin-bottom: var(--spacing-sm);
 }
 
-.tagName {
+.groupName {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -93,7 +95,7 @@ defineProps<{
   color: var(--color-text-primary);
 }
 
-.domainName {
+.badgeLabel {
   font-size: 12px;
   color: var(--color-text-secondary);
   padding: 2px var(--spacing-sm);

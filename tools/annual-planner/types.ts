@@ -75,6 +75,16 @@ export interface TagStats {
   goals: { id: number; title: string; domainName: string; completionRate: number }[];
 }
 
+export interface DomainGoalStats {
+  id: number;
+  name: string;
+  goalCount: number;
+  totalCheckitems: number;
+  completedCheckitems: number;
+  completionRate: number;
+  goals: { id: number; title: string; tagNames: string; completionRate: number }[];
+}
+
 export interface CreateGoalData {
   domainId: number;
   title: string;

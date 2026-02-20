@@ -14,10 +14,14 @@
     />
 
     <div v-else class="tagGroup">
-      <TagGroupCard
+      <GroupCard
         v-for="stat in tagStats"
         :key="stat.id"
-        :tag-stat="stat"
+        :name="stat.name"
+        :goal-count="stat.goalCount"
+        :completion-rate="stat.completionRate"
+        :goals="stat.goals.map(g => ({ id: g.id, title: g.title, badge: g.domainName, completionRate: g.completionRate }))"
+        empty-text="暂无关联目标"
       />
     </div>
   </div>
@@ -26,7 +30,7 @@
 <script setup lang="ts">
 import type { TagStats } from '../types';
 import EmptyState from './EmptyState.vue';
-import TagGroupCard from './TagGroupCard.vue';
+import GroupCard from './GroupCard.vue';
 
 defineProps<{
   tagStats: TagStats[];

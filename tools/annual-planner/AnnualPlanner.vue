@@ -22,6 +22,7 @@
         v-if="store.currentView.type === 'overview'"
         :domains="domains"
         :stats="store.overviewStats"
+        :domain-goal-stats="store.domainGoalStats"
         @select-domain="store.navigateTo({ type: 'domain', domainId: $event })"
         @create-domain="showDomainForm = true"
         @edit-domain="openEditDomain"
@@ -41,8 +42,8 @@
         @reorder-goals="store.reorderGoals($event)"
         @toggle-checkitem="store.toggleCheckitem($event)"
         @delete-checkitem="store.deleteCheckitem($event)"
-        @add-checkitem="(goalId: number, content: string) => store.createCheckitem(goalId, content)"
-        @update-checkitem="(id: number, content: string) => store.updateCheckitem(id, content)"
+        @add-checkitem="store.createCheckitem"
+        @update-checkitem="store.updateCheckitem"
         @reorder-checkitems="store.reorderCheckitems($event)"
       />
 
@@ -76,8 +77,8 @@
       :open="showTagManager"
       :tags="store.tags"
       @close="showTagManager = false"
-      @create="handleCreateTag"
-      @update="(id: number, name: string) => store.updateTag(id, name)"
+      @create="store.createTag"
+      @update="store.updateTag"
       @delete="handleDeleteTag"
     />
 
@@ -171,6 +172,7 @@ onMounted(async () => {
     await store.loadTags();
     if (store.domains.length > 0) {
       await store.loadOverview();
+      await store.loadDomainGoalStats();
     }
   } finally {
     loading.value = false;
@@ -260,10 +262,6 @@ async function handleDeleteGoal() {
 }
 
 // Tag handlers
-async function handleCreateTag(name: string) {
-  await store.createTag(name);
-}
-
 function handleDeleteTag(id: number) {
   const tag = store.tags.find(t => t.id === id);
   if (tag) {
