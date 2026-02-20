@@ -1,20 +1,20 @@
 <template>
   <div class="vocabItem" :class="{ selected: isSelected }">
-    <input
-      type="checkbox"
-      class="checkbox"
-      :checked="isSelected"
-      @change="toggleSelection"
-    />
+    <div class="topRow">
+      <input
+        type="checkbox"
+        class="checkbox"
+        :checked="isSelected"
+        @change="toggleSelection"
+      />
+      <span class="rank">#{{ word.rank }}</span>
+      <span class="word">{{ word.word }}</span>
+    </div>
 
-    <span class="rank">#{{ word.rank }}</span>
-    <span class="word">{{ word.word }}</span>
-
-    <span class="status" :class="statusClass">
-      {{ statusLabel }}
-    </span>
-
-    <div class="actions">
+    <div class="bottomRow">
+      <span class="status" :class="statusClass">
+        {{ statusLabel }}
+      </span>
       <button
         v-for="btn in actionButtons"
         :key="btn.action"
@@ -87,8 +87,8 @@ function handleAction(action: StatusAction) {
 <style scoped>
 .vocabItem {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+  flex-direction: column;
+  gap: var(--spacing-xs);
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -104,11 +104,16 @@ function handleAction(action: StatusAction) {
   background-color: var(--color-bg-hover);
 }
 
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .rank {
   font-size: 12px;
   color: var(--color-text-secondary);
   font-family: monospace;
-  min-width: 50px;
 }
 
 .word {
@@ -116,6 +121,13 @@ function handleAction(action: StatusAction) {
   font-weight: 600;
   flex: 1;
   min-width: 0;
+}
+
+.bottomRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding-left: 24px;
 }
 
 .status {
@@ -145,12 +157,6 @@ function handleAction(action: StatusAction) {
   color: var(--color-accent-inverse);
 }
 
-.actions {
-  display: flex;
-  gap: var(--spacing-xs);
-  flex-shrink: 0;
-}
-
 .actionBtn {
   padding: 2px var(--spacing-sm);
   font-size: 12px;
@@ -169,29 +175,9 @@ function handleAction(action: StatusAction) {
 }
 
 @media (max-width: 768px) {
-  .vocabItem {
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
-  }
-  .rank {
-    min-width: auto;
-  }
-  .word {
-    flex-basis: 100%;
-    order: -1;
-    font-size: 16px;
-  }
-  .actions {
-    flex-wrap: wrap;
-  }
   .actionBtn {
-    min-height: var(--touch-target-min);
-    padding: var(--spacing-xs) var(--spacing-md);
-  }
-  .checkbox {
-    min-width: var(--touch-target-min);
-    min-height: var(--touch-target-min);
+    min-height: 32px;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
   .actionBtn:active {
     background-color: var(--color-accent);

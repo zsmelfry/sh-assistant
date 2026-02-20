@@ -44,15 +44,17 @@
           class="catItem"
           :class="{ selected: selectedIds.has(w.id) }"
         >
-          <input
-            type="checkbox"
-            class="checkbox"
-            :checked="selectedIds.has(w.id)"
-            @change="toggleSelect(w.id)"
-          />
-          <span class="rank">#{{ w.rank }}</span>
-          <span class="word">{{ w.word }}</span>
-          <div class="itemActions">
+          <div class="topRow">
+            <input
+              type="checkbox"
+              class="checkbox"
+              :checked="selectedIds.has(w.id)"
+              @change="toggleSelect(w.id)"
+            />
+            <span class="rank">#{{ w.rank }}</span>
+            <span class="word">{{ w.word }}</span>
+          </div>
+          <div class="bottomRow">
             <button class="catBtn" @click="categorizeOne(w.id, 'SET_TO_LEARN')">待学习</button>
             <button class="catBtn" @click="categorizeOne(w.id, 'SET_LEARNING')">开始学习</button>
             <button class="catBtn catBtnPrimary" @click="categorizeOne(w.id, 'SET_MASTERED')">已掌握</button>
@@ -312,8 +314,8 @@ onMounted(() => loadWords());
 
 .catItem {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+  flex-direction: column;
+  gap: var(--spacing-xs);
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -329,11 +331,16 @@ onMounted(() => loadWords());
   background-color: var(--color-bg-hover);
 }
 
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .rank {
   font-size: 12px;
   color: var(--color-text-secondary);
   font-family: monospace;
-  min-width: 50px;
 }
 
 .word {
@@ -343,10 +350,11 @@ onMounted(() => loadWords());
   min-width: 0;
 }
 
-.itemActions {
+.bottomRow {
   display: flex;
+  align-items: center;
   gap: var(--spacing-xs);
-  flex-shrink: 0;
+  padding-left: 24px;
 }
 
 .catBtn {
@@ -456,25 +464,9 @@ onMounted(() => loadWords());
 }
 
 @media (max-width: 768px) {
-  .catItem {
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
-  }
-  .word {
-    flex-basis: 100%;
-    order: -1;
-    font-size: 16px;
-  }
-  .rank {
-    order: -1;
-  }
-  .itemActions {
-    flex-wrap: wrap;
-  }
   .catBtn {
-    min-height: var(--touch-target-min);
-    padding: var(--spacing-xs) var(--spacing-md);
+    min-height: 32px;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
   .catBtn:active {
     background-color: var(--color-bg-hover);
@@ -487,10 +479,10 @@ onMounted(() => loadWords());
     gap: var(--spacing-sm);
   }
   .batchBtn {
-    min-height: var(--touch-target-min);
+    min-height: 32px;
   }
   .pageBtn {
-    min-height: var(--touch-target-min);
+    min-height: 32px;
   }
 }
 </style>
