@@ -158,6 +158,21 @@ export const useStartupMapStore = defineStore('startup-map', () => {
     }
   }
 
+  // ===== 种子数据 =====
+  const seeding = ref(false);
+
+  async function seedData() {
+    seeding.value = true;
+    try {
+      await $fetch('/api/startup-map/seed', { method: 'POST' });
+      await loadDomains();
+      loadStages();
+      loadEnhancedStats();
+    } finally {
+      seeding.value = false;
+    }
+  }
+
   // ===== 领域操作 =====
   async function loadDomains() {
     domainsLoading.value = true;
@@ -679,6 +694,8 @@ export const useStartupMapStore = defineStore('startup-map', () => {
     breadcrumbDomainName, breadcrumbPointName,
     // 导航
     navigateToGlobal, navigateToDomain, navigateToPoint, navigateToProduct, switchGlobalTab,
+    // 种子数据
+    seeding, seedData,
     // 领域操作
     loadDomains, loadDomain,
     // 知识点操作

@@ -72,7 +72,14 @@
       <!-- Empty state -->
       <div v-else-if="store.domains.length === 0" class="emptyState">
         <p class="emptyTitle">还没有知识树数据</p>
-        <p class="emptyHint">请先初始化种子数据</p>
+        <p class="emptyHint">导入内置知识树，包含 10 大领域、90+ 个知识点</p>
+        <button
+          class="seedBtn"
+          :disabled="store.seeding"
+          @click="store.seedData()"
+        >
+          {{ store.seeding ? '导入中...' : '导入知识树' }}
+        </button>
       </div>
 
       <!-- Domain card grid -->
@@ -242,6 +249,28 @@ onMounted(() => {
 .emptyHint {
   font-size: 14px;
   color: var(--color-text-secondary);
+}
+
+.seedBtn {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.seedBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.seedBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
