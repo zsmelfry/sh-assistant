@@ -5,9 +5,22 @@
       <button class="newBtn" @click="$emit('new')">+ 新建</button>
     </div>
 
+    <div class="sortBar">
+      <button
+        class="sortBtn"
+        :class="{ active: sortBy === 'frequency' }"
+        @click="sortBy = 'frequency'"
+      >按类别</button>
+      <button
+        class="sortBtn"
+        :class="{ active: sortBy === 'createdAt' }"
+        @click="sortBy = 'createdAt'"
+      >按时间</button>
+    </div>
+
     <div class="listItems">
       <div
-        v-for="habit in habits"
+        v-for="habit in sortedHabits"
         :key="habit.id"
         class="habitItem"
         :class="{ active: habit.id === selectedId }"
@@ -39,10 +52,18 @@
 </template>
 
 <script setup lang="ts">
-import type { Habit } from '../types';
+import type { Habit, HabitFrequency } from '../types';
 import { FREQUENCY_BADGES } from '../types';
 
-defineProps<{
+type SortBy = 'frequency' | 'createdAt';
+
+const FREQUENCY_ORDER: Record<HabitFrequency, number> = {
+  daily: 0,
+  weekly: 1,
+  monthly: 2,
+};
+
+const props = defineProps<{
   habits: Habit[];
   selectedId: string | null;
 }>();
@@ -53,6 +74,18 @@ defineEmits<{
   edit: [habit: Habit];
   delete: [habit: Habit];
 }>();
+
+const sortBy = ref<SortBy>('frequency');
+
+const sortedHabits = computed(() => {
+  const list = [...props.habits];
+  if (sortBy.value === 'frequency') {
+    list.sort((a, b) => FREQUENCY_ORDER[a.frequency] - FREQUENCY_ORDER[b.frequency]);
+  } else {
+    list.sort((a, b) => a.createdAt - b.createdAt);
+  }
+  return list;
+});
 </script>
 
 <style scoped>
@@ -90,6 +123,34 @@ defineEmits<{
 
 .newBtn:hover {
   background-color: var(--color-bg-hover);
+}
+
+.sortBar {
+  display: flex;
+  gap: 4px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sortBtn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.sortBtn:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.sortBtn.active {
+  background-color: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border-color: var(--color-accent);
 }
 
 .listItems {
