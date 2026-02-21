@@ -1,21 +1,30 @@
 <template>
   <div class="annualPlanner">
-    <!-- Empty state: first use -->
+    <!-- Year selector shown even on empty state -->
+    <ViewNav
+      v-if="!loading && store.currentView.type !== 'domain'"
+      :current-type="store.currentView.type"
+      :selected-year="store.selectedYear"
+      :years="yearsList"
+      @navigate="store.navigateTo($event)"
+      @change-year="store.setYear($event)"
+      @add-year="handleAddYear"
+    />
+
+    <!-- Empty state: first use or empty year -->
     <EmptyState
       v-if="!loading && domains.length === 0"
       title="开始规划你的年度目标"
       hint="创建领域来组织你的目标，如事业、健康、兴趣"
-      action-label="开始规划"
-      @action="handleInitialize"
-    />
+      :action-label="prevYearHasData ? `从 ${store.selectedYear - 1} 复制` : '开始规划'"
+      @action="prevYearHasData ? handleCopyFromPrevYear() : handleInitialize()"
+    >
+      <template v-if="prevYearHasData" #extra>
+        <BaseButton variant="ghost" @click="handleInitialize">开始规划</BaseButton>
+      </template>
+    </EmptyState>
 
     <template v-else-if="domains.length > 0">
-      <!-- Navigation bar (show on overview and tags views) -->
-      <ViewNav
-        v-if="store.currentView.type !== 'domain'"
-        :current-type="store.currentView.type"
-        @navigate="store.navigateTo($event)"
-      />
 
       <!-- Overview page -->
       <OverviewPage
@@ -35,6 +44,7 @@
         v-else-if="store.currentView.type === 'domain' && store.currentDomain"
         :domain="store.currentDomain"
         :goals="store.goals"
+        :year="store.selectedYear"
         @back="store.navigateTo({ type: 'overview' })"
         @create-goal="openNewGoalForm"
         @edit-goal="openEditGoal"
@@ -133,6 +143,24 @@ const store = usePlannerStore();
 const domains = computed(() => store.domains);
 const loading = ref(true);
 
+// Year-related computed
+const currentYear = new Date().getFullYear();
+const yearsList = computed(() => {
+  const all = new Set([currentYear, store.selectedYear, ...store.availableYears]);
+  return [...all].sort((a, b) => a - b);
+});
+const prevYearHasData = computed(() =>
+  store.availableYears.includes(store.selectedYear - 1),
+);
+
+// Add new year
+async function handleAddYear(year: number) {
+  if (!yearsList.value.includes(year)) {
+    // Navigate to the new year — it will show empty state
+    await store.setYear(year);
+  }
+}
+
 // Domain form state
 const showDomainForm = ref(false);
 const editingDomain = ref<DomainWithStats | null>(null);
@@ -168,6 +196,7 @@ const deleteTagMessage = computed(() => {
 // Initialize
 onMounted(async () => {
   try {
+    await store.loadAvailableYears();
     await store.loadDomains();
     await store.loadTags();
     if (store.domains.length > 0) {
@@ -184,6 +213,16 @@ async function handleInitialize() {
   loading.value = true;
   try {
     await store.initializeDefaults();
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Copy from previous year
+async function handleCopyFromPrevYear() {
+  loading.value = true;
+  try {
+    await store.copyYearStructure(store.selectedYear - 1);
   } finally {
     loading.value = false;
   }
