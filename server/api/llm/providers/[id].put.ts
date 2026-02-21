@@ -1,13 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 const VALID_PROVIDERS = ['claude', 'ollama', 'openai'];
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'));
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: '无效的 provider ID' });
-  }
+  const id = requireNumericParam(event, 'id', 'Provider');
 
   const body = await readBody(event);
   const { provider, name, modelName, endpoint, apiKey, isEnabled, params } = body;

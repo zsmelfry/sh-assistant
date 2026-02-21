@@ -12,25 +12,12 @@ export interface Article {
   createdAt: number;
 }
 
-export interface ArticleTranslation {
-  id: number;
-  articleId: number;
-  type: TranslationType;
-  content: string;
-  providerId: number | null;
-  createdAt: number;
-}
-
 export interface ArticleBookmark {
   id: number;
   articleId: number;
   notes: string | null;
   bookmarkedAt: number;
 }
-
-export type TranslationType = 'full' | 'summary';
-
-export type TranslateMode = 'full' | 'summary' | 'both';
 
 // ===== API 响应类型 =====
 
@@ -81,8 +68,6 @@ export interface Tag {
 }
 
 // ===== UI 类型 =====
-
-export type ViewMode = 'reading' | 'bookmarks';
 
 export type PanelTab = 'full' | 'summary' | 'notes' | 'chat';
 

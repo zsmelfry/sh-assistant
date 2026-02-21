@@ -2,12 +2,10 @@ import { eq } from 'drizzle-orm';
 import { definitions } from '../../../../database/schemas/srs';
 import { vocabWords } from '../../../../database/schemas/vocab';
 import { translateWord } from '../../../../utils/translate-word';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const wordId = Number(getRouterParam(event, 'wordId'));
-  if (!wordId || isNaN(wordId)) {
-    throw createError({ statusCode: 400, message: '无效的 wordId' });
-  }
+  const wordId = requireNumericParam(event, 'wordId', '单词');
 
   const body = await readBody(event);
   const { providerId } = body;

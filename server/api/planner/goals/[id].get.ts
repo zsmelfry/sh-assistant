@@ -3,15 +3,12 @@ import { useDB } from '~/server/database';
 import {
   plannerGoals, plannerCheckitems, plannerGoalTags, plannerTags,
 } from '~/server/database/schema';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 const STAGNANT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'));
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: '无效的目标 ID' });
-  }
-
+  const id = requireNumericParam(event, 'id', '目标');
   const db = useDB();
 
   const [goal] = await db.select().from(plannerGoals).where(eq(plannerGoals.id, id)).limit(1);

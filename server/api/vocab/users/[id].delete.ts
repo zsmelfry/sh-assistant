@@ -1,11 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { vocabUsers, vocabSettings } from '../../../database/schemas/vocab';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'));
-  if (isNaN(id)) {
-    throw createError({ statusCode: 400, message: 'Invalid user id' });
-  }
+  const id = requireNumericParam(event, 'id', '用户');
 
   const db = useDB();
 

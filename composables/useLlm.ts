@@ -81,56 +81,53 @@ export function useLlm() {
     providers.value.find(p => p.isDefault),
   );
 
-  async function chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse> {
+  function extractErrorMessage(e: unknown, fallback: string): string {
+    return (e as { data?: { message?: string } })?.data?.message
+      || (e instanceof Error ? e.message : fallback);
+  }
+
+  function buildOptionsBody(options?: ChatOptions): Record<string, unknown> {
+    return {
+      providerId: options?.providerId,
+      options: {
+        temperature: options?.temperature,
+        maxTokens: options?.maxTokens,
+        timeout: options?.timeout,
+      },
+    };
+  }
+
+  async function withLoading<T>(fn: () => Promise<T>, fallbackError: string): Promise<T> {
     loading.value = true;
     error.value = null;
     try {
-      return await $fetch<ChatResponse>('/api/llm/chat', {
-        method: 'POST',
-        body: {
-          messages,
-          providerId: options?.providerId,
-          options: {
-            temperature: options?.temperature,
-            maxTokens: options?.maxTokens,
-            timeout: options?.timeout,
-          },
-        },
-      });
+      return await fn();
     } catch (e: unknown) {
-      const msg = (e as { data?: { message?: string } })?.data?.message
-        || (e instanceof Error ? e.message : '聊天请求失败');
-      error.value = msg;
+      error.value = extractErrorMessage(e, fallbackError);
       throw e;
     } finally {
       loading.value = false;
     }
   }
 
-  async function translate(word: string, options?: ChatOptions): Promise<TranslateResponse> {
-    loading.value = true;
-    error.value = null;
-    try {
-      return await $fetch<TranslateResponse>('/api/llm/translate', {
+  function chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse> {
+    return withLoading(
+      () => $fetch<ChatResponse>('/api/llm/chat', {
         method: 'POST',
-        body: {
-          word,
-          providerId: options?.providerId,
-          options: {
-            temperature: options?.temperature,
-            maxTokens: options?.maxTokens,
-            timeout: options?.timeout,
-          },
-        },
-      });
-    } catch (e: unknown) {
-      const msg = (e as { data?: { message?: string } })?.data?.message
-        || (e instanceof Error ? e.message : '翻译请求失败');
-      error.value = msg;
-      throw e;
-    } finally {
-      loading.value = false;
-    }
+        body: { messages, ...buildOptionsBody(options) },
+      }),
+      '聊天请求失败',
+    );
+  }
+
+  function translate(word: string, options?: ChatOptions): Promise<TranslateResponse> {
+    return withLoading(
+      () => $fetch<TranslateResponse>('/api/llm/translate', {
+        method: 'POST',
+        body: { word, ...buildOptionsBody(options) },
+      }),
+      '翻译请求失败',
+    );
   }
 
   async function loadProviders(): Promise<void> {

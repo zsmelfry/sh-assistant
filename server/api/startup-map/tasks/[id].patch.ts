@@ -1,12 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { smTasks } from '~/server/database/schema';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'));
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: '无效的任务 ID' });
-  }
+  const id = requireNumericParam(event, 'id', '任务');
 
   const body = await readBody(event);
   if (body.isCompleted === undefined) {

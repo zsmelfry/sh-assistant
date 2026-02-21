@@ -561,29 +561,19 @@ export const useStartupMapStore = defineStore('startup-map', () => {
   }
 
   async function deleteProduct(id: number) {
-    try {
-      await $fetch(`/api/startup-map/products/${id}`, { method: 'DELETE' });
-      products.value = products.value.filter(p => p.id !== id);
-      // If deleted the previously active product's notes reference, no-op
-    } catch (e: any) {
-      throw e;
-    }
+    await $fetch(`/api/startup-map/products/${id}`, { method: 'DELETE' });
+    products.value = products.value.filter(p => p.id !== id);
   }
 
   async function activateProduct(id: number) {
-    try {
-      const product = await $fetch<SmProduct>(`/api/startup-map/products/${id}/activate`, {
-        method: 'PATCH',
-      });
-      activeProduct.value = product;
-      // Update local list: deactivate all, activate target
-      products.value = products.value.map(p => ({
-        ...p,
-        isActive: p.id === id,
-      }));
-    } catch (e: any) {
-      throw e;
-    }
+    const product = await $fetch<SmProduct>(`/api/startup-map/products/${id}/activate`, {
+      method: 'PATCH',
+    });
+    activeProduct.value = product;
+    products.value = products.value.map(p => ({
+      ...p,
+      isActive: p.id === id,
+    }));
   }
 
   // ===== P2: 文章关联操作 =====
@@ -600,15 +590,11 @@ export const useStartupMapStore = defineStore('startup-map', () => {
 
   async function linkArticles(pointId: number, articleIds: number[]) {
     if (articleIds.length === 0) return;
-    try {
-      await $fetch(`/api/startup-map/points/${pointId}/articles`, {
-        method: 'POST',
-        body: { articleIds },
-      });
-      await loadPointArticles(pointId);
-    } catch (e: any) {
-      throw e;
-    }
+    await $fetch(`/api/startup-map/points/${pointId}/articles`, {
+      method: 'POST',
+      body: { articleIds },
+    });
+    await loadPointArticles(pointId);
   }
 
   async function unlinkArticle(pointId: number, articleId: number) {

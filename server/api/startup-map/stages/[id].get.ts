@@ -1,12 +1,10 @@
 import { eq, sql, asc } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { smStages, smStagePoints, smPoints, smTopics, smDomains } from '~/server/database/schema';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'));
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: '无效的阶段 ID' });
-  }
+  const id = requireNumericParam(event, 'id', '阶段');
 
   const db = useDB();
 

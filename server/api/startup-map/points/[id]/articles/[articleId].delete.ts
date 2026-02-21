@@ -1,14 +1,11 @@
 import { eq, and } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { smPointArticles } from '~/server/database/schema';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const pointId = Number(getRouterParam(event, 'id'));
-  const articleId = Number(getRouterParam(event, 'articleId'));
-
-  if (!pointId || isNaN(pointId) || !articleId || isNaN(articleId)) {
-    throw createError({ statusCode: 400, message: '无效的 ID' });
-  }
+  const pointId = requireNumericParam(event, 'id', '知识点');
+  const articleId = requireNumericParam(event, 'articleId', '文章');
 
   const db = useDB();
 

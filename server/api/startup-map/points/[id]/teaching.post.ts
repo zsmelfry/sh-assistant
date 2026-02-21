@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { smPoints, smTopics, smDomains, smTeachings, smProducts } from '~/server/database/schema';
 import { resolveProvider } from '~/server/utils/llm-provider';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 import { LlmError } from '~/server/lib/llm';
 import type { ChatMessage } from '~/server/lib/llm';
 
@@ -78,10 +79,7 @@ function parseSections(fullContent: string): Record<string, string> {
 }
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'));
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: '无效的知识点 ID' });
-  }
+  const id = requireNumericParam(event, 'id', '知识点');
 
   const body = await readBody(event);
   const { regenerate, providerId } = body || {};

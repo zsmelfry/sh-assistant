@@ -1,11 +1,9 @@
 import { useDB } from '~/server/database';
 import { smPointArticles } from '~/server/database/schema';
+import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const articleId = Number(getRouterParam(event, 'articleId'));
-  if (!articleId || isNaN(articleId)) {
-    throw createError({ statusCode: 400, message: '无效的文章 ID' });
-  }
+  const articleId = requireNumericParam(event, 'articleId', '文章');
 
   const body = await readBody(event);
   if (!Array.isArray(body.pointIds) || body.pointIds.length === 0) {
