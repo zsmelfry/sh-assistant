@@ -67,11 +67,11 @@
             <span class="statLabel">待复习</span>
           </div>
           <div class="statCard">
-            <span class="statNum">{{ studyStore.overview.cards.learning }}</span>
-            <span class="statLabel">学习中</span>
+            <span class="statNum">{{ studyStore.overview.cards.beginner }}</span>
+            <span class="statLabel">初学</span>
           </div>
           <div class="statCard">
-            <span class="statNum">{{ studyStore.overview.cards.mature }}</span>
+            <span class="statNum">{{ studyStore.overview.cards.mastered }}</span>
             <span class="statLabel">已掌握</span>
           </div>
         </div>
@@ -124,7 +124,7 @@ const chatWord = computed(() => studyStore.currentCard?.word || '');
 const cannotStudy = computed(() => {
   const o = studyStore.overview;
   if (!o) return true;
-  return o.cards.due === 0 && o.cards.new === 0 && o.availableLearningCount === 0;
+  return o.cards.due === 0 && o.availableLearningCount === 0;
 });
 
 onMounted(async () => {

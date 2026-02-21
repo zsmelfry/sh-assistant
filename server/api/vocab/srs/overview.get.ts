@@ -15,23 +15,24 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
   const today = formatDate(new Date());
 
-  // 1. SRS 卡片总览（SQL 聚合，避免全表扫描到内存）
-  const cardStats = await db.all(sql`
-    SELECT
-      COUNT(*) as total,
-      COALESCE(SUM(CASE WHEN next_review_at <= ${now} AND repetitions > 0 THEN 1 ELSE 0 END), 0) as due,
-      COALESCE(SUM(CASE WHEN repetitions = 0 THEN 1 ELSE 0 END), 0) as new_cards,
-      COALESCE(SUM(CASE WHEN repetitions > 0 AND interval < 21 THEN 1 ELSE 0 END), 0) as learning,
-      COALESCE(SUM(CASE WHEN interval >= 21 THEN 1 ELSE 0 END), 0) as mature
-    FROM srs_cards
-    WHERE user_id = ${userId}
-  `) as Array<{ total: number; due: number; new_cards: number; learning: number; mature: number }>;
-  const stats = cardStats[0] || { total: 0, due: 0, new_cards: 0, learning: 0, mature: 0 };
-  const totalCards = stats.total;
-  const dueCards = stats.due;
-  const newCards = stats.new_cards;
-  const learningCards = stats.learning;
-  const matureCards = stats.mature;
+  // 1. SRS 卡片总览 — 分类逻辑与 cards.get.ts 保持一致
+  const stageRows = await db.all(sql`
+    SELECT stage, COUNT(*) as cnt FROM (
+      SELECT CASE
+        WHEN interval >= 21 THEN 'mastered'
+        WHEN next_review_at <= ${now} AND repetitions > 0 THEN 'due'
+        WHEN interval <= 6 THEN 'beginner'
+        ELSE 'consolidating'
+      END as stage
+      FROM srs_cards WHERE user_id = ${userId}
+    ) GROUP BY stage
+  `) as Array<{ stage: string; cnt: number }>;
+  const stageCounts: Record<string, number> = { due: 0, beginner: 0, consolidating: 0, mastered: 0 };
+  let totalCards = 0;
+  for (const row of stageRows) {
+    stageCounts[row.stage] = row.cnt;
+    totalCards += row.cnt;
+  }
 
   // 2. 今日会话统计
   const sessionResult = await db.select()
@@ -106,10 +107,10 @@ export default defineEventHandler(async (event) => {
   return {
     cards: {
       total: totalCards,
-      due: dueCards,
-      new: newCards,
-      learning: learningCards,
-      mature: matureCards,
+      due: stageCounts.due,
+      beginner: stageCounts.beginner,
+      consolidating: stageCounts.consolidating,
+      mastered: stageCounts.mastered,
     },
     todaySession: todaySession ? {
       newWordsStudied: todaySession.newWordsStudied,

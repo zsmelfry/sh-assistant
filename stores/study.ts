@@ -47,7 +47,7 @@ export interface Definition {
 }
 
 export interface StudyOverview {
-  cards: { total: number; due: number; new: number; learning: number; mature: number };
+  cards: { total: number; due: number; beginner: number; consolidating: number; mastered: number };
   availableLearningCount: number;
   todaySession: { newWordsStudied: number; reviewsCompleted: number } | null;
   recentDays: Record<string, { reviews: number; avgQuality: number }>;
