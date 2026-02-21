@@ -6,3 +6,4 @@ export * from './schemas/llm';
 export * from './schemas/srs';
 export * from './schemas/planner';
 export * from './schemas/articles';
+export * from './schemas/startup-map';

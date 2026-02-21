@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLite. Uses a monochrome black/white design system with JWT authentication for LAN access.
 
-**Tool modules:** Habit Tracker (日历打卡), Vocab Tracker (法语词汇), Annual Planner (年度计划), Article Reader (文章阅读)
+**Tool modules:** Habit Tracker (日历打卡), Vocab Tracker (法语词汇), Annual Planner (年度计划), Article Reader (文章阅读), Startup Map (创业地图)
 
 ## Commands
 
@@ -57,7 +57,7 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 - `03.test-guard.ts` — Blocks test endpoints in production
 
 **Database:** SQLite via `better-sqlite3` + Drizzle ORM, WAL mode, foreign keys enabled.
-- Schema split into files under `server/database/schemas/` (auth, habits, vocab, llm, srs, planner, articles)
+- Schema split into files under `server/database/schemas/` (auth, habits, vocab, llm, srs, planner, articles, startup-map)
 - Migrations: `server/database/migrations/`
 - Singleton connection: `server/database/index.ts` exports `useDB()`
 - DB file: `./data/assistant.db` (configurable via `DATABASE_PATH` env var)
@@ -68,6 +68,7 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 - `/api/vocab` — Word import/list, progress tracking, SRS spaced repetition
 - `/api/planner` — Domains, goals, check items, tags, stats (overview/by-domain/by-tag)
 - `/api/articles` + `/api/bookmarks` + `/api/article-tags` — Article fetch/translate/chat, bookmarks, tags
+- `/api/startup-map` — Knowledge tree (domains/topics/points), AI teaching generation (SSE), AI chat, learning status, product profiles, stats
 - `/api/llm` — Provider CRUD, model discovery, chat, translation
 - `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`, blocked in production)
 
@@ -108,7 +109,7 @@ PM2-based production setup. Config in `ecosystem.config.cjs`, deploy script in `
 - **DB access:** Always call `useDB()` inside the handler function, never at module level
 - **API error pattern:** Validate input → check existence (throw 404) → then mutate. Use `createError({ statusCode, message })`
 - **Timestamps:** Unix milliseconds (integer) for timestamps, `YYYY-MM-DD` strings for dates
-- **IDs:** UUID strings for habits/checkins, auto-increment integers for vocab/SRS/planner/articles
+- **IDs:** UUID strings for habits/checkins, auto-increment integers for vocab/SRS/planner/articles/startup-map
 - **Optimistic updates:** Habit checkin toggling updates UI immediately, then syncs with server
 - **Reactivity:** `Set<number>` state (e.g. `selectedWordIds`) must be replaced, not mutated, to trigger Vue reactivity
 - **Batch DB operations:** Use synchronous transactions with 500-row chunks

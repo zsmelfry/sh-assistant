@@ -3,3 +3,4 @@ import './habit-tracker';
 import './vocab-tracker';
 import './annual-planner';
 import './article-reader';
+import './startup-map';

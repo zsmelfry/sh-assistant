@@ -7,6 +7,7 @@ import {
   llmProviders,
   plannerGoalTags, plannerCheckitems, plannerGoals, plannerDomains, plannerTags,
   articleChats, articleTagMap, articleTags, articleTranslations, articleBookmarks, articles,
+  smChats, smTeachings, smPoints, smTopics, smDomains, smProducts,
 } from '~/server/database/schema';
 
 export default defineEventHandler(async () => {
@@ -42,5 +43,12 @@ export default defineEventHandler(async () => {
   await db.delete(plannerGoals);
   await db.delete(plannerDomains);
   await db.delete(plannerTags);
+  // startup-map (child tables first)
+  await db.delete(smChats);
+  await db.delete(smTeachings);
+  await db.delete(smPoints);
+  await db.delete(smTopics);
+  await db.delete(smDomains);
+  await db.delete(smProducts);
   return { success: true };
 });
