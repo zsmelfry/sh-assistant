@@ -59,10 +59,26 @@
       <button
         v-if="teaching && !generating"
         class="generateBtn secondary"
-        @click="$emit('regenerate')"
+        @click="showRegenConfirm = true"
       >
         重新生成
       </button>
+
+      <!-- Regenerate confirmation dialog -->
+      <Teleport to="body">
+        <div v-if="showRegenConfirm" class="dialogOverlay" @click.self="showRegenConfirm = false">
+          <div class="dialogBox">
+            <p class="dialogText">
+              确定重新生成教学内容吗？<br />
+              现有内容将被覆盖，但笔记、对话和任务不受影响。
+            </p>
+            <div class="dialogActions">
+              <button class="dialogBtn cancel" @click="showRegenConfirm = false">取消</button>
+              <button class="dialogBtn confirm" @click="confirmRegenerate">确认重新生成</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
 
       <!-- Generating indicator -->
       <div v-if="generating" class="generatingHint">
@@ -87,12 +103,8 @@ defineProps<{
   streamingSections: Record<TeachingSection, string>;
 }>();
 
-defineEmits<{
-  generate: [];
-  regenerate: [];
-}>();
-
 const expandedSections = ref(new Set<TeachingSection>(TEACHING_SECTIONS));
+const showRegenConfirm = ref(false);
 
 function toggleSection(section: TeachingSection) {
   const next = new Set(expandedSections.value);
@@ -107,6 +119,16 @@ function toggleSection(section: TeachingSection) {
 function renderMarkdown(content: string): string {
   return marked.parse(content) as string;
 }
+
+function confirmRegenerate() {
+  showRegenConfirm.value = false;
+  emit('regenerate');
+}
+
+const emit = defineEmits<{
+  generate: [];
+  regenerate: [];
+}>();
 </script>
 
 <style scoped>
@@ -218,6 +240,58 @@ function renderMarkdown(content: string): string {
 
 .generateBtn.secondary:hover {
   background: var(--color-bg-hover);
+}
+
+/* Confirm dialog */
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialogBox {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  max-width: 400px;
+  width: 90%;
+}
+
+.dialogText {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-md);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.dialogBtn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dialogBtn.cancel {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+}
+
+.dialogBtn.confirm {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
 }
 
 .generatingHint {

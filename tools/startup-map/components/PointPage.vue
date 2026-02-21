@@ -32,6 +32,21 @@
               @generate="handleGenerate"
               @regenerate="handleRegenerate"
             />
+
+            <!-- Practice tasks -->
+            <div class="panelSection">
+              <PracticeTasks :point-id="store.currentPoint.id" />
+            </div>
+
+            <!-- Notes -->
+            <div class="panelSection">
+              <NoteEditor :point-id="store.currentPoint.id" />
+            </div>
+
+            <!-- Linked articles -->
+            <div class="panelSection">
+              <LinkedArticles :point-id="store.currentPoint.id" />
+            </div>
           </div>
         </div>
 
@@ -59,9 +74,19 @@
 import StatusSelector from './StatusSelector.vue';
 import TeachingContent from './TeachingContent.vue';
 import ChatPanel from './ChatPanel.vue';
+import PracticeTasks from './PracticeTasks.vue';
+import NoteEditor from './NoteEditor.vue';
+import LinkedArticles from './LinkedArticles.vue';
 import type { PointStatus } from '../types';
 
 const store = useStartupMapStore();
+
+// Log view activity when point loads
+watch(() => store.currentPoint, (point) => {
+  if (point) {
+    store.logActivity(point.id, 'view');
+  }
+});
 
 // ===== Split pane resize (same pattern as ArticleReader) =====
 const splitRatio = ref(55);
@@ -230,6 +255,12 @@ function handleRegenerate() {
   border-radius: 2px;
   background-color: var(--color-border);
   transition: background-color var(--transition-fast);
+}
+
+.panelSection {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
 }
 
 @media (max-width: 768px) {

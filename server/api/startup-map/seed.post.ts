@@ -1,6 +1,6 @@
 import { useDB } from '~/server/database';
-import { smDomains, smTopics, smPoints } from '~/server/database/schema';
-import { SEED_DOMAINS } from '~/server/database/seeds/startup-map';
+import { smDomains, smTopics, smPoints, smStages, smStagePoints } from '~/server/database/schema';
+import { SEED_DOMAINS, SEED_STAGES } from '~/server/database/seeds/startup-map';
 
 export default defineEventHandler(async () => {
   const db = useDB();
@@ -15,7 +15,11 @@ export default defineEventHandler(async () => {
   let totalTopics = 0;
   let totalPoints = 0;
 
+  // Map point name → inserted ID for stage-point mapping
+  const pointNameToId = new Map<string, number>();
+
   db.transaction((tx) => {
+    // Insert domains → topics → points
     for (let di = 0; di < SEED_DOMAINS.length; di++) {
       const domain = SEED_DOMAINS[di];
 
@@ -42,13 +46,38 @@ export default defineEventHandler(async () => {
           const point = topic.points[pi];
           totalPoints++;
 
-          tx.insert(smPoints).values({
+          const [insertedPoint] = tx.insert(smPoints).values({
             topicId: insertedTopic.id,
             name: point.name,
             description: point.description,
             status: 'not_started',
             sortOrder: pi,
             createdAt: now,
+          }).returning().all();
+
+          pointNameToId.set(point.name, insertedPoint.id);
+        }
+      }
+    }
+
+    // Insert stages and stage-point mappings
+    for (let si = 0; si < SEED_STAGES.length; si++) {
+      const stage = SEED_STAGES[si];
+
+      const [insertedStage] = tx.insert(smStages).values({
+        name: stage.name,
+        description: stage.description,
+        objective: stage.objective,
+        sortOrder: si,
+      }).returning().all();
+
+      for (let pi = 0; pi < stage.pointNames.length; pi++) {
+        const pointId = pointNameToId.get(stage.pointNames[pi]);
+        if (pointId) {
+          tx.insert(smStagePoints).values({
+            stageId: insertedStage.id,
+            pointId,
+            sortOrder: pi,
           }).run();
         }
       }
@@ -61,6 +90,7 @@ export default defineEventHandler(async () => {
       domains: SEED_DOMAINS.length,
       topics: totalTopics,
       points: totalPoints,
+      stages: SEED_STAGES.length,
     },
   };
 });

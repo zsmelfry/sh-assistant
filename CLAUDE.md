@@ -68,7 +68,7 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 - `/api/vocab` — Word import/list, progress tracking, SRS spaced repetition
 - `/api/planner` — Domains, goals, check items, tags, stats (overview/by-domain/by-tag)
 - `/api/articles` + `/api/bookmarks` + `/api/article-tags` — Article fetch/translate/chat, bookmarks, tags
-- `/api/startup-map` — Knowledge tree (domains/topics/points), AI teaching generation (SSE), AI chat, learning status, product profiles, stats
+- `/api/startup-map` — Knowledge tree (domains/topics/points), AI teaching generation (SSE), AI chat, learning status, product profiles, learning stages, practice tasks (AI-generated), notes (upsert), recommendations, enhanced stats (overview/by-domain), article linking (bidirectional with article-reader), learning activities (with hourly dedup), heatmap/streak, multi-product management
 - `/api/llm` — Provider CRUD, model discovery, chat, translation
 - `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`, blocked in production)
 

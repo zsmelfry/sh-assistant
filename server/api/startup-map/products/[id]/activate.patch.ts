@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
   db.transaction((tx) => {
     tx.update(smProducts)
       .set({ isActive: false, updatedAt: Date.now() })
+      .where(eq(smProducts.isActive, true))
       .run();
 
     tx.update(smProducts)

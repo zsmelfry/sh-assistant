@@ -8,6 +8,7 @@ import {
   plannerGoalTags, plannerCheckitems, plannerGoals, plannerDomains, plannerTags,
   articleChats, articleTagMap, articleTags, articleTranslations, articleBookmarks, articles,
   smChats, smTeachings, smPoints, smTopics, smDomains, smProducts,
+  smActivities, smPointArticles, smNotes, smTasks, smStagePoints, smStages,
 } from '~/server/database/schema';
 
 export default defineEventHandler(async () => {
@@ -30,7 +31,8 @@ export default defineEventHandler(async () => {
   await db.delete(vocabSettings);
   // LLM
   await db.delete(llmProviders);
-  // article-reader (child tables first)
+  // article-reader (child tables first, including cross-module FK)
+  await db.delete(smPointArticles);
   await db.delete(articleChats);
   await db.delete(articleTagMap);
   await db.delete(articleTags);
@@ -44,6 +46,11 @@ export default defineEventHandler(async () => {
   await db.delete(plannerDomains);
   await db.delete(plannerTags);
   // startup-map (child tables first)
+  await db.delete(smActivities);
+  await db.delete(smNotes);
+  await db.delete(smTasks);
+  await db.delete(smStagePoints);
+  await db.delete(smStages);
   await db.delete(smChats);
   await db.delete(smTeachings);
   await db.delete(smPoints);

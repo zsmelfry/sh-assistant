@@ -17,6 +17,23 @@
         <span class="domainProgress">{{ completedCount }}/{{ totalPoints }} 已完成</span>
       </div>
 
+      <!-- Status breakdown -->
+      <div v-if="totalPoints > 0" class="domainStats">
+        <SegmentedProgress
+          :not-started="statusCounts.notStarted"
+          :learning="statusCounts.learning"
+          :understood="statusCounts.understood"
+          :practiced="statusCounts.practiced"
+          :total="totalPoints"
+        />
+        <div class="statusBreakdown">
+          <span class="statusItem">已实践 {{ statusCounts.practiced }}</span>
+          <span class="statusItem">已理解 {{ statusCounts.understood }}</span>
+          <span class="statusItem">学习中 {{ statusCounts.learning }}</span>
+          <span class="statusItem">未开始 {{ statusCounts.notStarted }}</span>
+        </div>
+      </div>
+
       <!-- Topic groups -->
       <div class="topicList">
         <div
@@ -48,21 +65,28 @@
 
 <script setup lang="ts">
 import StatusBadge from './StatusBadge.vue';
+import SegmentedProgress from './SegmentedProgress.vue';
 
 const store = useStartupMapStore();
 
-const totalPoints = computed(() =>
-  store.currentDomain?.topics.reduce(
-    (sum, t) => sum + t.points.length, 0,
-  ) ?? 0,
+const allPoints = computed(() =>
+  store.currentDomain?.topics.flatMap(t => t.points) ?? [],
 );
 
+const totalPoints = computed(() => allPoints.value.length);
+
+const statusCounts = computed(() => {
+  const points = allPoints.value;
+  return {
+    notStarted: points.filter(p => p.status === 'not_started').length,
+    learning: points.filter(p => p.status === 'learning').length,
+    understood: points.filter(p => p.status === 'understood').length,
+    practiced: points.filter(p => p.status === 'practiced').length,
+  };
+});
+
 const completedCount = computed(() =>
-  store.currentDomain?.topics.reduce(
-    (sum, t) => sum + t.points.filter(
-      p => p.status === 'understood' || p.status === 'practiced',
-    ).length, 0,
-  ) ?? 0,
+  statusCounts.value.understood + statusCounts.value.practiced,
 );
 </script>
 
@@ -167,6 +191,24 @@ const completedCount = computed(() =>
 .pointName {
   font-size: 14px;
   color: var(--color-text-primary);
+}
+
+/* Domain stats */
+.domainStats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.statusBreakdown {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.statusItem {
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 
 @media (max-width: 768px) {

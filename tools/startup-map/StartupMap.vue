@@ -30,14 +30,17 @@
         </template>
       </nav>
 
-      <button
-        class="productBtn"
-        :class="{ active: currentView === 'product' }"
-        title="产品档案"
-        @click="store.navigateToProduct()"
-      >
-        <Briefcase :size="18" />
-      </button>
+      <div class="topBarRight">
+        <ProductSwitcher />
+        <button
+          class="productBtn"
+          :class="{ active: currentView === 'product' }"
+          title="产品档案"
+          @click="store.navigateToProduct()"
+        >
+          <Briefcase :size="18" />
+        </button>
+      </div>
     </div>
 
     <!-- Views -->
@@ -54,6 +57,7 @@ import GlobalView from './components/GlobalView.vue';
 import DomainDetail from './components/DomainDetail.vue';
 import PointPage from './components/PointPage.vue';
 import ProductProfile from './components/ProductProfile.vue';
+import ProductSwitcher from './components/ProductSwitcher.vue';
 
 const store = useStartupMapStore();
 
@@ -118,6 +122,12 @@ onMounted(() => {
 .separator {
   color: var(--color-text-disabled);
   font-size: 12px;
+}
+
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 /* Product button */

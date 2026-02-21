@@ -14,6 +14,8 @@
 | [LLM-ARCHITECTURE.md](LLM-ARCHITECTURE.md) | LLM 集成架构 v1.0 |
 | [DECISIONS.md](DECISIONS.md) | 技术决策记录 (ADR) |
 | [TEAM.md](TEAM.md) | 团队结构与分工 |
+| [e2e-testing-guide.md](e2e-testing-guide.md) | Playwright E2E 测试指南 |
+| [startup-map-guide.md](startup-map-guide.md) | 创业地图使用指南 |
 
 ## 归档文档
 
@@ -31,6 +33,9 @@
 | [archive/v2/article-reader-p0-spec.md](archive/v2/article-reader-p0-spec.md) | 文章阅读器 P0 MVP 规格 |
 | [archive/v2/mobile-auth-requirements.md](archive/v2/mobile-auth-requirements.md) | LAN 认证 + 移动适配需求 |
 | [archive/v2/mobile-auth-architecture.md](archive/v2/mobile-auth-architecture.md) | LAN 认证 + 移动适配架构 |
+| [archive/v2/startup-map-prd.md](archive/v2/startup-map-prd.md) | 创业地图 PRD（P0-P2 全部完成） |
+| [archive/v2/startup-map-spec.md](archive/v2/startup-map-spec.md) | 创业地图功能规格（P0/P1/P2 全部完成） |
+| [archive/v2/startup-map-architecture.md](archive/v2/startup-map-architecture.md) | 创业地图技术架构 |
 
 ### v1 — React + IndexedDB 前端 SPA（已废弃）
 

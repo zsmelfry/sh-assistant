@@ -11,6 +11,11 @@
         填写你的产品信息，AI 将根据这些背景生成更有针对性的教学内容和建议
       </p>
 
+      <!-- Product list (multi-product management) -->
+      <ProductList />
+
+      <hr class="divider" />
+
       <form class="profileForm" @submit.prevent="handleSave">
         <div class="formGroup">
           <label class="formLabel" for="productName">产品名称 *</label>
@@ -114,6 +119,7 @@
 <script setup lang="ts">
 import { PRODUCT_STAGE_LABELS } from '../types';
 import type { ProductStage, ProductFormData } from '../types';
+import ProductList from './ProductList.vue';
 
 const store = useStartupMapStore();
 
@@ -171,6 +177,12 @@ onUnmounted(() => {
 <style scoped>
 .productProfile {
   max-width: 600px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--spacing-md) 0;
 }
 
 .loadingState {
