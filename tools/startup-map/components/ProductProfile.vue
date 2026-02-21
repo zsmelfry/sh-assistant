@@ -117,11 +117,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStartupMapProductStore } from '~/stores/startup-map';
 import { PRODUCT_STAGE_LABELS } from '../types';
 import type { ProductStage, ProductFormData } from '../types';
 import ProductList from './ProductList.vue';
 
-const store = useStartupMapStore();
+const store = useStartupMapProductStore();
 
 const isEditing = computed(() => !!store.activeProduct);
 const saved = ref(false);

@@ -6,7 +6,7 @@
         <span
           class="crumb"
           :class="{ clickable: currentView !== 'global' }"
-          @click="currentView !== 'global' && store.navigateToGlobal()"
+          @click="handleGlobalClick()"
         >
           全局视图
         </span>
@@ -15,14 +15,14 @@
           <span
             class="crumb"
             :class="{ clickable: currentView === 'point' }"
-            @click="currentView === 'point' && store.navigateToDomain(store.currentDomainId!)"
+            @click="currentView === 'point' && skillStore.navigateToDomain(skillStore.currentDomainId!)"
           >
-            {{ store.breadcrumbDomainName }}
+            {{ skillStore.breadcrumbDomainName }}
           </span>
         </template>
         <template v-if="currentView === 'point'">
           <span class="separator">/</span>
-          <span class="crumb active">{{ store.breadcrumbPointName }}</span>
+          <span class="crumb active">{{ skillStore.breadcrumbPointName }}</span>
         </template>
         <template v-if="currentView === 'product'">
           <span class="separator">/</span>
@@ -36,7 +36,7 @@
           class="productBtn"
           :class="{ active: currentView === 'product' }"
           title="产品档案"
-          @click="store.navigateToProduct()"
+          @click="navigateToProduct()"
         >
           <Briefcase :size="18" />
         </button>
@@ -46,30 +46,60 @@
     <!-- Views -->
     <GlobalView v-if="currentView === 'global'" />
     <DomainDetail v-else-if="currentView === 'domain'" />
-    <PointPage v-else-if="currentView === 'point'" />
+    <PointPage v-else-if="currentView === 'point'" :product-id="productStore.activeProduct?.id" />
     <ProductProfile v-else-if="currentView === 'product'" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { Briefcase } from 'lucide-vue-next';
-import GlobalView from './components/GlobalView.vue';
-import DomainDetail from './components/DomainDetail.vue';
-import PointPage from './components/PointPage.vue';
+import { SKILL_STORE_KEY } from '~/composables/skill-learning';
+import { useStartupMapSkillStore, useStartupMapProductStore } from '~/stores/startup-map';
+import type { StartupMapView } from './types';
+import GlobalView from '~/components/skill-learning/GlobalView.vue';
+import DomainDetail from '~/components/skill-learning/DomainDetail.vue';
+import PointPage from '~/components/skill-learning/PointPage.vue';
 import ProductProfile from './components/ProductProfile.vue';
 import ProductSwitcher from './components/ProductSwitcher.vue';
 
-const store = useStartupMapStore();
+const skillStore = useStartupMapSkillStore();
+const productStore = useStartupMapProductStore();
 
-const currentView = computed(() => store.currentView);
+// Provide skill store for shared components via inject
+provide(SKILL_STORE_KEY, skillStore);
+
+// View management — extends skill store's view with 'product'
+const currentView = ref<StartupMapView>(skillStore.currentView);
+
+// Sync from skill store view changes
+watch(() => skillStore.currentView, (v) => {
+  currentView.value = v;
+});
+
+// Navigate to product view (local-only, not a skill store view)
+function navigateToProduct() {
+  currentView.value = 'product';
+}
+
+// Override breadcrumb click to handle product→global navigation
+function handleGlobalClick() {
+  if (currentView.value === 'product') {
+    // When on product view, skillStore.currentView is already 'global',
+    // so navigateToGlobal() won't trigger the watcher. Set directly.
+    currentView.value = 'global';
+    skillStore.loadDomains();
+  } else if (currentView.value !== 'global') {
+    skillStore.navigateToGlobal();
+  }
+}
 
 const showDomainCrumb = computed(() =>
   currentView.value === 'domain' || currentView.value === 'point',
 );
 
 onMounted(() => {
-  store.loadDomains();
-  store.loadActiveProduct();
+  skillStore.loadDomains();
+  productStore.loadActiveProduct();
 });
 </script>
 

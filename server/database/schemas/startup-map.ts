@@ -23,9 +23,11 @@ export const smDomains = sqliteTable('sm_domains', {
   name: text('name').notNull(),
   description: text('description'),
   sortOrder: integer('sort_order').notNull().default(0),
+  skillId: text('skill_id').notNull().default('startup-map'),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [
   index('idx_sm_domains_sort').on(table.sortOrder),
+  index('idx_sm_domains_skill').on(table.skillId),
 ]);
 
 // ===== 主题 =====
@@ -99,7 +101,10 @@ export const smStages = sqliteTable('sm_stages', {
   description: text('description'),
   objective: text('objective'),
   sortOrder: integer('sort_order').notNull().default(0),
-});
+  skillId: text('skill_id').notNull().default('startup-map'),
+}, (table) => [
+  index('idx_sm_stages_skill').on(table.skillId),
+]);
 
 // ===== P1: 阶段-知识点多对多映射 =====
 export const smStagePoints = sqliteTable('sm_stage_points', {
@@ -161,11 +166,13 @@ export const smActivities = sqliteTable('sm_activities', {
   pointId: integer('point_id')
     .references(() => smPoints.id, { onDelete: 'set null' }),
   type: text('type', { enum: ['view', 'chat', 'note', 'task', 'status_change'] }).notNull(),
+  skillId: text('skill_id').notNull().default('startup-map'),
   date: text('date').notNull(),   // 'YYYY-MM-DD'
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [
   index('idx_sm_activities_date').on(table.date),
   index('idx_sm_activities_point').on(table.pointId),
+  index('idx_sm_activities_skill').on(table.skillId),
 ]);
 
 // ===== 类型推导 =====

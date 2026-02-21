@@ -46,6 +46,22 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 
 **To add a new tool:** Create `tools/my-tool/index.ts` calling `registerTool(...)`, add side-effect import in `tools/index.ts`. Routing is automatic — `pages/[...slug].vue` resolves `slug[0]` as the tool ID.
 
+### Skill Learning Core
+
+A reusable structured learning engine extracted from Startup Map. Any skill tool shares the same DB tables (isolated by `skillId`), API routes (`/api/skills/[skillId]/...`), and UI components.
+
+**To add a new skill tool** (~4 files):
+1. Define seed data (`server/database/seeds/my-skill.ts`)
+2. Register skill config with AI prompts (`server/lib/skill-learning/skills/my-skill.ts`) + add side-effect import in `server/plugins/skill-learning.ts`
+3. Register tool (`tools/my-skill/index.ts`)
+4. Create root component (`tools/my-skill/MySkill.vue`) using `createSkillLearningStore(skillId)` + `provide(SKILL_STORE_KEY, store)`
+
+**Key files:**
+- `server/lib/skill-learning/` — SkillConfig types, registry, DB helpers, skill configs
+- `server/plugins/skill-learning.ts` — Ensures skill registration at server startup
+- `composables/skill-learning/` — Store factory (`createSkillLearningStore`), shared types, `SKILL_STORE_KEY`
+- `components/skill-learning/` — 22 shared learning UI components (excluded from Nuxt auto-import)
+
 ### Server (`server/`)
 
 **API routes** use Nuxt file-based routing with method suffix convention: `index.get.ts`, `toggle.post.ts`, `[id].delete.ts`.
@@ -68,7 +84,8 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 - `/api/vocab` — Word import/list, progress tracking, SRS spaced repetition
 - `/api/planner` — Domains, goals, check items, tags, stats (overview/by-domain/by-tag)
 - `/api/articles` + `/api/bookmarks` + `/api/article-tags` — Article fetch/translate/chat, bookmarks, tags
-- `/api/startup-map` — Knowledge tree (domains/topics/points), AI teaching generation (SSE), AI chat, learning status, product profiles, learning stages, practice tasks (AI-generated), notes (upsert), recommendations, enhanced stats (overview/by-domain), article linking (bidirectional with article-reader), learning activities (with hourly dedup), heatmap/streak, multi-product management
+- `/api/skills/[skillId]` — Skill Learning Core: knowledge tree (domains/topics/points), AI teaching generation (SSE), AI chat, learning status, learning stages, practice tasks (AI-generated), notes (upsert), recommendations, stats (overview/by-domain), article linking (bidirectional), learning activities (with hourly dedup), heatmap/streak, seed data import. Data isolated by `skillId` column on root tables (sm_domains, sm_stages, sm_activities).
+- `/api/startup-map/products` — Startup-map specific: multi-product management (CRUD, activate, profile)
 - `/api/llm` — Provider CRUD, model discovery, chat, translation
 - `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`, blocked in production)
 

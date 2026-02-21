@@ -60,10 +60,11 @@
 </template>
 
 <script setup lang="ts">
+import { useStartupMapProductStore } from '~/stores/startup-map';
 import { PRODUCT_STAGE_LABELS } from '../types';
 import type { SmProduct } from '../types';
 
-const store = useStartupMapStore();
+const store = useStartupMapProductStore();
 const confirmTarget = ref<SmProduct | null>(null);
 
 onMounted(() => {

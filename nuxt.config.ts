@@ -41,6 +41,11 @@ export default defineNuxtConfig({
     strict: true,
   },
 
+  // Prevent Nuxt auto-import of shared skill-learning components (explicitly imported in tool roots)
+  components: [
+    { path: '~/components', ignore: ['skill-learning/**'] },
+  ],
+
   // 开发工具
   devtools: { enabled: true },
 

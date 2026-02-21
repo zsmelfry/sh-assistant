@@ -45,7 +45,7 @@ async function authFetch(
 
 /** 种子知识树数据（需要 token） */
 async function seedKnowledgeTree(request: APIRequestContext, token: string) {
-  const res = await authFetch(request, token, 'POST', '/api/startup-map/seed');
+  const res = await authFetch(request, token, 'POST', '/api/skills/startup-map/seed');
   return res.json();
 }
 
@@ -97,29 +97,29 @@ async function apiUpdatePointStatus(
   pointId: number,
   status: string,
 ) {
-  const res = await authFetch(request, token, 'PATCH', `/api/startup-map/points/${pointId}/status`, { status });
+  const res = await authFetch(request, token, 'PATCH', `/api/skills/startup-map/points/${pointId}/status`, { status });
   return res.json();
 }
 
 /** 获取第一个领域的详情（含知识点） */
 async function getFirstDomainDetail(request: APIRequestContext, token: string) {
-  const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+  const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
   const domains = await domainsRes.json();
   const domainId = domains[0].id;
-  const detailRes = await authFetch(request, token, 'GET', `/api/startup-map/domains/${domainId}`);
+  const detailRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/domains/${domainId}`);
   return detailRes.json();
 }
 
 // ─── 种子数据初始化 ───
 
 test.describe('创业地图 - 种子数据', () => {
-  test('POST /api/startup-map/seed 成功创建知识树', async ({ request }) => {
+  test('POST /api/skills/startup-map/seed 成功创建知识树', async ({ request }) => {
     const token = await getAuthToken(request);
     const result = await seedKnowledgeTree(request, token);
     expect(result.success).toBe(true);
 
     // 验证 10 个领域
-    const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+    const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
     const domains = await domainsRes.json();
     expect(domains).toHaveLength(10);
   });
@@ -130,7 +130,7 @@ test.describe('创业地图 - 种子数据', () => {
     const result = await seedKnowledgeTree(request, token);
     expect(result.skipped).toBe(true);
 
-    const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+    const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
     const domains = await domainsRes.json();
     expect(domains).toHaveLength(10);
   });
@@ -139,7 +139,7 @@ test.describe('创业地图 - 种子数据', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+    const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
     const domains = await domainsRes.json();
     const names = domains.map((d: { name: string }) => d.name);
 
@@ -159,7 +159,7 @@ test.describe('创业地图 - 种子数据', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+    const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
     const domains = await domainsRes.json();
 
     for (const domain of domains) {
@@ -219,7 +219,7 @@ test.describe('创业地图 - 全局视图', () => {
     await loginAndGoToStartupMap(page);
 
     await expect(page.getByText('还没有知识树数据')).toBeVisible();
-    await expect(page.getByText('请先初始化种子数据')).toBeVisible();
+    await expect(page.getByText('导入内置知识树')).toBeVisible();
   });
 
   test('面包屑显示全局视图', async ({ page, request }) => {
@@ -453,7 +453,7 @@ test.describe('创业地图 - 学习状态', () => {
     await expect(page.locator('.statusBtn').filter({ hasText: '已理解' })).toHaveClass(/active/, { timeout: 5000 });
 
     // 通过 API 验证
-    const pointRes = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}`);
+    const pointRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}`);
     const point = await pointRes.json();
     expect(point.status).toBe('understood');
   });
@@ -646,7 +646,7 @@ test.describe('创业地图 - AI 对话', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const chatsRes = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/chats`);
+    const chatsRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/chats`);
     const chats = await chatsRes.json();
     expect(chats).toHaveLength(0);
   });
@@ -657,7 +657,7 @@ test.describe('创业地图 - AI 对话', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const res = await authFetch(request, token, 'DELETE', `/api/startup-map/points/${firstPointId}/chats`);
+    const res = await authFetch(request, token, 'DELETE', `/api/skills/startup-map/points/${firstPointId}/chats`);
     expect(res.ok()).toBe(true);
   });
 });
@@ -825,7 +825,7 @@ test.describe('创业地图 - 进度统计', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const statsRes = await authFetch(request, token, 'GET', '/api/startup-map/stats/overview');
+    const statsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/overview');
     const stats = await statsRes.json();
 
     expect(stats.totalPoints).toBeGreaterThan(0);
@@ -841,7 +841,7 @@ test.describe('创业地图 - 进度统计', () => {
 
     await apiUpdatePointStatus(request, token, firstPointId, 'understood');
 
-    const statsRes = await authFetch(request, token, 'GET', '/api/startup-map/stats/overview');
+    const statsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/overview');
     const stats = await statsRes.json();
 
     expect(stats.completedCount).toBe(1);
@@ -855,13 +855,13 @@ test.describe('创业地图 - 进度统计', () => {
 
 /** 获取阶段列表 */
 async function getStages(request: APIRequestContext, token: string) {
-  const res = await authFetch(request, token, 'GET', '/api/startup-map/stages');
+  const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stages');
   return res.json();
 }
 
 /** 获取阶段详情 */
 async function getStageDetail(request: APIRequestContext, token: string, stageId: number) {
-  const res = await authFetch(request, token, 'GET', `/api/startup-map/stages/${stageId}`);
+  const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/stages/${stageId}`);
   return res.json();
 }
 
@@ -872,7 +872,7 @@ async function apiCreateNote(
   pointId: number,
   content: string,
 ) {
-  const res = await authFetch(request, token, 'PUT', `/api/startup-map/points/${pointId}/notes`, { content });
+  const res = await authFetch(request, token, 'PUT', `/api/skills/startup-map/points/${pointId}/notes`, { content });
   return res.json();
 }
 
@@ -960,14 +960,14 @@ test.describe('创业地图 - 学习阶段', () => {
 
   test('GET /stages/[id] 无效 ID 返回 400', async ({ request }) => {
     const token = await getAuthToken(request);
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stages/abc');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stages/abc');
     expect(res.status()).toBe(400);
   });
 
   test('GET /stages/[id] 不存在的阶段返回 404', async ({ request }) => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stages/99999');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stages/99999');
     expect(res.status()).toBe(404);
   });
 
@@ -1094,33 +1094,33 @@ test.describe('创业地图 - 实践任务', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const res = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/tasks`);
+    const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/tasks`);
     const tasks = await res.json();
     expect(tasks).toHaveLength(0);
   });
 
   test('GET tasks 无效 ID 返回 400', async ({ request }) => {
     const token = await getAuthToken(request);
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/points/abc/tasks');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/points/abc/tasks');
     expect(res.status()).toBe(400);
   });
 
   test('GET tasks 不存在的知识点返回 404', async ({ request }) => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/points/99999/tasks');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/points/99999/tasks');
     expect(res.status()).toBe(404);
   });
 
   test('PATCH task 缺少 isCompleted 返回 400', async ({ request }) => {
     const token = await getAuthToken(request);
-    const res = await authFetch(request, token, 'PATCH', '/api/startup-map/tasks/1', { completionNote: 'test' });
+    const res = await authFetch(request, token, 'PATCH', '/api/skills/startup-map/tasks/1', { completionNote: 'test' });
     expect(res.status()).toBe(400);
   });
 
   test('PATCH task 不存在的任务返回 404', async ({ request }) => {
     const token = await getAuthToken(request);
-    const res = await authFetch(request, token, 'PATCH', '/api/startup-map/tasks/99999', { isCompleted: true });
+    const res = await authFetch(request, token, 'PATCH', '/api/skills/startup-map/tasks/99999', { isCompleted: true });
     expect(res.status()).toBe(404);
   });
 
@@ -1149,7 +1149,7 @@ test.describe('创业地图 - 笔记', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const res = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/notes`);
+    const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/notes`);
     expect(res.ok()).toBe(true);
     const text = await res.text();
     // Nitro returns "null" as body or empty string for null values
@@ -1194,14 +1194,14 @@ test.describe('创业地图 - 笔记', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const res = await authFetch(request, token, 'PUT', `/api/startup-map/points/${firstPointId}/notes`, {});
+    const res = await authFetch(request, token, 'PUT', `/api/skills/startup-map/points/${firstPointId}/notes`, {});
     expect(res.status()).toBe(400);
   });
 
   test('PUT notes 不存在的知识点返回 404', async ({ request }) => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
-    const res = await authFetch(request, token, 'PUT', '/api/startup-map/points/99999/notes', { content: 'test' });
+    const res = await authFetch(request, token, 'PUT', '/api/skills/startup-map/points/99999/notes', { content: 'test' });
     expect(res.status()).toBe(404);
   });
 
@@ -1293,7 +1293,7 @@ test.describe('创业地图 - 学习建议', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/recommendations');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/recommendations');
     const data = await res.json();
 
     expect(data.allCompleted).toBe(false);
@@ -1319,7 +1319,7 @@ test.describe('创业地图 - 学习建议', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/recommendations');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/recommendations');
     const data = await res.json();
 
     // 所有推荐应为未完成状态
@@ -1339,7 +1339,7 @@ test.describe('创业地图 - 学习建议', () => {
       await apiUpdatePointStatus(request, token, point.pointId, 'understood');
     }
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/recommendations');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/recommendations');
     const data = await res.json();
 
     expect(data.allCompleted).toBe(false);
@@ -1352,10 +1352,10 @@ test.describe('创业地图 - 学习建议', () => {
     await seedKnowledgeTree(request, token);
 
     // 获取所有领域的所有知识点并批量更新
-    const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+    const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
     const domains = await domainsRes.json();
     for (const domain of domains) {
-      const detailRes = await authFetch(request, token, 'GET', `/api/startup-map/domains/${domain.id}`);
+      const detailRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/domains/${domain.id}`);
       const detail = await detailRes.json();
       const points = detail.topics.flatMap((t: { points: { id: number }[] }) => t.points);
       await Promise.all(
@@ -1363,7 +1363,7 @@ test.describe('创业地图 - 学习建议', () => {
       );
     }
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/recommendations');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/recommendations');
     const data = await res.json();
 
     expect(data.allCompleted).toBe(true);
@@ -1406,10 +1406,10 @@ test.describe('创业地图 - 学习建议', () => {
     await seedKnowledgeTree(request, token);
 
     // 批量完成所有知识点
-    const domainsRes = await authFetch(request, token, 'GET', '/api/startup-map/domains');
+    const domainsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/domains');
     const domains = await domainsRes.json();
     for (const domain of domains) {
-      const detailRes = await authFetch(request, token, 'GET', `/api/startup-map/domains/${domain.id}`);
+      const detailRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/domains/${domain.id}`);
       const detail = await detailRes.json();
       const points = detail.topics.flatMap((t: { points: { id: number }[] }) => t.points);
       await Promise.all(
@@ -1432,7 +1432,7 @@ test.describe('创业地图 - 增强统计', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const statsRes = await authFetch(request, token, 'GET', '/api/startup-map/stats/overview');
+    const statsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/overview');
     const stats = await statsRes.json();
 
     expect(stats.totalPoints).toBeGreaterThan(0);
@@ -1461,7 +1461,7 @@ test.describe('创业地图 - 增强统计', () => {
     await apiUpdatePointStatus(request, token, points[1].id, 'understood');
     await apiUpdatePointStatus(request, token, points[2].id, 'practiced');
 
-    const statsRes = await authFetch(request, token, 'GET', '/api/startup-map/stats/overview');
+    const statsRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/overview');
     const stats = await statsRes.json();
 
     expect(stats.learning).toBe(1);
@@ -1474,7 +1474,7 @@ test.describe('创业地图 - 增强统计', () => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stats/by-domain');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/by-domain');
     const data = await res.json();
 
     expect(data.domains).toBeTruthy();
@@ -1500,7 +1500,7 @@ test.describe('创业地图 - 增强统计', () => {
 
     await apiUpdatePointStatus(request, token, firstPointId, 'understood');
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stats/by-domain');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/by-domain');
     const data = await res.json();
 
     // 第一个领域应有 1 个 understood
@@ -1578,7 +1578,7 @@ async function apiCreateActivity(
   pointId: number,
   type: string,
 ) {
-  const res = await authFetch(request, token, 'POST', '/api/startup-map/activities', { pointId, type });
+  const res = await authFetch(request, token, 'POST', '/api/skills/startup-map/activities', { pointId, type });
   return res.json();
 }
 
@@ -1595,7 +1595,7 @@ test.describe('创业地图 - 文章关联', () => {
     const article = await seedTestArticle(request, { title: '测试文章' });
 
     // 关联文章到知识点
-    const res = await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {
+    const res = await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {
       articleIds: [article.id],
     });
     const data = await res.json();
@@ -1609,11 +1609,11 @@ test.describe('创业地图 - 文章关联', () => {
     const firstPointId = domain.topics[0].points[0].id;
 
     const article = await seedTestArticle(request, { title: '关联文章', siteName: 'test.com' });
-    await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {
+    await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {
       articleIds: [article.id],
     });
 
-    const res = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/articles`);
+    const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/articles`);
     const articles = await res.json();
     expect(articles).toHaveLength(1);
     expect(articles[0].articleId).toBe(article.id);
@@ -1629,16 +1629,16 @@ test.describe('创业地图 - 文章关联', () => {
     const firstPointId = domain.topics[0].points[0].id;
 
     const article = await seedTestArticle(request);
-    await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {
+    await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {
       articleIds: [article.id],
     });
 
-    const res = await authFetch(request, token, 'DELETE', `/api/startup-map/points/${firstPointId}/articles/${article.id}`);
+    const res = await authFetch(request, token, 'DELETE', `/api/skills/startup-map/points/${firstPointId}/articles/${article.id}`);
     const data = await res.json();
     expect(data.success).toBe(true);
 
     // 验证已取消关联
-    const listRes = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/articles`);
+    const listRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/articles`);
     const list = await listRes.json();
     expect(list).toHaveLength(0);
   });
@@ -1650,12 +1650,12 @@ test.describe('创业地图 - 文章关联', () => {
     const firstPointId = domain.topics[0].points[0].id;
 
     const article = await seedTestArticle(request);
-    await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {
+    await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {
       articleIds: [article.id],
     });
 
     // 第二次关联同一篇文章
-    const res = await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {
+    const res = await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {
       articleIds: [article.id],
     });
     const data = await res.json();
@@ -1669,12 +1669,12 @@ test.describe('创业地图 - 文章关联', () => {
     const firstPointId = domain.topics[0].points[0].id;
 
     const article = await seedTestArticle(request, { title: '双向测试' });
-    await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {
+    await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {
       articleIds: [article.id],
     });
 
     // 从文章侧查看
-    const res = await authFetch(request, token, 'GET', `/api/startup-map/articles/${article.id}/points`);
+    const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/articles/${article.id}/points`);
     const points = await res.json();
     expect(points).toHaveLength(1);
     expect(points[0].pointId).toBe(firstPointId);
@@ -1686,7 +1686,7 @@ test.describe('创业地图 - 文章关联', () => {
   test('DELETE 不存在的关联返回 404', async ({ request }) => {
     const token = await getAuthToken(request);
     await seedKnowledgeTree(request, token);
-    const res = await authFetch(request, token, 'DELETE', '/api/startup-map/points/1/articles/99999');
+    const res = await authFetch(request, token, 'DELETE', '/api/skills/startup-map/points/1/articles/99999');
     expect(res.status()).toBe(404);
   });
 
@@ -1696,7 +1696,7 @@ test.describe('创业地图 - 文章关联', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const res = await authFetch(request, token, 'POST', `/api/startup-map/points/${firstPointId}/articles`, {});
+    const res = await authFetch(request, token, 'POST', `/api/skills/startup-map/points/${firstPointId}/articles`, {});
     expect(res.status()).toBe(400);
   });
 
@@ -1771,7 +1771,7 @@ test.describe('创业地图 - 活动记录', () => {
     const domain = await getFirstDomainDetail(request, token);
     const firstPointId = domain.topics[0].points[0].id;
 
-    const res = await authFetch(request, token, 'POST', '/api/startup-map/activities', {
+    const res = await authFetch(request, token, 'POST', '/api/skills/startup-map/activities', {
       pointId: firstPointId, type: 'invalid',
     });
     expect(res.status()).toBe(400);
@@ -1788,7 +1788,7 @@ test.describe('创业地图 - 活动记录', () => {
     await apiCreateActivity(request, token, points[1].id, 'view');
     await apiCreateActivity(request, token, points[2].id, 'chat');
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/activities?page=1&pageSize=10');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/activities?page=1&pageSize=10');
     const data = await res.json();
 
     expect(data.items.length).toBe(3);
@@ -1817,12 +1817,12 @@ test.describe('创业地图 - 活动记录', () => {
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    const res = await authFetch(request, token, 'GET', `/api/startup-map/activities?date=${dateStr}`);
+    const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/activities?date=${dateStr}`);
     const data = await res.json();
     expect(data.items.length).toBeGreaterThan(0);
 
     // 用未来日期过滤应为空
-    const futureRes = await authFetch(request, token, 'GET', '/api/startup-map/activities?date=2099-01-01');
+    const futureRes = await authFetch(request, token, 'GET', '/api/skills/startup-map/activities?date=2099-01-01');
     const futureData = await futureRes.json();
     expect(futureData.items).toHaveLength(0);
   });
@@ -1833,7 +1833,7 @@ test.describe('创业地图 - 活动记录', () => {
 test.describe('创业地图 - 热力图', () => {
   test('GET heatmap 无活动返回空对象', async ({ request }) => {
     const token = await getAuthToken(request);
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stats/heatmap');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/heatmap');
     const data = await res.json();
     expect(typeof data).toBe('object');
     expect(Object.keys(data)).toHaveLength(0);
@@ -1850,7 +1850,7 @@ test.describe('创业地图 - 热力图', () => {
     await apiCreateActivity(request, token, points[1].id, 'chat');
 
     const year = new Date().getFullYear();
-    const res = await authFetch(request, token, 'GET', `/api/startup-map/stats/heatmap?year=${year}`);
+    const res = await authFetch(request, token, 'GET', `/api/skills/startup-map/stats/heatmap?year=${year}`);
     const data = await res.json();
 
     // 应有至少一个日期条目
@@ -1867,14 +1867,14 @@ test.describe('创业地图 - 热力图', () => {
   test('GET heatmap 指定年份过滤', async ({ request }) => {
     const token = await getAuthToken(request);
     // 查询未来年份应为空
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stats/heatmap?year=2099');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/heatmap?year=2099');
     const data = await res.json();
     expect(Object.keys(data)).toHaveLength(0);
   });
 
   test('GET streak 无活动返回 0', async ({ request }) => {
     const token = await getAuthToken(request);
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stats/streak');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/streak');
     const data = await res.json();
     expect(data.streak).toBe(0);
   });
@@ -1888,7 +1888,7 @@ test.describe('创业地图 - 热力图', () => {
     // 创建今天的活动
     await apiCreateActivity(request, token, firstPointId, 'view');
 
-    const res = await authFetch(request, token, 'GET', '/api/startup-map/stats/streak');
+    const res = await authFetch(request, token, 'GET', '/api/skills/startup-map/stats/streak');
     const data = await res.json();
     expect(data.streak).toBeGreaterThanOrEqual(1);
   });
@@ -1995,7 +1995,7 @@ test.describe('创业地图 - 多产品', () => {
     const second = await apiCreateProduct(request, token, { name: '产品B' });
 
     // 给非激活产品创建笔记
-    await authFetch(request, token, 'PUT', `/api/startup-map/points/${firstPointId}/notes`, {
+    await authFetch(request, token, 'PUT', `/api/skills/startup-map/points/${firstPointId}/notes`, {
       content: '产品B笔记', productId: second.id,
     });
 
@@ -2003,7 +2003,7 @@ test.describe('创业地图 - 多产品', () => {
     await authFetch(request, token, 'DELETE', `/api/startup-map/products/${second.id}`);
 
     // 该产品的笔记应被删除
-    const noteRes = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/notes?productId=${second.id}`);
+    const noteRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/notes?productId=${second.id}`);
     const text = await noteRes.text();
     expect(text === 'null' || text === '').toBe(true);
   });
@@ -2018,7 +2018,7 @@ test.describe('创业地图 - 多产品', () => {
     const second = await apiCreateProduct(request, token, { name: '产品B' });
 
     // 为两个产品创建不同笔记，验证 PUT 成功
-    const putARes = await authFetch(request, token, 'PUT', `/api/startup-map/points/${firstPointId}/notes`, {
+    const putARes = await authFetch(request, token, 'PUT', `/api/skills/startup-map/points/${firstPointId}/notes`, {
       content: '产品A笔记', productId: first.id,
     });
     expect(putARes.ok()).toBe(true);
@@ -2026,7 +2026,7 @@ test.describe('创业地图 - 多产品', () => {
     expect(savedA.content).toBe('产品A笔记');
     expect(savedA.productId).toBe(first.id);
 
-    const putBRes = await authFetch(request, token, 'PUT', `/api/startup-map/points/${firstPointId}/notes`, {
+    const putBRes = await authFetch(request, token, 'PUT', `/api/skills/startup-map/points/${firstPointId}/notes`, {
       content: '产品B笔记', productId: second.id,
     });
     expect(putBRes.ok()).toBe(true);
@@ -2035,11 +2035,11 @@ test.describe('创业地图 - 多产品', () => {
     expect(savedB.productId).toBe(second.id);
 
     // 分别获取
-    const noteARes = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/notes?productId=${first.id}`);
+    const noteARes = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/notes?productId=${first.id}`);
     const noteA = await noteARes.json();
     expect(noteA.content).toBe('产品A笔记');
 
-    const noteBRes = await authFetch(request, token, 'GET', `/api/startup-map/points/${firstPointId}/notes?productId=${second.id}`);
+    const noteBRes = await authFetch(request, token, 'GET', `/api/skills/startup-map/points/${firstPointId}/notes?productId=${second.id}`);
     const noteB = await noteBRes.json();
     expect(noteB.content).toBe('产品B笔记');
   });

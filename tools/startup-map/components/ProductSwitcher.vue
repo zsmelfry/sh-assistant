@@ -6,7 +6,9 @@
 </template>
 
 <script setup lang="ts">
-const store = useStartupMapStore();
+import { useStartupMapProductStore } from '~/stores/startup-map';
+
+const store = useStartupMapProductStore();
 </script>
 
 <style scoped>
