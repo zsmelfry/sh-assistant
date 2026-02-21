@@ -8,6 +8,7 @@ export type PlannerView =
 export interface PlannerDomain {
   id: number;
   name: string;
+  year: number;
   sortOrder: number;
   createdAt: number;
   updatedAt: number;

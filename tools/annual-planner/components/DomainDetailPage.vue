@@ -1,7 +1,7 @@
 <template>
   <div class="domainDetailPage">
     <div class="pageHeader">
-      <button class="backBtn" @click="$emit('back')">← 返回总览</button>
+      <button class="backBtn" @click="$emit('back')">← {{ year }} 总览</button>
       <h2 class="domainName">{{ domain.name }}</h2>
       <div class="headerRight">
         <span class="stat">
@@ -53,6 +53,7 @@ const isMobile = useIsMobile();
 const props = defineProps<{
   domain: DomainWithStats;
   goals: GoalWithDetails[];
+  year: number;
 }>();
 
 const emit = defineEmits<{

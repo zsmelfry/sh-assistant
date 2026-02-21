@@ -1,14 +1,18 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { plannerDomains, plannerGoals, plannerCheckitems } from '~/server/database/schema';
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  const year = Number(query.year) || new Date().getFullYear();
+
   const db = useDB();
 
   const rows = await db
     .select({
       id: plannerDomains.id,
       name: plannerDomains.name,
+      year: plannerDomains.year,
       sortOrder: plannerDomains.sortOrder,
       createdAt: plannerDomains.createdAt,
       updatedAt: plannerDomains.updatedAt,
@@ -19,6 +23,7 @@ export default defineEventHandler(async () => {
     .from(plannerDomains)
     .leftJoin(plannerGoals, sql`${plannerGoals.domainId} = ${plannerDomains.id}`)
     .leftJoin(plannerCheckitems, sql`${plannerCheckitems.goalId} = ${plannerGoals.id}`)
+    .where(eq(plannerDomains.year, year))
     .groupBy(plannerDomains.id)
     .orderBy(plannerDomains.sortOrder);
 

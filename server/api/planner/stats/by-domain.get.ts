@@ -6,10 +6,15 @@ import {
 } from '~/server/database/schema';
 import { completionRate, aggregateCheckitemCounts } from '~/server/utils/planner-stats';
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  const year = Number(query.year) || new Date().getFullYear();
+
   const db = useDB();
 
-  const domains = await db.select().from(plannerDomains).orderBy(plannerDomains.sortOrder);
+  const domains = await db.select().from(plannerDomains)
+    .where(eq(plannerDomains.year, year))
+    .orderBy(plannerDomains.sortOrder);
   if (domains.length === 0) return [];
 
   // Batch fetch all goal-tag associations

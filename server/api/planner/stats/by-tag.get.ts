@@ -6,7 +6,10 @@ import {
 } from '~/server/database/schema';
 import { completionRate, aggregateCheckitemCounts } from '~/server/utils/planner-stats';
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  const year = Number(query.year) || new Date().getFullYear();
+
   const db = useDB();
 
   const tags = await db.select().from(plannerTags).orderBy(plannerTags.name);
@@ -25,7 +28,7 @@ export default defineEventHandler(async () => {
       .innerJoin(plannerGoals, eq(plannerGoalTags.goalId, plannerGoals.id))
       .innerJoin(plannerDomains, eq(plannerGoals.domainId, plannerDomains.id))
       .leftJoin(plannerCheckitems, eq(plannerCheckitems.goalId, plannerGoals.id))
-      .where(eq(plannerGoalTags.tagId, tag.id))
+      .where(sql`${plannerGoalTags.tagId} = ${tag.id} and ${plannerDomains.year} = ${year}`)
       .groupBy(plannerGoals.id);
 
     const goals = goalRows.map((r) => ({

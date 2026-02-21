@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import {
   plannerDomains, plannerGoals, plannerCheckitems,
@@ -7,7 +7,10 @@ import { completionRate, aggregateCheckitemCounts } from '~/server/utils/planner
 
 const STAGNANT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  const year = Number(query.year) || new Date().getFullYear();
+
   const db = useDB();
 
   // Domain-level stats
@@ -15,6 +18,7 @@ export default defineEventHandler(async () => {
     .select({
       id: plannerDomains.id,
       name: plannerDomains.name,
+      year: plannerDomains.year,
       sortOrder: plannerDomains.sortOrder,
       createdAt: plannerDomains.createdAt,
       updatedAt: plannerDomains.updatedAt,
@@ -25,6 +29,7 @@ export default defineEventHandler(async () => {
     .from(plannerDomains)
     .leftJoin(plannerGoals, sql`${plannerGoals.domainId} = ${plannerDomains.id}`)
     .leftJoin(plannerCheckitems, sql`${plannerCheckitems.goalId} = ${plannerGoals.id}`)
+    .where(eq(plannerDomains.year, year))
     .groupBy(plannerDomains.id)
     .orderBy(plannerDomains.sortOrder);
 
@@ -36,7 +41,7 @@ export default defineEventHandler(async () => {
   const totalGoals = domains.reduce((sum, d) => sum + d.goalCount, 0);
   const totals = aggregateCheckitemCounts(domains);
 
-  // Stagnant goal detection
+  // Stagnant goal detection — scoped to current year
   const fourteenDaysAgo = Date.now() - STAGNANT_THRESHOLD_MS;
   const stagnantRows = await db
     .select({
@@ -46,6 +51,9 @@ export default defineEventHandler(async () => {
       latestActivity: sql<number>`max(coalesce(${plannerCheckitems.completedAt}, ${plannerCheckitems.createdAt}))`,
     })
     .from(plannerCheckitems)
+    .innerJoin(plannerGoals, eq(plannerCheckitems.goalId, plannerGoals.id))
+    .innerJoin(plannerDomains, eq(plannerGoals.domainId, plannerDomains.id))
+    .where(eq(plannerDomains.year, year))
     .groupBy(plannerCheckitems.goalId);
 
   const stagnantGoalCount = stagnantRows.filter(

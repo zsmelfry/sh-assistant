@@ -2,9 +2,12 @@
   <div class="emptyState">
     <p class="emptyTitle">{{ title }}</p>
     <p class="emptyHint">{{ hint }}</p>
-    <BaseButton v-if="actionLabel" @click="$emit('action')">
-      {{ actionLabel }}
-    </BaseButton>
+    <div class="emptyActions">
+      <BaseButton v-if="actionLabel" @click="$emit('action')">
+        {{ actionLabel }}
+      </BaseButton>
+      <slot name="extra" />
+    </div>
   </div>
 </template>
 
@@ -41,5 +44,11 @@ defineEmits<{
   font-size: 14px;
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
+}
+
+.emptyActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
 }
 </style>

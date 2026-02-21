@@ -3,11 +3,13 @@ import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqli
 export const plannerDomains = sqliteTable('planner_domains', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
+  year: integer('year').notNull().default(2026),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
 }, (table) => [
   index('idx_planner_domains_sort').on(table.sortOrder),
+  index('idx_planner_domains_year_sort').on(table.year, table.sortOrder),
 ]);
 
 export const plannerGoals = sqliteTable('planner_goals', {

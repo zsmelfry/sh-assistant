@@ -14,6 +14,8 @@ import { DEFAULT_DOMAINS } from '~/tools/annual-planner/types';
 
 export const usePlannerStore = defineStore('planner', () => {
   // ===== 状态 =====
+  const selectedYear = ref(new Date().getFullYear());
+  const availableYears = ref<number[]>([]);
   const domains = ref<DomainWithStats[]>([]);
   const currentView = ref<PlannerView>({ type: 'overview' });
   const goals = ref<GoalWithDetails[]>([]);
@@ -54,15 +56,43 @@ export const usePlannerStore = defineStore('planner', () => {
     }
   }
 
+  // ===== 年份操作 =====
+  async function loadAvailableYears() {
+    availableYears.value = await $fetch<number[]>('/api/planner/domains/years');
+  }
+
+  async function setYear(year: number) {
+    selectedYear.value = year;
+    currentView.value = { type: 'overview' };
+    await loadDomains();
+    if (domains.value.length > 0) {
+      await loadOverview();
+      await loadDomainGoalStats();
+    }
+  }
+
+  async function copyYearStructure(sourceYear: number) {
+    await $fetch('/api/planner/domains/copy-year', {
+      method: 'POST',
+      body: { sourceYear, targetYear: selectedYear.value },
+    });
+    await loadAvailableYears();
+    await loadDomains();
+    await loadOverview();
+    await loadDomainGoalStats();
+  }
+
   // ===== 领域操作 =====
   async function loadDomains() {
-    domains.value = await $fetch<DomainWithStats[]>('/api/planner/domains');
+    domains.value = await $fetch<DomainWithStats[]>('/api/planner/domains', {
+      params: { year: selectedYear.value },
+    });
   }
 
   async function createDomain(name: string) {
     await $fetch('/api/planner/domains', {
       method: 'POST',
-      body: { name },
+      body: { name, year: selectedYear.value },
     });
     await loadDomains();
   }
@@ -102,9 +132,10 @@ export const usePlannerStore = defineStore('planner', () => {
     for (const name of DEFAULT_DOMAINS) {
       await $fetch('/api/planner/domains', {
         method: 'POST',
-        body: { name },
+        body: { name, year: selectedYear.value },
       });
     }
+    await loadAvailableYears();
     await loadDomains();
     await loadOverview();
     await loadDomainGoalStats();
@@ -256,25 +287,34 @@ export const usePlannerStore = defineStore('planner', () => {
 
   // ===== 统计 =====
   async function loadOverview() {
-    overviewStats.value = await $fetch<OverviewStats>('/api/planner/stats/overview');
+    overviewStats.value = await $fetch<OverviewStats>('/api/planner/stats/overview', {
+      params: { year: selectedYear.value },
+    });
     domains.value = overviewStats.value.domains;
   }
 
   async function loadTagStats() {
-    tagStats.value = await $fetch<TagStats[]>('/api/planner/stats/by-tag');
+    tagStats.value = await $fetch<TagStats[]>('/api/planner/stats/by-tag', {
+      params: { year: selectedYear.value },
+    });
   }
 
   async function loadDomainGoalStats() {
-    domainGoalStats.value = await $fetch<DomainGoalStats[]>('/api/planner/stats/by-domain');
+    domainGoalStats.value = await $fetch<DomainGoalStats[]>('/api/planner/stats/by-domain', {
+      params: { year: selectedYear.value },
+    });
   }
 
   return {
     // 状态
+    selectedYear, availableYears,
     domains, currentView, goals, tags, overviewStats, tagStats, domainGoalStats, loading,
     // 计算属性
     currentDomain, globalCompletionRate,
     // 导航
     navigateTo,
+    // 年份操作
+    loadAvailableYears, setYear, copyYearStructure,
     // 领域操作
     loadDomains, createDomain, updateDomain, deleteDomain,
     reorderDomains, initializeDefaults,
