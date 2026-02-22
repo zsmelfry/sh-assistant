@@ -28,6 +28,4 @@ export const checkins = sqliteTable('checkins', {
 
 // 类型推导
 export type Habit = typeof habits.$inferSelect;
-export type NewHabit = typeof habits.$inferInsert;
 export type CheckIn = typeof checkins.$inferSelect;
-export type NewCheckIn = typeof checkins.$inferInsert;

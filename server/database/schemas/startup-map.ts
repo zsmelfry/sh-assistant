@@ -177,26 +177,14 @@ export const smActivities = sqliteTable('sm_activities', {
 
 // ===== 类型推导 =====
 export type SmDomain = typeof smDomains.$inferSelect;
-export type NewSmDomain = typeof smDomains.$inferInsert;
 export type SmTopic = typeof smTopics.$inferSelect;
-export type NewSmTopic = typeof smTopics.$inferInsert;
 export type SmPoint = typeof smPoints.$inferSelect;
-export type NewSmPoint = typeof smPoints.$inferInsert;
 export type SmTeaching = typeof smTeachings.$inferSelect;
-export type NewSmTeaching = typeof smTeachings.$inferInsert;
 export type SmChat = typeof smChats.$inferSelect;
-export type NewSmChat = typeof smChats.$inferInsert;
 export type SmProduct = typeof smProducts.$inferSelect;
-export type NewSmProduct = typeof smProducts.$inferInsert;
 export type SmStage = typeof smStages.$inferSelect;
-export type NewSmStage = typeof smStages.$inferInsert;
 export type SmStagePoint = typeof smStagePoints.$inferSelect;
-export type NewSmStagePoint = typeof smStagePoints.$inferInsert;
 export type SmTask = typeof smTasks.$inferSelect;
-export type NewSmTask = typeof smTasks.$inferInsert;
 export type SmNote = typeof smNotes.$inferSelect;
-export type NewSmNote = typeof smNotes.$inferInsert;
 export type SmPointArticle = typeof smPointArticles.$inferSelect;
-export type NewSmPointArticle = typeof smPointArticles.$inferInsert;
 export type SmActivity = typeof smActivities.$inferSelect;
-export type NewSmActivity = typeof smActivities.$inferInsert;

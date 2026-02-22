@@ -11,4 +11,3 @@ export const users = sqliteTable('users', {
 
 // 类型推导
 export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;

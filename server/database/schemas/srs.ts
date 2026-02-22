@@ -78,10 +78,6 @@ export const definitions = sqliteTable('definitions', {
 
 // 类型推导
 export type SrsCard = typeof srsCards.$inferSelect;
-export type NewSrsCard = typeof srsCards.$inferInsert;
 export type ReviewLog = typeof reviewLogs.$inferSelect;
-export type NewReviewLog = typeof reviewLogs.$inferInsert;
 export type StudySession = typeof studySessions.$inferSelect;
-export type NewStudySession = typeof studySessions.$inferInsert;
 export type Definition = typeof definitions.$inferSelect;
-export type NewDefinition = typeof definitions.$inferInsert;

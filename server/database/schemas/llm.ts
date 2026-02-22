@@ -19,4 +19,3 @@ export const llmProviders = sqliteTable('llm_providers', {
 
 // 类型推导
 export type LlmProvider = typeof llmProviders.$inferSelect;
-export type NewLlmProvider = typeof llmProviders.$inferInsert;

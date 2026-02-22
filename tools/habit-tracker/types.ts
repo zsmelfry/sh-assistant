@@ -22,16 +22,6 @@ export interface CheckIn {
 
 // ===== API 响应类型 =====
 
-export interface ToggleResponse {
-  checked: boolean;
-  checkin?: {
-    id: string;
-    habitId: string;
-    date: string;
-    createdAt: number;
-  };
-}
-
 export interface StatsResponse {
   streak: number;
   monthlyRate: number;

@@ -4,7 +4,6 @@ export type {
   ChatMessage,
   ChatOptions,
   ChatResponse,
-  HealthStatus,
   ProviderType,
   TranslateResult,
 } from './types';

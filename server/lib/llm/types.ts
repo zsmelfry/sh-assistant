@@ -36,13 +36,6 @@ export interface TranslateResult {
   meta: { provider: string; modelName: string; timestamp: string };
 }
 
-/** Provider 健康状态 */
-export interface HealthStatus {
-  available: boolean;
-  latency?: number;
-  error?: string;
-}
-
 /** LLM Provider 接口 */
 export interface ILlmProvider {
   getType(): ProviderType;

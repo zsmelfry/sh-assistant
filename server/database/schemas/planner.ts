@@ -65,11 +65,7 @@ export const plannerGoalTags = sqliteTable('planner_goal_tags', {
 
 // Type inference
 export type PlannerDomain = typeof plannerDomains.$inferSelect;
-export type NewPlannerDomain = typeof plannerDomains.$inferInsert;
 export type PlannerGoal = typeof plannerGoals.$inferSelect;
-export type NewPlannerGoal = typeof plannerGoals.$inferInsert;
 export type PlannerCheckitem = typeof plannerCheckitems.$inferSelect;
-export type NewPlannerCheckitem = typeof plannerCheckitems.$inferInsert;
 export type PlannerTag = typeof plannerTags.$inferSelect;
-export type NewPlannerTag = typeof plannerTags.$inferInsert;
 export type PlannerGoalTag = typeof plannerGoalTags.$inferSelect;

@@ -20,4 +20,3 @@ export const skillConfigs = sqliteTable('skill_configs', {
 
 // ===== 类型推导 =====
 export type SkillConfigRow = typeof skillConfigs.$inferSelect;
-export type NewSkillConfigRow = typeof skillConfigs.$inferInsert;

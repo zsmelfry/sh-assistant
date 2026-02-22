@@ -80,14 +80,8 @@ export const articleChats = sqliteTable('article_chats', {
 
 // 类型推导
 export type Article = typeof articles.$inferSelect;
-export type NewArticle = typeof articles.$inferInsert;
 export type ArticleTranslation = typeof articleTranslations.$inferSelect;
-export type NewArticleTranslation = typeof articleTranslations.$inferInsert;
 export type ArticleBookmark = typeof articleBookmarks.$inferSelect;
-export type NewArticleBookmark = typeof articleBookmarks.$inferInsert;
 export type ArticleTag = typeof articleTags.$inferSelect;
-export type NewArticleTag = typeof articleTags.$inferInsert;
 export type ArticleTagMap = typeof articleTagMap.$inferSelect;
-export type NewArticleTagMap = typeof articleTagMap.$inferInsert;
 export type ArticleChat = typeof articleChats.$inferSelect;
-export type NewArticleChat = typeof articleChats.$inferInsert;
