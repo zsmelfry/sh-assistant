@@ -114,5 +114,3 @@ export const PRIORITY_ORDER: Record<Priority, number> = {
 };
 
 export const DEFAULT_DOMAINS = ['事业', '财务', '健康', '兴趣'];
-
-export const STAGNANT_THRESHOLD_DAYS = 14;
