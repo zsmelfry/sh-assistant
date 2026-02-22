@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Parse flags
+for arg in "$@"; do
+  case "$arg" in
+    --lan) export LAN=1 ;;
+  esac
+done
+
 PROD_DB="./data/assistant.db"
 BACKUP_DIR="./data/backups"
 JOURNAL="./server/database/migrations/meta/_journal.json"
@@ -112,6 +119,11 @@ DATABASE_PATH="$PROD_DB" npx drizzle-kit migrate
 
 echo ""
 echo "=== 6/6 Restarting PM2 ==="
+if [ "${LAN:-}" = "1" ]; then
+  echo "LAN mode: binding to 0.0.0.0 (accessible from network)"
+else
+  echo "Local mode: binding to 127.0.0.1 (use --lan to expose to network)"
+fi
 if pm2 describe personal-assistant > /dev/null 2>&1; then
   pm2 restart ecosystem.config.cjs
   echo "PM2 process restarted."
