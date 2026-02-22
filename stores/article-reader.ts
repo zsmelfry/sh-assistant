@@ -50,6 +50,17 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
 
   // ===== 阅读操作 =====
 
+  function resetWithArticle(res: ArticleWithBookmark) {
+    currentArticle.value = res;
+    translations.value = { full: null, summary: null };
+    isBookmarked.value = !!res.bookmark;
+    bookmarkId.value = res.bookmark?.id ?? null;
+    notes.value = res.bookmark?.notes || '';
+    articleTagIds.value = (res.tags || []).map(t => t.id);
+    chatMessages.value = [];
+    chatError.value = null;
+  }
+
   // C2: API returns Article directly (with optional bookmark field), not { article }
   async function fetchArticle(url: string) {
     fetchLoading.value = true;
@@ -59,17 +70,7 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
         method: 'POST',
         body: { url },
       });
-      currentArticle.value = res;
-      translations.value = { full: null, summary: null };
-
-      // C5: Extract bookmark status from article response instead of separate endpoint
-      isBookmarked.value = !!res.bookmark;
-      bookmarkId.value = res.bookmark?.id ?? null;
-      notes.value = res.bookmark?.notes || '';
-      articleTagIds.value = (res.tags || []).map(t => t.id);
-      chatMessages.value = [];
-      chatError.value = null;
-
+      resetWithArticle(res);
       await loadTranslations();
     } catch (e: any) {
       fetchError.value = e?.data?.message || e?.message || '文章加载失败，请检查链接是否正确';
@@ -297,16 +298,8 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
     fetchError.value = null;
     try {
       const res = await $fetch<ArticleWithBookmark>(`/api/articles/${articleId}`);
-      currentArticle.value = res;
-      translations.value = { full: null, summary: null };
-      isBookmarked.value = !!res.bookmark;
-      bookmarkId.value = res.bookmark?.id ?? null;
-      notes.value = res.bookmark?.notes || '';
-      articleTagIds.value = (res.tags || []).map(t => t.id);
-      chatMessages.value = [];
-      chatError.value = null;
+      resetWithArticle(res);
       currentView.value = 'reading';
-
       await loadTranslations();
     } catch (e: any) {
       fetchError.value = e?.data?.message || e?.message || '文章加载失败';
