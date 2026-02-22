@@ -2,8 +2,8 @@ import { asc, eq, type SQL } from 'drizzle-orm';
 import type { SQLiteTableWithColumns } from 'drizzle-orm/sqlite-core';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { resolveProvider } from '~/server/utils/llm-provider';
-import { LlmError } from '~/server/lib/llm';
 import type { ChatMessage } from '~/server/lib/llm';
+import { throwLlmError } from '~/server/utils/handler-helpers';
 
 interface ChatHandlerOptions {
   db: BetterSQLite3Database<any>;
@@ -74,17 +74,6 @@ export async function handleChatRequest(opts: ChatHandlerOptions) {
       },
     };
   } catch (error) {
-    if (error instanceof LlmError) {
-      throw createError({
-        statusCode: 502,
-        message: error.message,
-        data: { type: error.type },
-      });
-    }
-    if ((error as any)?.statusCode) throw error;
-    throw createError({
-      statusCode: 500,
-      message: error instanceof Error ? error.message : 'AI 聊天失败',
-    });
+    throwLlmError(error, 'AI 聊天失败');
   }
 }

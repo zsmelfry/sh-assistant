@@ -1,5 +1,5 @@
-import { LlmError } from '../../lib/llm';
 import { translateWord } from '../../utils/translate-word';
+import { throwLlmError } from '../../utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -20,16 +20,6 @@ export default defineEventHandler(async (event) => {
       timeout: options?.timeout,
     });
   } catch (error) {
-    if (error instanceof LlmError) {
-      throw createError({
-        statusCode: 502,
-        message: error.message,
-        data: { type: error.type },
-      });
-    }
-    throw createError({
-      statusCode: 500,
-      message: error instanceof Error ? error.message : '翻译失败',
-    });
+    throwLlmError(error, '翻译失败');
   }
 });

@@ -1,6 +1,6 @@
-import { LlmError } from '../../lib/llm';
 import type { ChatMessage } from '../../lib/llm';
 import { resolveProvider } from '../../utils/llm-provider';
+import { throwLlmError } from '../../utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -53,16 +53,6 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error) {
-    if (error instanceof LlmError) {
-      throw createError({
-        statusCode: 502,
-        message: error.message,
-        data: { type: error.type },
-      });
-    }
-    throw createError({
-      statusCode: 500,
-      message: error instanceof Error ? error.message : 'LLM 调用失败',
-    });
+    throwLlmError(error, 'LLM 调用失败');
   }
 });

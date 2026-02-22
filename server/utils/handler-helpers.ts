@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import type { SQLiteTableWithColumns } from 'drizzle-orm/sqlite-core';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { useDB } from '~/server/database';
+import { LlmError } from '~/server/lib/llm';
 
 /**
  * Parse a numeric route parameter and throw 400 if invalid.
@@ -61,6 +62,25 @@ export function parsePagination(query: Record<string, any>, opts?: {
   const limit = Math.min(maxLimit, Math.max(1, Number(query[limitKey]) || defaultLimit));
   const offset = (page - 1) * limit;
   return { page, limit, offset };
+}
+
+/**
+ * Convert LLM errors to appropriate HTTP errors. Re-throws H3 errors as-is.
+ * Use in catch blocks of handlers that call LLM providers.
+ */
+export function throwLlmError(error: unknown, fallbackMessage = 'LLM 调用失败'): never {
+  if (error instanceof LlmError) {
+    throw createError({
+      statusCode: 502,
+      message: error.message,
+      data: { type: error.type },
+    });
+  }
+  if ((error as any)?.statusCode) throw error;
+  throw createError({
+    statusCode: 500,
+    message: error instanceof Error ? error.message : fallbackMessage,
+  });
 }
 
 /**
