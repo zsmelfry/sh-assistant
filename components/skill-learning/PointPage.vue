@@ -182,6 +182,7 @@ function handleRegenerate() {
   flex-direction: column;
   gap: 12px;
   height: 100%;
+  padding-bottom: var(--spacing-lg);
 }
 
 .loadingState {
@@ -236,6 +237,7 @@ function handleRegenerate() {
 .panelScroll {
   flex: 1;
   overflow-y: auto;
+  padding-bottom: var(--spacing-xl);
 }
 
 /* Resize divider */

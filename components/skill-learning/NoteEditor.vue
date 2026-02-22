@@ -100,6 +100,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@import '~/assets/css/markdown-preview.css';
+
 .noteEditor {
   display: flex;
   flex-direction: column;
@@ -182,9 +184,6 @@ onUnmounted(() => {
 .editorTextarea::placeholder {
   color: var(--color-text-disabled);
 }
-
-/* Preview — shared markdown styles */
-@import '~/assets/css/markdown-preview.css';
 
 .previewContent {
   min-height: 150px;

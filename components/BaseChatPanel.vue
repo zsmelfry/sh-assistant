@@ -57,6 +57,10 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked';
+
+marked.setOptions({ breaks: true });
+
 interface ChatMsg {
   id: number;
   role: string;
@@ -91,15 +95,8 @@ function scrollToBottom(): void {
 // Auto-scroll on message count or loading state change
 watch([() => props.messages.length, () => props.loading], () => scrollToBottom());
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 function renderMessage(content: string): string {
-  return escapeHtml(content)
-    .split('\n')
-    .map(line => line || '<br>')
-    .join('<br>');
+  return marked.parse(content) as string;
 }
 
 function handleSend(): void {
@@ -213,6 +210,81 @@ function autoResize(): void {
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-bottom-left-radius: var(--radius-sm);
+}
+
+/* Markdown in bubbles */
+.bubble :deep(p) {
+  margin-bottom: 0.5em;
+}
+
+.bubble :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.bubble :deep(h1),
+.bubble :deep(h2),
+.bubble :deep(h3),
+.bubble :deep(h4) {
+  margin-top: 0.8em;
+  margin-bottom: 0.4em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bubble :deep(h1) { font-size: 1.2em; }
+.bubble :deep(h2) { font-size: 1.1em; }
+.bubble :deep(h3) { font-size: 1em; }
+
+.bubble :deep(ul),
+.bubble :deep(ol) {
+  margin-bottom: 0.5em;
+  padding-left: 1.4em;
+}
+
+.bubble :deep(li) {
+  margin-bottom: 0.2em;
+}
+
+.bubble :deep(blockquote) {
+  margin: 0.4em 0;
+  padding: 2px var(--spacing-sm);
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.bubble :deep(pre) {
+  margin: 0.4em 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-sidebar);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: 13px;
+}
+
+.bubble :deep(code) {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+}
+
+.bubble :deep(:not(pre) > code) {
+  padding: 1px 4px;
+  background: var(--color-bg-sidebar);
+  border-radius: 3px;
+}
+
+.bubble :deep(strong) {
+  font-weight: 600;
+}
+
+.bubble :deep(a) {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.bubble :deep(hr) {
+  margin: 0.5em 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
 }
 
 /* Loading dots */
