@@ -86,14 +86,23 @@ export function throwLlmError(error: unknown, fallbackMessage = 'LLM 调用失�
 /**
  * Common pattern: parse ID param, check existence, delete row, return { success: true }.
  * Suitable for simple delete handlers where the only logic is validate + delete.
+ * Set `stringId: true` for tables that use string (UUID) primary keys.
  */
 export function createDeleteHandler(
   table: SQLiteTableWithColumns<any>,
   label: string,
-  paramName = 'id',
+  opts?: { paramName?: string; stringId?: boolean },
 ) {
+  const paramName = opts?.paramName ?? 'id';
   return defineEventHandler(async (event) => {
-    const id = requireNumericParam(event, paramName, label);
+    let id: number | string;
+    if (opts?.stringId) {
+      const raw = getRouterParam(event, paramName);
+      if (!raw) throw createError({ statusCode: 400, message: `缺少${label} ID` });
+      id = raw;
+    } else {
+      id = requireNumericParam(event, paramName, label);
+    }
     const db = useDB();
     await requireEntity(db, table, id, label);
     await db.delete(table).where(eq(table.id, id));
