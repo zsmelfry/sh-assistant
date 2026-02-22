@@ -4,57 +4,8 @@ import { articles, articleTranslations } from '~/server/database/schema';
 import { resolveProvider } from '~/server/utils/llm-provider';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 import { stripHtmlTags } from '~/server/utils/article-sanitizer';
+import { buildFullTranslatePrompt, buildSummaryPrompt } from '~/server/utils/article-translator';
 import { LlmError } from '~/server/lib/llm';
-import type { ChatMessage } from '~/server/lib/llm';
-
-/** Build full-text translation prompt */
-function buildFullTranslatePrompt(plainText: string): ChatMessage[] {
-  return [
-    {
-      role: 'system',
-      content: `你是一个专业翻译助手。请将以下外文文章逐段翻译成中文。
-
-要求：
-1. 保持原文的段落结构，逐段对照翻译
-2. 翻译要准确、通顺、自然
-3. 专业术语保留原文并在括号中给出中文翻译
-4. 不要添加任何额外的说明或注释，只输出翻译结果
-5. 每段之间用空行分隔`,
-    },
-    {
-      role: 'user',
-      content: `请翻译以下文章：\n\n${plainText}`,
-    },
-  ];
-}
-
-/** Build summary prompt */
-function buildSummaryPrompt(plainText: string): ChatMessage[] {
-  return [
-    {
-      role: 'system',
-      content: `你是一个专业的文章分析助手。请对以下外文文章进行精简概括。
-
-要求：
-1. 先列出 3-5 个核心要点（用「•」开头的列表形式）
-2. 然后写一段 200 字以内的总结
-3. 全部使用中文
-4. 格式：
-
-## 核心要点
-• 要点一
-• 要点二
-• ...
-
-## 总结
-总结内容...`,
-    },
-    {
-      role: 'user',
-      content: `请概括以下文章：\n\n${plainText}`,
-    },
-  ];
-}
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '文章');

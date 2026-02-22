@@ -9,7 +9,7 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 export type TranslationType = 'full' | 'summary';
 
 /** 构建逐段翻译 prompt */
-function buildFullTranslatePrompt(plainText: string): ChatMessage[] {
+export function buildFullTranslatePrompt(plainText: string): ChatMessage[] {
   return [
     {
       role: 'system',
@@ -30,7 +30,7 @@ function buildFullTranslatePrompt(plainText: string): ChatMessage[] {
 }
 
 /** 构建精简概括 prompt */
-function buildSummaryPrompt(plainText: string): ChatMessage[] {
+export function buildSummaryPrompt(plainText: string): ChatMessage[] {
   return [
     {
       role: 'system',
