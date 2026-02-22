@@ -2,41 +2,16 @@
 // 任何工具可通过 useLlm() 调用 LLM（Nuxt 自动导入）
 
 // ===== Types =====
-
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+// Import shared LLM types from server (single source of truth)
+import type { ChatMessage, ChatResponse, TranslateResult } from '~/server/lib/llm/types';
+export type { ChatMessage, ChatResponse };
+export type { TranslateResult as TranslateResponse };
 
 export interface ChatOptions {
   providerId?: number;
   temperature?: number;
   maxTokens?: number;
   timeout?: number;
-}
-
-export interface ChatResponse {
-  content: string;
-  meta: {
-    provider: string;
-    modelName: string;
-    timestamp: string;
-  };
-}
-
-export interface TranslateResponse {
-  definition: string;
-  partOfSpeech: string;
-  examples: Array<{ sentence: string; translation: string }>;
-  synonyms: string;
-  antonyms: string;
-  wordFamily: string;
-  collocations: string;
-  meta: {
-    provider: string;
-    modelName: string;
-    timestamp: string;
-  };
 }
 
 export interface LlmProvider {

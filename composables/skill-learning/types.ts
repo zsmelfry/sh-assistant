@@ -2,8 +2,9 @@
 // Extracted from tools/startup-map/types.ts — generic types reusable across all skill tools.
 
 // Import shared constants from server (single source of truth)
-import type { PointStatus, ActivityType } from '~/server/lib/skill-learning/types';
+import type { PointStatus, ActivityType, TeachingSectionKey } from '~/server/lib/skill-learning/types';
 export type { PointStatus, ActivityType };
+export type { TeachingSectionKey as TeachingSection };
 export {
   POINT_STATUS_LABELS,
   ACTIVITY_TYPE_LABELS,
@@ -220,10 +221,6 @@ export interface LinkedPoint {
   domainName: string;
   linkedAt: number;
 }
-
-// ===== Teaching sections =====
-// TeachingSection string union kept here for frontend usage; constants re-exported from server above
-export type TeachingSection = 'what' | 'how' | 'example' | 'apply' | 'resources';
 
 // ===== Chat response =====
 
