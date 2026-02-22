@@ -3,6 +3,8 @@ import { useDB } from '~/server/database';
 import { habits } from '~/server/database/schema';
 import { requireEntity, requireNonEmpty } from '~/server/utils/handler-helpers';
 
+const VALID_FREQUENCIES = ['daily', 'weekly', 'monthly'] as const;
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id');
   if (!id) {
@@ -20,8 +22,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (body.frequency !== undefined) {
-    const validFrequencies = ['daily', 'weekly', 'monthly'];
-    if (!validFrequencies.includes(body.frequency)) {
+    if (!VALID_FREQUENCIES.includes(body.frequency)) {
       throw createError({ statusCode: 400, message: '无效的频率类型' });
     }
     updates.frequency = body.frequency;
