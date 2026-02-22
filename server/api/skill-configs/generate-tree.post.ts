@@ -58,16 +58,13 @@ ${description ? `技能描述：${description}` : ''}
 
   let fullContent = '';
   try {
-    const stream = provider.chatStream(
+    fullContent = await provider.chat(
       [
         { role: 'system', content: '你是一位教育体系设计专家，擅长设计结构化的知识树。你只输出 JSON，不附加任何说明文字。' },
         { role: 'user', content: prompt },
       ],
-      { temperature: 0.3, maxTokens: 8000, timeout: 120000 },
+      { temperature: 0.3, maxTokens: 8000, timeout: 300000 },
     );
-    for await (const chunk of stream) {
-      fullContent += chunk;
-    }
   } catch (error) {
     const message = error instanceof LlmError
       ? error.message

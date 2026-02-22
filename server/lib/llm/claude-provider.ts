@@ -55,38 +55,36 @@ export class ClaudeProvider extends BaseLlmProvider {
     options: Required<ChatOptions>,
   ): AsyncIterable<string> {
     const prompt = this.formatMessages(messages);
+    const env = this.cleanEnv();
 
-    const env = { ...process.env };
-    delete env.CLAUDECODE;
-
-    const proc = spawn('claude', ['-p', '-', '--model', this.model, '--output-format', 'text'], {
-      timeout: options.timeout,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env,
-    });
+    const proc = spawn('claude',
+      ['-p', '-', '--model', this.model, '--output-format', 'text'],
+      { timeout: options.timeout, stdio: ['pipe', 'pipe', 'pipe'], env },
+    );
 
     let stderr = '';
+    let spawnError: Error | null = null;
     proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+    proc.on('error', (err: Error) => { spawnError = err; });
 
     proc.stdin.write(prompt);
     proc.stdin.end();
 
-    // Yield stdout chunks as they arrive
     for await (const chunk of proc.stdout) {
       yield (chunk as Buffer).toString();
     }
 
-    // Wait for process to close and check exit code
-    const code = await new Promise<number | null>((resolve) => {
-      proc.on('close', resolve);
+    const { code, signal } = await new Promise<{ code: number | null; signal: string | null }>((resolve) => {
+      proc.on('close', (c, s) => resolve({ code: c, signal: s }));
     });
 
+    if (spawnError) {
+      throw new LlmError(LlmErrorType.PROVIDER_UNAVAILABLE, `无法启动 claude CLI: ${spawnError.message}`, spawnError);
+    }
+
     if (code !== 0) {
-      throw new LlmError(
-        LlmErrorType.INVALID_RESPONSE,
-        `claude CLI 退出码 ${code}: ${stderr}`,
-        new Error(stderr),
-      );
+      const detail = signal ? `信号 ${signal}` : `退出码 ${code}`;
+      throw new LlmError(LlmErrorType.INVALID_RESPONSE, `claude CLI ${detail}: ${stderr || '(无错误输出)'}`, new Error(stderr || signal || `exit ${code}`));
     }
   }
 
@@ -94,10 +92,7 @@ export class ClaudeProvider extends BaseLlmProvider {
     return new Promise((resolve, reject) => {
       let stdout = '';
       let stderr = '';
-
-      // Strip CLAUDECODE env var so the CLI doesn't reject "nested session"
-      const env = { ...process.env };
-      delete env.CLAUDECODE;
+      const env = this.cleanEnv();
 
       const proc = spawn('claude', args, {
         timeout,
@@ -109,20 +104,13 @@ export class ClaudeProvider extends BaseLlmProvider {
       proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 
       proc.on('error', (err: Error) => {
-        reject(new LlmError(
-          LlmErrorType.PROVIDER_UNAVAILABLE,
-          `无法启动 claude CLI: ${err.message}`,
-          err,
-        ));
+        reject(new LlmError(LlmErrorType.PROVIDER_UNAVAILABLE, `无法启动 claude CLI: ${err.message}`, err));
       });
 
-      proc.on('close', (code: number | null) => {
+      proc.on('close', (code: number | null, signal: string | null) => {
         if (code !== 0) {
-          reject(new LlmError(
-            LlmErrorType.INVALID_RESPONSE,
-            `claude CLI 退出码 ${code}: ${stderr}`,
-            new Error(stderr),
-          ));
+          const detail = signal ? `信号 ${signal}` : `退出码 ${code}`;
+          reject(new LlmError(LlmErrorType.INVALID_RESPONSE, `claude CLI ${detail}: ${stderr || '(无错误输出)'}`, new Error(stderr || signal || `exit ${code}`)));
           return;
         }
         resolve(stdout);
@@ -133,5 +121,17 @@ export class ClaudeProvider extends BaseLlmProvider {
       }
       proc.stdin.end();
     });
+  }
+
+  /** Strip env vars that interfere with the spawned CLI */
+  private cleanEnv(): Record<string, string | undefined> {
+    const env = { ...process.env };
+    // Prevent nested session / stale SSE port detection
+    delete env.CLAUDECODE;
+    delete env.CLAUDE_CODE_SSE_PORT;
+    delete env.CLAUDE_CODE_ENTRYPOINT;
+    delete env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    // NOTE: keep http_proxy/https_proxy — needed for VPN/proxy access to API
+    return env;
   }
 }
