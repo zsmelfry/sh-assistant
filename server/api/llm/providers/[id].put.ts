@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
-import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
 
 const VALID_PROVIDERS = ['claude', 'ollama', 'openai'];
 
@@ -32,12 +32,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB();
-
-  // 检查 provider 存在
-  const existing = await db.select().from(llmProviders).where(eq(llmProviders.id, id)).limit(1);
-  if (existing.length === 0) {
-    throw createError({ statusCode: 404, message: 'Provider 不存在' });
-  }
+  await requireEntity(db, llmProviders, id, 'Provider');
 
   // 构建更新对象
   const updates: Record<string, unknown> = { updatedAt: Date.now() };

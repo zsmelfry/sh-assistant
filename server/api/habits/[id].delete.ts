@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { habits } from '~/server/database/schema';
+import { requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id');
@@ -9,15 +10,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB();
-
-  const existing = await db.select()
-    .from(habits)
-    .where(eq(habits.id, id))
-    .limit(1);
-
-  if (existing.length === 0) {
-    throw createError({ statusCode: 404, message: '习惯不存在' });
-  }
+  await requireEntity(db, habits, id, '习惯');
 
   // 级联删除打卡记录由数据库外键约束处理
   await db.delete(habits).where(eq(habits.id, id));

@@ -1,17 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { vocabUsers, vocabSettings } from '../../../database/schemas/vocab';
-import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '用户');
 
   const db = useDB();
-
-  // 检查用户是否存在
-  const existing = await db.select().from(vocabUsers).where(eq(vocabUsers.id, id)).limit(1);
-  if (existing.length === 0) {
-    throw createError({ statusCode: 404, message: '用户不存在' });
-  }
+  await requireEntity(db, vocabUsers, id, '用户');
 
   // 级联删除（progress、statusHistory 会被级联删除）
   await db.delete(vocabUsers).where(eq(vocabUsers.id, id));
