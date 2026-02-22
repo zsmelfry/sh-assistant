@@ -1,6 +1,7 @@
 import { eq, desc, like, or, and, sql, count } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { articles, articleBookmarks, articleTranslations, articleTagMap, articleTags } from '~/server/database/schema';
+import { parsePagination } from '~/server/utils/handler-helpers';
 
 /** 转义 LIKE 通配符，防止用户输入 % 或 _ 导致意外匹配 */
 function escapeLikePattern(s: string): string {
@@ -10,9 +11,7 @@ function escapeLikePattern(s: string): string {
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
-  const page = Math.max(1, Number(query.page) || 1);
-  const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-  const offset = (page - 1) * limit;
+  const { page, limit, offset } = parsePagination(query);
   const search = (query.search as string) || '';
   const sort = query.sort === 'publishedAt' ? 'publishedAt' : 'bookmarkedAt';
 

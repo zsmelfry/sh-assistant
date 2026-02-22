@@ -1,13 +1,11 @@
 import { desc, count, isNotNull, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { articles, articleBookmarks } from '~/server/database/schema';
+import { parsePagination } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-
-  const page = Math.max(1, Number(query.page) || 1);
-  const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-  const offset = (page - 1) * limit;
+  const { page, limit, offset } = parsePagination(query);
 
   const db = useDB();
 

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { habits } from '~/server/database/schema';
+import { requireEntity, requireNonEmpty } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id');
@@ -10,23 +11,12 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event);
   const db = useDB();
-
-  const existing = await db.select()
-    .from(habits)
-    .where(eq(habits.id, id))
-    .limit(1);
-
-  if (existing.length === 0) {
-    throw createError({ statusCode: 404, message: '习惯不存在' });
-  }
+  await requireEntity(db, habits, id, '习惯');
 
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
   if (body.name !== undefined) {
-    if (!body.name?.trim()) {
-      throw createError({ statusCode: 400, message: '习惯名称不能为空' });
-    }
-    updates.name = body.name.trim();
+    updates.name = requireNonEmpty(body.name, '习惯名称');
   }
 
   if (body.frequency !== undefined) {

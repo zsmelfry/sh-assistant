@@ -1,13 +1,11 @@
 import { eq, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { plannerDomains } from '~/server/database/schema';
+import { requireNonEmpty } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-
-  if (!body.name?.trim()) {
-    throw createError({ statusCode: 400, message: '领域名称不能为空' });
-  }
+  const name = requireNonEmpty(body.name, '领域名称');
 
   const year = Number(body.year) || new Date().getFullYear();
   const db = useDB();
@@ -19,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const now = Date.now();
   const [inserted] = await db.insert(plannerDomains).values({
-    name: body.name.trim(),
+    name,
     year,
     sortOrder: maxRow.max + 1,
     createdAt: now,

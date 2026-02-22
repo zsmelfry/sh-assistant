@@ -1,17 +1,13 @@
 import { eq, inArray } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { plannerGoals, plannerGoalTags, plannerTags } from '~/server/database/schema';
-import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '目标');
   const body = await readBody(event);
   const db = useDB();
-
-  const [existing] = await db.select().from(plannerGoals).where(eq(plannerGoals.id, id)).limit(1);
-  if (!existing) {
-    throw createError({ statusCode: 404, message: '目标不存在' });
-  }
+  await requireEntity(db, plannerGoals, id, '目标');
 
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
 

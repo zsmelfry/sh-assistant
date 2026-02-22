@@ -35,6 +35,23 @@ export function createSkillLearningStore(skillId: string) {
   return defineStore(`skill-${skillId}`, () => {
     const baseUrl = `/api/skills/${skillId}`;
 
+    // Helper: fetch data into a ref with loading state and fallback on error
+    async function fetchTo<T>(
+      loading: Ref<boolean>,
+      target: Ref<T>,
+      fetcher: () => Promise<T>,
+      fallback: T,
+    ) {
+      loading.value = true;
+      try {
+        target.value = await fetcher();
+      } catch {
+        target.value = fallback;
+      } finally {
+        loading.value = false;
+      }
+    }
+
     // ===== 视图状态 =====
     const currentView = ref<SkillLearningView>('global');
     const globalTab = ref<GlobalTab>('domains');
@@ -171,25 +188,13 @@ export function createSkillLearningStore(skillId: string) {
 
     // ===== 领域操作 =====
     async function loadDomains() {
-      domainsLoading.value = true;
-      try {
-        domains.value = await $fetch<DomainWithStats[]>(`${baseUrl}/domains`);
-      } catch {
-        // API not ready yet — fail silently
-      } finally {
-        domainsLoading.value = false;
-      }
+      await fetchTo(domainsLoading, domains,
+        () => $fetch<DomainWithStats[]>(`${baseUrl}/domains`), []);
     }
 
     async function loadDomain(id: number) {
-      domainLoading.value = true;
-      try {
-        currentDomain.value = await $fetch<DomainDetail>(`${baseUrl}/domains/${id}`);
-      } catch {
-        currentDomain.value = null;
-      } finally {
-        domainLoading.value = false;
-      }
+      await fetchTo(domainLoading, currentDomain,
+        () => $fetch<DomainDetail>(`${baseUrl}/domains/${id}`), null);
     }
 
     // ===== 知识点操作 =====
@@ -327,14 +332,8 @@ export function createSkillLearningStore(skillId: string) {
 
     // ===== 聊天 =====
     async function loadChats(pointId: number) {
-      chatLoading.value = true;
-      try {
-        chats.value = await $fetch<SmChat[]>(`${baseUrl}/points/${pointId}/chats`);
-      } catch {
-        chats.value = [];
-      } finally {
-        chatLoading.value = false;
-      }
+      await fetchTo(chatLoading, chats,
+        () => $fetch<SmChat[]>(`${baseUrl}/points/${pointId}/chats`), []);
     }
 
     async function sendChat(pointId: number, message: string) {
@@ -380,37 +379,19 @@ export function createSkillLearningStore(skillId: string) {
 
     // ===== 阶段操作 =====
     async function loadStages() {
-      stagesLoading.value = true;
-      try {
-        stages.value = await $fetch<StageWithStats[]>(`${baseUrl}/stages`);
-      } catch {
-        stages.value = [];
-      } finally {
-        stagesLoading.value = false;
-      }
+      await fetchTo(stagesLoading, stages,
+        () => $fetch<StageWithStats[]>(`${baseUrl}/stages`), []);
     }
 
     async function loadStage(id: number) {
-      stageLoading.value = true;
-      try {
-        currentStage.value = await $fetch<StageDetail>(`${baseUrl}/stages/${id}`);
-      } catch {
-        currentStage.value = null;
-      } finally {
-        stageLoading.value = false;
-      }
+      await fetchTo(stageLoading, currentStage,
+        () => $fetch<StageDetail>(`${baseUrl}/stages/${id}`), null);
     }
 
     // ===== 实践任务操作 =====
     async function loadTasks(pointId: number) {
-      tasksLoading.value = true;
-      try {
-        tasks.value = await $fetch<SmTask[]>(`${baseUrl}/points/${pointId}/tasks`);
-      } catch {
-        tasks.value = [];
-      } finally {
-        tasksLoading.value = false;
-      }
+      await fetchTo(tasksLoading, tasks,
+        () => $fetch<SmTask[]>(`${baseUrl}/points/${pointId}/tasks`), []);
     }
 
     async function generateTasks(pointId: number) {
@@ -474,45 +455,27 @@ export function createSkillLearningStore(skillId: string) {
 
     // ===== 学习建议 =====
     async function loadRecommendations() {
-      recommendationsLoading.value = true;
-      try {
-        const res = await $fetch<{ recommendations: RecommendedPoint[] }>(`${baseUrl}/recommendations`);
-        recommendations.value = res.recommendations;
-      } catch {
-        recommendations.value = [];
-      } finally {
-        recommendationsLoading.value = false;
-      }
+      await fetchTo(recommendationsLoading, recommendations,
+        async () => (await $fetch<{ recommendations: RecommendedPoint[] }>(`${baseUrl}/recommendations`)).recommendations, []);
     }
 
     // ===== 增强统计 =====
     async function loadEnhancedStats() {
       try {
         enhancedStats.value = await $fetch<EnhancedGlobalStats>(`${baseUrl}/stats/overview`);
-      } catch {
-        enhancedStats.value = null;
-      }
+      } catch { enhancedStats.value = null; }
     }
 
     async function loadDomainStats() {
       try {
-        const res = await $fetch<{ domains: DomainStatItem[] }>(`${baseUrl}/stats/by-domain`);
-        domainStats.value = res.domains;
-      } catch {
-        domainStats.value = [];
-      }
+        domainStats.value = (await $fetch<{ domains: DomainStatItem[] }>(`${baseUrl}/stats/by-domain`)).domains;
+      } catch { domainStats.value = []; }
     }
 
     // ===== 文章关联操作 =====
     async function loadPointArticles(pointId: number) {
-      linkedArticlesLoading.value = true;
-      try {
-        linkedArticles.value = await $fetch<LinkedArticle[]>(`${baseUrl}/points/${pointId}/articles`);
-      } catch {
-        linkedArticles.value = [];
-      } finally {
-        linkedArticlesLoading.value = false;
-      }
+      await fetchTo(linkedArticlesLoading, linkedArticles,
+        () => $fetch<LinkedArticle[]>(`${baseUrl}/points/${pointId}/articles`), []);
     }
 
     async function linkArticles(pointId: number, articleIds: number[]) {
@@ -544,18 +507,13 @@ export function createSkillLearningStore(skillId: string) {
         heatmapData.value = await $fetch<Record<string, number>>(`${baseUrl}/stats/heatmap`, {
           params: { year: heatmapYear.value },
         });
-      } catch {
-        heatmapData.value = {};
-      }
+      } catch { heatmapData.value = {}; }
     }
 
     async function loadStreak() {
       try {
-        const res = await $fetch<{ streak: number }>(`${baseUrl}/stats/streak`);
-        currentStreak.value = res.streak;
-      } catch {
-        currentStreak.value = 0;
-      }
+        currentStreak.value = (await $fetch<{ streak: number }>(`${baseUrl}/stats/streak`)).streak;
+      } catch { currentStreak.value = 0; }
     }
 
     // ===== 学习记录操作 =====
@@ -579,11 +537,8 @@ export function createSkillLearningStore(skillId: string) {
         activities.value = res.items;
         activitiesPage.value = res.page;
         activitiesTotalPages.value = res.totalPages;
-      } catch {
-        activities.value = [];
-      } finally {
-        activitiesLoading.value = false;
-      }
+      } catch { activities.value = []; }
+      finally { activitiesLoading.value = false; }
     }
 
     return {

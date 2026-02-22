@@ -14,10 +14,8 @@ export default defineEventHandler(async (event) => {
 
   const userId = query.userId ? Number(query.userId) : null;
   const filter = (query.filter as string) || 'all';
-  const page = Math.max(1, Number(query.page) || 1);
-  const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 50));
+  const { page, limit: pageSize, offset } = parsePagination(query, { defaultLimit: 50, pageSizeKey: 'pageSize' });
   const search = (query.search as string) || '';
-  const offset = (page - 1) * pageSize;
 
   // 无用户 - 只返回词汇列表（不含 progress）
   if (!userId) {

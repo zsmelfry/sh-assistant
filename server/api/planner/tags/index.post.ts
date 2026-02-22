@@ -1,18 +1,16 @@
 import { useDB } from '~/server/database';
 import { plannerTags } from '~/server/database/schema';
+import { requireNonEmpty } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-
-  if (!body.name?.trim()) {
-    throw createError({ statusCode: 400, message: '标签名称不能为空' });
-  }
+  const name = requireNonEmpty(body.name, '标签名称');
 
   const db = useDB();
 
   try {
     const [inserted] = await db.insert(plannerTags).values({
-      name: body.name.trim(),
+      name,
       createdAt: Date.now(),
     }).returning();
 

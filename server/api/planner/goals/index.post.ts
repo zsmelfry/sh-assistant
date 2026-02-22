@@ -1,6 +1,7 @@
 import { eq, sql, inArray } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { plannerGoals, plannerGoalTags, plannerDomains, plannerTags } from '~/server/database/schema';
+import { requireNonEmpty, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -8,9 +9,7 @@ export default defineEventHandler(async (event) => {
   if (!body.domainId || typeof body.domainId !== 'number') {
     throw createError({ statusCode: 400, message: '缺少 domainId' });
   }
-  if (!body.title?.trim()) {
-    throw createError({ statusCode: 400, message: '目标标题不能为空' });
-  }
+  const title = requireNonEmpty(body.title, '目标标题');
 
   const validPriorities = ['high', 'medium', 'low'];
   const priority = body.priority || 'medium';
@@ -19,12 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB();
-
-  // Verify domain exists
-  const domain = await db.select().from(plannerDomains).where(eq(plannerDomains.id, body.domainId)).limit(1);
-  if (domain.length === 0) {
-    throw createError({ statusCode: 404, message: '领域不存在' });
-  }
+  await requireEntity(db, plannerDomains, body.domainId, '领域');
 
   // Validate tagIds if provided
   const tagIds: number[] = body.tagIds ?? [];
@@ -45,7 +39,7 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
   const [inserted] = await db.insert(plannerGoals).values({
     domainId: body.domainId,
-    title: body.title.trim(),
+    title,
     description: body.description?.trim() ?? '',
     priority: priority as 'high' | 'medium' | 'low',
     sortOrder: maxRow.max + 1,

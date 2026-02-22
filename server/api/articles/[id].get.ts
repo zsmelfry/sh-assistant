@@ -1,21 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { articles, articleBookmarks, articleTagMap, articleTags } from '~/server/database/schema';
-import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '文章');
-
   const db = useDB();
-
-  const result = await db.select()
-    .from(articles)
-    .where(eq(articles.id, id))
-    .limit(1);
-
-  if (result.length === 0) {
-    throw createError({ statusCode: 404, message: '文章不存在' });
-  }
+  const article = await requireEntity(db, articles, id, '文章');
 
   // Update lastReadAt timestamp (fire-and-forget)
   db.update(articles)
@@ -40,7 +31,7 @@ export default defineEventHandler(async (event) => {
     .where(eq(articleTagMap.articleId, id));
 
   return {
-    ...result[0],
+    ...article,
     bookmark: bookmark.length > 0 ? bookmark[0] : null,
     tags: tagRows,
   };
