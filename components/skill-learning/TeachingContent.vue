@@ -202,7 +202,7 @@ const emit = defineEmits<{
 }
 
 .sectionBody {
-  padding: var(--spacing-md);
+  padding: 12px var(--spacing-md);
 }
 
 .noContent {
@@ -327,7 +327,7 @@ const emit = defineEmits<{
 /* Markdown content — same deep styles as NoteEditor preview */
 .markdownContent {
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.6;
   color: var(--color-text-primary);
 }
 
@@ -335,8 +335,8 @@ const emit = defineEmits<{
 .markdownContent :deep(h2),
 .markdownContent :deep(h3),
 .markdownContent :deep(h4) {
-  margin-top: 1.2em;
-  margin-bottom: 0.5em;
+  margin-top: 1em;
+  margin-bottom: 0.4em;
   font-weight: 600;
   line-height: 1.3;
 }
@@ -345,7 +345,7 @@ const emit = defineEmits<{
 .markdownContent :deep(h2) { font-size: 1.25em; }
 .markdownContent :deep(h3) { font-size: 1.1em; }
 
-.markdownContent :deep(p) { margin-bottom: 0.8em; }
+.markdownContent :deep(p) { margin-bottom: 0.7em; }
 
 .markdownContent :deep(blockquote) {
   margin: var(--spacing-sm) 0;

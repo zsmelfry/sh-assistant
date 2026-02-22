@@ -23,12 +23,12 @@ const sidebarCollapsed = ref(false);
 .main {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 @media (max-width: 768px) {
   .main {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
     padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-md));
   }
 }

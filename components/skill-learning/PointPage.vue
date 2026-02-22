@@ -180,7 +180,7 @@ function handleRegenerate() {
 .pointPage {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 12px;
   height: 100%;
 }
 
@@ -227,7 +227,7 @@ function handleRegenerate() {
   min-width: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: var(--spacing-md);
+  padding: 12px var(--spacing-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -263,8 +263,8 @@ function handleRegenerate() {
 }
 
 .panelSection {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border);
 }
 

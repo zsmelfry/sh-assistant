@@ -60,9 +60,7 @@ onMounted(() => {
 .skillTool {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  max-width: 1200px;
-  margin: 0 auto;
+  gap: 12px;
   height: 100%;
 }
 
@@ -72,7 +70,6 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-xs);
   font-size: 14px;
-  min-height: 32px;
   flex-shrink: 0;
 }
 
