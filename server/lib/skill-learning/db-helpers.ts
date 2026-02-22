@@ -6,32 +6,16 @@ import type { SkillConfig, SkillTeachingContext } from './types';
 import type { SkillConfigRow } from '~/server/database/schemas/skill-configs';
 import { renderTemplate } from './template';
 import type { ChatMessage } from '~/server/lib/llm/types';
+import {
+  POINT_STATUS_LABELS,
+  ACTIVITY_TYPE_LABELS,
+  TEACHING_SECTIONS,
+  TEACHING_SECTION_LABELS,
+} from '~/composables/skill-learning/types';
 
-/** Default teaching sections shared by all skills */
-const DEFAULT_TEACHING_SECTIONS: SkillConfig['teachingSections'] = [
-  { key: 'what', label: '是什么' },
-  { key: 'how', label: '怎么做' },
-  { key: 'example', label: '案例' },
-  { key: 'apply', label: '我的应用' },
-  { key: 'resources', label: '推荐资源' },
-];
-
-/** Default status labels shared by all skills */
-const DEFAULT_STATUS_LABELS: SkillConfig['statusLabels'] = {
-  not_started: '未开始',
-  learning: '学习中',
-  understood: '已理解',
-  practiced: '已实践',
-};
-
-/** Default activity type labels shared by all skills */
-const DEFAULT_ACTIVITY_LABELS: SkillConfig['activityTypeLabels'] = {
-  view: '查看知识点',
-  chat: 'AI 对话',
-  note: '编辑笔记',
-  task: '完成任务',
-  status_change: '状态变更',
-};
+/** Default teaching sections derived from shared constants */
+const DEFAULT_TEACHING_SECTIONS: SkillConfig['teachingSections'] =
+  TEACHING_SECTIONS.map(key => ({ key, label: TEACHING_SECTION_LABELS[key] }));
 
 /** Build template variables from teaching context and DB row */
 function buildTemplateVars(row: SkillConfigRow, ctx: SkillTeachingContext & { teachingSummary?: string }): Record<string, any> {
@@ -72,8 +56,8 @@ function buildSkillConfigFromDb(row: SkillConfigRow): SkillConfig {
     },
 
     teachingSections: DEFAULT_TEACHING_SECTIONS,
-    statusLabels: DEFAULT_STATUS_LABELS,
-    activityTypeLabels: DEFAULT_ACTIVITY_LABELS,
+    statusLabels: POINT_STATUS_LABELS,
+    activityTypeLabels: ACTIVITY_TYPE_LABELS,
   };
 }
 
