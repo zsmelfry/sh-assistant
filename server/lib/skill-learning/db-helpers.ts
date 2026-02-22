@@ -40,7 +40,7 @@ function buildTemplateVars(row: SkillConfigRow, ctx: SkillTeachingContext & { te
     domain: ctx.domain,
     topic: ctx.topic,
     point: ctx.point,
-    teachingSummary: (ctx as any).teachingSummary || '',
+    teachingSummary: ctx.teachingSummary || '',
   };
 }
 
