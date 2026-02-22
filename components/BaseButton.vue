@@ -61,12 +61,12 @@ defineEmits<{
 
 .btn-danger {
   background-color: transparent;
-  color: #DC2626;
-  border-color: #DC2626;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #FEF2F2;
+  background-color: var(--color-danger-bg);
 }
 
 .btn-disabled,
