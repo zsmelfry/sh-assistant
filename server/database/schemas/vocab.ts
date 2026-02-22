@@ -69,9 +69,3 @@ export const vocabStatusHistory = sqliteTable('vocab_status_history', {
   index('idx_vocab_history_changed_at').on(table.changedAt),
 ]);
 
-// 类型推导
-export type VocabWord = typeof vocabWords.$inferSelect;
-export type VocabUser = typeof vocabUsers.$inferSelect;
-export type VocabProgress = typeof vocabProgress.$inferSelect;
-export type VocabSetting = typeof vocabSettings.$inferSelect;
-export type VocabStatusHistory = typeof vocabStatusHistory.$inferSelect;

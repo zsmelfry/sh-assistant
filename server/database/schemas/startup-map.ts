@@ -175,16 +175,3 @@ export const smActivities = sqliteTable('sm_activities', {
   index('idx_sm_activities_skill').on(table.skillId),
 ]);
 
-// ===== 类型推导 =====
-export type SmDomain = typeof smDomains.$inferSelect;
-export type SmTopic = typeof smTopics.$inferSelect;
-export type SmPoint = typeof smPoints.$inferSelect;
-export type SmTeaching = typeof smTeachings.$inferSelect;
-export type SmChat = typeof smChats.$inferSelect;
-export type SmProduct = typeof smProducts.$inferSelect;
-export type SmStage = typeof smStages.$inferSelect;
-export type SmStagePoint = typeof smStagePoints.$inferSelect;
-export type SmTask = typeof smTasks.$inferSelect;
-export type SmNote = typeof smNotes.$inferSelect;
-export type SmPointArticle = typeof smPointArticles.$inferSelect;
-export type SmActivity = typeof smActivities.$inferSelect;

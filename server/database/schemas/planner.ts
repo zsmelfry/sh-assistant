@@ -66,9 +66,3 @@ export const plannerGoalTags = sqliteTable('planner_goal_tags', {
 // 常量
 export const VALID_PRIORITIES = ['high', 'medium', 'low'] as const;
 
-// Type inference
-export type PlannerDomain = typeof plannerDomains.$inferSelect;
-export type PlannerGoal = typeof plannerGoals.$inferSelect;
-export type PlannerCheckitem = typeof plannerCheckitems.$inferSelect;
-export type PlannerTag = typeof plannerTags.$inferSelect;
-export type PlannerGoalTag = typeof plannerGoalTags.$inferSelect;

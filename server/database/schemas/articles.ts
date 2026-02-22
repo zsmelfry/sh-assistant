@@ -78,10 +78,3 @@ export const articleChats = sqliteTable('article_chats', {
   index('idx_article_chats_created_at').on(table.createdAt),
 ]);
 
-// 类型推导
-export type Article = typeof articles.$inferSelect;
-export type ArticleTranslation = typeof articleTranslations.$inferSelect;
-export type ArticleBookmark = typeof articleBookmarks.$inferSelect;
-export type ArticleTag = typeof articleTags.$inferSelect;
-export type ArticleTagMap = typeof articleTagMap.$inferSelect;
-export type ArticleChat = typeof articleChats.$inferSelect;
