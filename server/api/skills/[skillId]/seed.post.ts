@@ -2,9 +2,10 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { smDomains, smTopics, smPoints, smStages, smStagePoints } from '~/server/database/schema';
 import { resolveSkill } from '~/server/lib/skill-learning';
+import type { SeedDomain, SeedStage } from '~/server/database/seeds/startup-map';
 
 export default defineEventHandler(async (event) => {
-  const { skillId, config } = await resolveSkill(event);
+  const { skillId } = await resolveSkill(event);
   const db = useDB();
 
   // Idempotent: skip if data already exists for this skill
@@ -13,7 +14,17 @@ export default defineEventHandler(async (event) => {
     return { success: true, message: 'Seed data already exists', skipped: true };
   }
 
-  const { domains: seedDomains, stages: seedStages } = config.seedData;
+  const body = await readBody(event);
+  const seedDomains: SeedDomain[] | undefined = body?.domains;
+  const seedStages: SeedStage[] | undefined = body?.stages;
+
+  if (!seedDomains || !Array.isArray(seedDomains) || seedDomains.length === 0) {
+    throw createError({ statusCode: 400, message: '请提供 domains 数据' });
+  }
+  if (!seedStages || !Array.isArray(seedStages)) {
+    throw createError({ statusCode: 400, message: '请提供 stages 数据' });
+  }
+
   const now = Date.now();
   let totalTopics = 0;
   let totalPoints = 0;

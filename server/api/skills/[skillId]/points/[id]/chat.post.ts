@@ -27,13 +27,8 @@ export default defineEventHandler(async (event) => {
     ? [teaching.what, teaching.how].filter(Boolean).join('\n').slice(0, 2000)
     : '';
 
-  // Resolve extra context (e.g. startup-map's active product)
-  const extra = config.resolveExtraContext
-    ? await config.resolveExtraContext(db, { point, topic, domain })
-    : {};
-
   const systemMessage = config.buildChatSystemMessage({
-    point, topic, domain, extra, teachingSummary,
+    point, topic, domain, teachingSummary,
   });
 
   // Load chat history

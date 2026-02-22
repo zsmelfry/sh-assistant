@@ -44,6 +44,8 @@
 </template>
 
 <script setup lang="ts">
+import { registerSkillTools } from '~/plugins/tools.client';
+
 definePageMeta({
   layout: 'auth',
 });
@@ -63,6 +65,7 @@ async function handleSubmit() {
 
   try {
     await login(username.value, password.value);
+    await registerSkillTools();
     await navigateTo('/');
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || '登录失败，请重试';

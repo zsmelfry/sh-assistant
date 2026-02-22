@@ -7,4 +7,5 @@ export interface ToolDefinition {
   order: number;
   component: () => Promise<Component>;
   namespaces: string[];
+  props?: Record<string, any>;
 }

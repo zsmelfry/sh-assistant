@@ -1,12 +1,10 @@
 import type { ChatMessage } from '~/server/lib/llm/types';
-import type { SeedDomain, SeedStage } from '~/server/database/seeds/startup-map';
 
 /** Context passed to AI prompt builders */
 export interface SkillTeachingContext {
   point: { name: string; description: string | null };
   topic: { name: string };
   domain: { name: string };
-  extra?: Record<string, any>;
 }
 
 /** Teaching section definition — keys must be what/how/example/apply/resources */
@@ -31,13 +29,4 @@ export interface SkillConfig {
   teachingSections: TeachingSection[];
   statusLabels: Record<string, string>;
   activityTypeLabels: Record<string, string>;
-
-  /** Optional: inject extra context before AI calls (e.g. startup-map's active product) */
-  resolveExtraContext?: (
-    db: any,
-    ctx: { point: { name: string; description: string | null }; topic: { name: string }; domain: { name: string } },
-  ) => Promise<Record<string, any>>;
-
-  /** Seed data for this skill */
-  seedData: { domains: SeedDomain[]; stages: SeedStage[] };
 }

@@ -2,6 +2,7 @@
   <component
     v-if="currentTool"
     :is="toolComponent"
+    v-bind="currentTool.props"
   />
   <div v-else class="not-found">
     工具未找到

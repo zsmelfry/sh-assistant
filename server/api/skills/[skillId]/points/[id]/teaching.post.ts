@@ -54,12 +54,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Resolve extra context (e.g. startup-map's active product)
-  const extra = config.resolveExtraContext
-    ? await config.resolveExtraContext(db, { point, topic, domain })
-    : {};
-
-  const messages = config.buildTeachingPrompt({ point, topic, domain, extra });
+  const messages = config.buildTeachingPrompt({ point, topic, domain });
   const { provider } = await resolveProvider(db, providerId);
 
   setResponseHeaders(event, {
@@ -105,7 +100,7 @@ export default defineEventHandler(async (event) => {
           example: sections.example || null,
           apply: sections.apply || null,
           resources: sections.resources || null,
-          productId: extra.product?.id || null,
+          productId: null,
           createdAt: now,
           updatedAt: now,
         }).returning();

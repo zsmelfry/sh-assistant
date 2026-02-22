@@ -16,12 +16,7 @@ export default defineEventHandler(async (event) => {
   const db = useDB();
   const { point, topic, domain } = await requirePointForSkill(db, id, skillId);
 
-  // Resolve extra context (e.g. startup-map's active product)
-  const extra = config.resolveExtraContext
-    ? await config.resolveExtraContext(db, { point, topic, domain })
-    : {};
-
-  const messages = config.buildTaskPrompt({ point, topic, domain, extra });
+  const messages = config.buildTaskPrompt({ point, topic, domain });
   const { provider } = await resolveProvider(db, providerId);
 
   let fullContent = '';

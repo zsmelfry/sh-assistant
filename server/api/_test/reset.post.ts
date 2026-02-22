@@ -9,6 +9,7 @@ import {
   articleChats, articleTagMap, articleTags, articleTranslations, articleBookmarks, articles,
   smChats, smTeachings, smPoints, smTopics, smDomains, smProducts,
   smActivities, smPointArticles, smNotes, smTasks, smStagePoints, smStages,
+  skillConfigs,
 } from '~/server/database/schema';
 
 export default defineEventHandler(async () => {
@@ -57,5 +58,7 @@ export default defineEventHandler(async () => {
   await db.delete(smTopics);
   await db.delete(smDomains);
   await db.delete(smProducts);
+  // skill-configs
+  await db.delete(skillConfigs);
   return { success: true };
 });

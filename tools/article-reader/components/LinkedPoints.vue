@@ -102,10 +102,11 @@
 
 <script setup lang="ts">
 import { X } from 'lucide-vue-next';
-import type { LinkedPoint } from '~/tools/startup-map/types';
+import type { LinkedPoint } from '~/composables/skill-learning/types';
 
 const props = defineProps<{
   articleId: number;
+  skillId: string;
 }>();
 
 interface DomainWithPoints {
@@ -134,7 +135,7 @@ async function loadPoints() {
   loading.value = true;
   try {
     points.value = await $fetch<LinkedPoint[]>(
-      `/api/startup-map/articles/${props.articleId}/points`,
+      `/api/skills/${props.skillId}/articles/${props.articleId}/points`,
     );
   } catch {
     points.value = [];
@@ -151,7 +152,7 @@ watch(showPicker, async (show) => {
   if (show && allDomains.value.length === 0) {
     domainsLoading.value = true;
     try {
-      allDomains.value = await $fetch<DomainWithPoints[]>('/api/startup-map/domains');
+      allDomains.value = await $fetch<DomainWithPoints[]>(`/api/skills/${props.skillId}/domains`);
     } catch {
       allDomains.value = [];
     } finally {
@@ -191,7 +192,7 @@ async function handleLink() {
   if (selectedIds.value.size === 0) return;
   showPicker.value = false;
   try {
-    await $fetch(`/api/startup-map/articles/${props.articleId}/points`, {
+    await $fetch(`/api/skills/${props.skillId}/articles/${props.articleId}/points`, {
       method: 'POST',
       body: { pointIds: Array.from(selectedIds.value) },
     });
@@ -205,7 +206,7 @@ async function handleUnlink(pointId: number) {
   const old = points.value;
   points.value = points.value.filter(p => p.pointId !== pointId);
   try {
-    await $fetch(`/api/startup-map/articles/${props.articleId}/points/${pointId}`, {
+    await $fetch(`/api/skills/${props.skillId}/articles/${props.articleId}/points/${pointId}`, {
       method: 'DELETE',
     });
   } catch {
@@ -214,7 +215,7 @@ async function handleUnlink(pointId: number) {
 }
 
 function goToPoint(pointId: number) {
-  navigateTo(`/startup-map?pointId=${pointId}`);
+  navigateTo(`/${props.skillId}?pointId=${pointId}`);
 }
 </script>
 
