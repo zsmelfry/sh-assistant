@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="overlay" @click.self="$emit('close')">
+    <div class="overlay">
       <div class="wizard">
         <!-- Header -->
         <div class="wizardHeader">

@@ -5,7 +5,7 @@ registerTool({
   id: 'skill-manager',
   name: '技能管理',
   icon: Settings,
-  order: 90,
+  order: Infinity,
   component: () => import('./SkillManager.vue'),
   namespaces: ['skill-manager'],
 });
