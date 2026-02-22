@@ -1,15 +1,15 @@
 // ===== Shared Skill Learning Types =====
 // Extracted from tools/startup-map/types.ts — generic types reusable across all skill tools.
 
-// ===== 学习状态 =====
-export type PointStatus = 'not_started' | 'learning' | 'understood' | 'practiced';
-
-export const POINT_STATUS_LABELS: Record<PointStatus, string> = {
-  not_started: '未开始',
-  learning: '学习中',
-  understood: '已理解',
-  practiced: '已实践',
-};
+// Import shared constants from server (single source of truth)
+import type { PointStatus, ActivityType } from '~/server/lib/skill-learning/types';
+export type { PointStatus, ActivityType };
+export {
+  POINT_STATUS_LABELS,
+  ACTIVITY_TYPE_LABELS,
+  TEACHING_SECTION_KEYS as TEACHING_SECTIONS,
+  TEACHING_SECTION_KEY_LABELS as TEACHING_SECTION_LABELS,
+} from '~/server/lib/skill-learning/types';
 
 // ===== 视图类型 =====
 export type SkillLearningView = 'global' | 'domain' | 'point';
@@ -187,17 +187,7 @@ export interface RecommendedPoint {
   stage: { id: number; name: string } | null;
 }
 
-// ===== 活动类型 =====
-
-export type ActivityType = 'view' | 'chat' | 'note' | 'task' | 'status_change';
-
-export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
-  view: '查看知识点',
-  chat: 'AI 对话',
-  note: '编辑笔记',
-  task: '完成任务',
-  status_change: '状态变更',
-};
+// ===== 活动类型 (re-exported from server) =====
 
 export interface ActivityWithPointName extends SmActivity {
   pointName: string | null;
@@ -232,18 +222,8 @@ export interface LinkedPoint {
 }
 
 // ===== Teaching sections =====
-
+// TeachingSection string union kept here for frontend usage; constants re-exported from server above
 export type TeachingSection = 'what' | 'how' | 'example' | 'apply' | 'resources';
-
-export const TEACHING_SECTIONS: TeachingSection[] = ['what', 'how', 'example', 'apply', 'resources'];
-
-export const TEACHING_SECTION_LABELS: Record<TeachingSection, string> = {
-  what: '是什么',
-  how: '怎么做',
-  example: '案例',
-  apply: '我的应用',
-  resources: '推荐资源',
-};
 
 // ===== Chat response =====
 

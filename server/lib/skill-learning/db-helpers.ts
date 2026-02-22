@@ -2,20 +2,20 @@ import type { H3Event } from 'h3';
 import { eq } from 'drizzle-orm';
 import { smPoints, smTopics, smDomains, skillConfigs } from '~/server/database/schema';
 import { useDB } from '~/server/database';
+import {
+  POINT_STATUS_LABELS,
+  ACTIVITY_TYPE_LABELS,
+  TEACHING_SECTION_KEYS,
+  TEACHING_SECTION_KEY_LABELS,
+} from './types';
 import type { SkillConfig, SkillTeachingContext } from './types';
 import type { SkillConfigRow } from '~/server/database/schemas/skill-configs';
 import { renderTemplate } from './template';
 import type { ChatMessage } from '~/server/lib/llm/types';
-import {
-  POINT_STATUS_LABELS,
-  ACTIVITY_TYPE_LABELS,
-  TEACHING_SECTIONS,
-  TEACHING_SECTION_LABELS,
-} from '~/composables/skill-learning/types';
 
 /** Default teaching sections derived from shared constants */
 const DEFAULT_TEACHING_SECTIONS: SkillConfig['teachingSections'] =
-  TEACHING_SECTIONS.map(key => ({ key, label: TEACHING_SECTION_LABELS[key] }));
+  TEACHING_SECTION_KEYS.map(key => ({ key, label: TEACHING_SECTION_KEY_LABELS[key] }));
 
 /** Build template variables from teaching context and DB row */
 function buildTemplateVars(row: SkillConfigRow, ctx: SkillTeachingContext & { teachingSummary?: string }): Record<string, any> {
