@@ -1,5 +1,9 @@
 import type { ChatMessage } from '~/server/lib/llm/types';
 
+/** Valid point statuses — single source of truth for server-side validation */
+export const VALID_POINT_STATUSES = ['not_started', 'learning', 'understood', 'practiced'] as const;
+export type PointStatus = (typeof VALID_POINT_STATUSES)[number];
+
 /** Context passed to AI prompt builders */
 export interface SkillTeachingContext {
   point: { name: string; description: string | null };

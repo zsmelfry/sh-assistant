@@ -2,9 +2,8 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { smPoints } from '~/server/database/schema';
 import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning';
+import { VALID_POINT_STATUSES } from '~/server/lib/skill-learning/types';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
-
-const VALID_STATUSES = ['not_started', 'learning', 'understood', 'practiced'] as const;
 
 export default defineEventHandler(async (event) => {
   const { skillId } = await resolveSkill(event);
@@ -13,10 +12,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { status } = body || {};
 
-  if (!status || !VALID_STATUSES.includes(status)) {
+  if (!status || !VALID_POINT_STATUSES.includes(status)) {
     throw createError({
       statusCode: 400,
-      message: `status 必须是 ${VALID_STATUSES.join(', ')} 之一`,
+      message: `status 必须是 ${VALID_POINT_STATUSES.join(', ')} 之一`,
     });
   }
 
