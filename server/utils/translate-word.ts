@@ -1,7 +1,7 @@
-import { LlmError } from '../lib/llm';
 import type { ChatMessage, TranslateResult } from '../lib/llm';
 import { resolveProvider } from './llm-provider';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { definitions } from '../database/schemas/srs';
 
 /** 构建翻译系统提示词 */
 function buildTranslateSystemPrompt(): string {
@@ -111,4 +111,30 @@ export async function translateWord(
       timestamp: new Date().toISOString(),
     },
   };
+}
+
+/**
+ * Save a TranslateResult into the definitions cache table. Returns the inserted row.
+ */
+export async function cacheDefinition(
+  db: BetterSQLite3Database<any>,
+  wordId: number,
+  translateResult: TranslateResult,
+) {
+  const [row] = await db.insert(definitions).values({
+    wordId,
+    definition: translateResult.definition,
+    partOfSpeech: translateResult.partOfSpeech,
+    example: translateResult.examples[0]?.sentence || '',
+    exampleTranslation: translateResult.examples[0]?.translation || '',
+    examples: JSON.stringify(translateResult.examples),
+    synonyms: translateResult.synonyms,
+    antonyms: translateResult.antonyms,
+    wordFamily: translateResult.wordFamily,
+    collocations: translateResult.collocations,
+    fetchedAt: Date.now(),
+    modelProvider: translateResult.meta.provider,
+    modelName: translateResult.meta.modelName,
+  }).returning();
+  return row;
 }

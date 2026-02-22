@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { articles, articleBookmarks, articleTagMap, articleTags } from '~/server/database/schema';
+import { articles } from '~/server/database/schema';
 import { extractArticle } from '~/server/utils/article-extractor';
 import { sanitizeArticleHtml } from '~/server/utils/article-sanitizer';
+import { enrichArticleWithMeta } from '~/server/utils/article-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -28,27 +29,7 @@ export default defineEventHandler(async (event) => {
       .where(eq(articles.id, existing[0].id))
       .run();
 
-    // 查询收藏状态（与 [id].get.ts 一致）
-    const bookmark = await db.select()
-      .from(articleBookmarks)
-      .where(eq(articleBookmarks.articleId, existing[0].id))
-      .limit(1);
-
-    // 查询标签
-    const tagRows = await db.select({
-      id: articleTags.id,
-      name: articleTags.name,
-      color: articleTags.color,
-    })
-      .from(articleTagMap)
-      .innerJoin(articleTags, eq(articleTagMap.tagId, articleTags.id))
-      .where(eq(articleTagMap.articleId, existing[0].id));
-
-    return {
-      ...existing[0],
-      bookmark: bookmark.length > 0 ? bookmark[0] : null,
-      tags: tagRows,
-    };
+    return enrichArticleWithMeta(db, existing[0].id, existing[0]);
   }
 
   // 抓取并提取

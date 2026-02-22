@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { definitions } from '../../../database/schemas/srs';
 import { vocabWords } from '../../../database/schemas/vocab';
-import { translateWord } from '../../../utils/translate-word';
+import { translateWord, cacheDefinition } from '../../../utils/translate-word';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
@@ -35,27 +35,10 @@ export default defineEventHandler(async (event) => {
 
   try {
     const translateResult = await translateWord(db, word);
-
-    // 缓存到数据库
-    const now = Date.now();
-    const result = await db.insert(definitions).values({
-      wordId,
-      definition: translateResult.definition,
-      partOfSpeech: translateResult.partOfSpeech,
-      example: translateResult.examples[0]?.sentence || '',
-      exampleTranslation: translateResult.examples[0]?.translation || '',
-      examples: JSON.stringify(translateResult.examples),
-      synonyms: translateResult.synonyms,
-      antonyms: translateResult.antonyms,
-      wordFamily: translateResult.wordFamily,
-      collocations: translateResult.collocations,
-      fetchedAt: now,
-      modelProvider: translateResult.meta.provider,
-      modelName: translateResult.meta.modelName,
-    }).returning();
+    const row = await cacheDefinition(db, wordId, translateResult);
 
     return {
-      ...result[0],
+      ...row,
       examples: translateResult.examples,
       cached: false,
     };
