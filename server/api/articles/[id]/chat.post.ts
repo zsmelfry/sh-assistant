@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { articles, articleChats } from '~/server/database/schema';
-import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
+import { requireNumericParam, requireEntity, requireNonEmpty } from '~/server/utils/handler-helpers';
 import { stripHtmlTags } from '~/server/utils/article-sanitizer';
 import { handleChatRequest } from '~/server/utils/chat-handler';
 
@@ -10,10 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event);
   const { message, providerId } = body || {};
-
-  if (!message || typeof message !== 'string' || !message.trim()) {
-    throw createError({ statusCode: 400, message: '消息内容不能为空' });
-  }
+  requireNonEmpty(message, '消息内容');
 
   const db = useDB();
   const article = await requireEntity<{ id: number; title: string; content: string }>(db, articles, id, '文章');
