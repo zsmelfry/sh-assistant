@@ -1,5 +1,6 @@
 /** Provider 类型 */
 export type ProviderType = 'claude' | 'ollama' | 'openai';
+export const VALID_PROVIDERS: readonly string[] = ['claude', 'ollama', 'openai'];
 
 /** 聊天消息 */
 export interface ChatMessage {

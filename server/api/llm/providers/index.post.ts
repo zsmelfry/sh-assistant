@@ -1,6 +1,5 @@
 import { llmProviders } from '../../../database/schemas/llm';
-
-const VALID_PROVIDERS = ['claude', 'ollama', 'openai'];
+import { VALID_PROVIDERS } from '~/server/lib/llm/types';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

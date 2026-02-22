@@ -63,6 +63,9 @@ export const plannerGoalTags = sqliteTable('planner_goal_tags', {
   index('idx_planner_goal_tags_tag').on(table.tagId),
 ]);
 
+// 常量
+export const VALID_PRIORITIES = ['high', 'medium', 'low'] as const;
+
 // Type inference
 export type PlannerDomain = typeof plannerDomains.$inferSelect;
 export type PlannerGoal = typeof plannerGoals.$inferSelect;

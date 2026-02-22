@@ -1,8 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
-
-const VALID_PROVIDERS = ['claude', 'ollama', 'openai'];
+import { VALID_PROVIDERS } from '~/server/lib/llm/types';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', 'Provider');

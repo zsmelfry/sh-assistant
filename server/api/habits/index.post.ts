@@ -1,8 +1,6 @@
 import { useDB } from '~/server/database';
-import { habits } from '~/server/database/schema';
+import { habits, VALID_FREQUENCIES } from '~/server/database/schemas/habits';
 import { requireNonEmpty } from '~/server/utils/handler-helpers';
-
-const VALID_FREQUENCIES = ['daily', 'weekly', 'monthly'] as const;
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

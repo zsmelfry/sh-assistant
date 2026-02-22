@@ -1,3 +1,6 @@
+/** Goals with no activity in this period are considered stagnant */
+export const STAGNANT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
+
 /**
  * Calculate completion rate as a percentage (0-100), returning 0 when there are no items.
  */

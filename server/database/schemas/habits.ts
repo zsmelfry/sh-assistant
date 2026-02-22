@@ -26,6 +26,9 @@ export const checkins = sqliteTable('checkins', {
   index('idx_checkins_habit_id').on(table.habitId),
 ]);
 
+// 常量
+export const VALID_FREQUENCIES = ['daily', 'weekly', 'monthly'] as const;
+
 // 类型推导
 export type Habit = typeof habits.$inferSelect;
 export type CheckIn = typeof checkins.$inferSelect;

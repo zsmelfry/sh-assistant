@@ -3,8 +3,7 @@ import { useDB } from '~/server/database';
 import {
   plannerGoals, plannerCheckitems, plannerGoalTags, plannerTags,
 } from '~/server/database/schema';
-
-const STAGNANT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
+import { STAGNANT_THRESHOLD_MS } from '~/server/utils/planner-stats';
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);

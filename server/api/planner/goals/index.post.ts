@@ -1,6 +1,6 @@
 import { eq, sql, inArray } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { plannerGoals, plannerGoalTags, plannerDomains, plannerTags } from '~/server/database/schema';
+import { plannerGoals, plannerGoalTags, plannerDomains, plannerTags, VALID_PRIORITIES } from '~/server/database/schemas/planner';
 import { requireNonEmpty, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
@@ -11,9 +11,8 @@ export default defineEventHandler(async (event) => {
   }
   const title = requireNonEmpty(body.title, '目标标题');
 
-  const validPriorities = ['high', 'medium', 'low'];
   const priority = body.priority || 'medium';
-  if (!validPriorities.includes(priority)) {
+  if (!VALID_PRIORITIES.includes(priority)) {
     throw createError({ statusCode: 400, message: '无效的优先级' });
   }
 
