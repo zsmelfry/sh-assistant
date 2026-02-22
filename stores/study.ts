@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import type { ChatMessage } from '~/composables/useLlm';
 
 // ===== Types =====
 
