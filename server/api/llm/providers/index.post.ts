@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { llmProviders } from '../../../database/schemas/llm';
 import { VALID_PROVIDERS } from '~/server/lib/llm/types';
 

@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { translateWord } from '../../utils/translate-word';
 import { throwLlmError } from '../../utils/handler-helpers';
 

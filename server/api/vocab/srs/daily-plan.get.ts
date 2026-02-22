@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { eq, and, lte, sql, inArray } from 'drizzle-orm';
 import { srsCards, studySessions } from '../../../database/schemas/srs';
 import { vocabProgress, vocabWords, LEARNING_STATUS } from '../../../database/schemas/vocab';

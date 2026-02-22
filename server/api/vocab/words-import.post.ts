@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { sql } from 'drizzle-orm';
 import { vocabWords, vocabProgress, vocabUsers } from '../../database/schemas/vocab';
 import { initProgressForUsersSync } from '../../utils/vocab-progress';

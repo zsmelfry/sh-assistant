@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { eq, and } from 'drizzle-orm';
 import { studySessions } from '../../../../database/schemas/srs';
 import { formatDate } from '../../../../utils/date';

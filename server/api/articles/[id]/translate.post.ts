@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { translateArticle } from '~/server/utils/article-translator';
 import type { TranslationType } from '~/server/utils/article-translator';
 import { requireNumericParam, throwLlmError } from '~/server/utils/handler-helpers';

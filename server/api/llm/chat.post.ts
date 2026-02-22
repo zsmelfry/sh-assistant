@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import type { ChatMessage } from '../../lib/llm';
 import { resolveProvider } from '../../utils/llm-provider';
 import { throwLlmError } from '../../utils/handler-helpers';

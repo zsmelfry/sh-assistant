@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { vocabUsers, vocabSettings } from '../../database/schemas/vocab';
 import { eq } from 'drizzle-orm';
 

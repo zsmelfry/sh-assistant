@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { vocabUsers, vocabSettings } from '../../database/schemas/vocab';
 import { initProgressForUser } from '../../utils/vocab-progress';
 

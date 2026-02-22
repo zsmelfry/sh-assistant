@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
 

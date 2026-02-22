@@ -1,3 +1,4 @@
+import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { vocabUsers, vocabSettings } from '../../../database/schemas/vocab';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
