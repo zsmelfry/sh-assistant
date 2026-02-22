@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   // 检查用户是否存在
   const existing = await db.select().from(vocabUsers).where(eq(vocabUsers.id, id)).limit(1);
   if (existing.length === 0) {
-    throw createError({ statusCode: 404, message: 'User not found' });
+    throw createError({ statusCode: 404, message: '用户不存在' });
   }
 
   // 级联删除（progress、statusHistory 会被级联删除）
