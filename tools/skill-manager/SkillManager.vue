@@ -12,6 +12,7 @@
       :configs="configs"
       :loading="loading"
       @edit="handleEdit"
+      @export="handleExport"
       @delete="handleDelete"
     />
 
@@ -21,6 +22,12 @@
       @close="closeWizard"
       @saved="handleSaved"
     />
+
+    <ExportDialog
+      v-if="exportingConfig"
+      :config="exportingConfig"
+      @close="exportingConfig = null"
+    />
   </div>
 </template>
 
@@ -28,6 +35,7 @@
 import { Plus } from 'lucide-vue-next';
 import SkillList from './components/SkillList.vue';
 import SkillWizard from './components/SkillWizard.vue';
+import ExportDialog from './components/ExportDialog.vue';
 import { registerSkillTools } from '~/plugins/tools.client';
 import type { SkillConfig } from './types';
 
@@ -35,6 +43,7 @@ const configs = ref<SkillConfig[]>([]);
 const loading = ref(false);
 const showWizard = ref(false);
 const editingConfig = ref<SkillConfig | null>(null);
+const exportingConfig = ref<SkillConfig | null>(null);
 
 async function loadConfigs() {
   loading.value = true;
@@ -45,6 +54,10 @@ async function loadConfigs() {
   } finally {
     loading.value = false;
   }
+}
+
+function handleExport(config: SkillConfig) {
+  exportingConfig.value = config;
 }
 
 function handleEdit(config: SkillConfig) {

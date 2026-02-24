@@ -18,7 +18,16 @@
         class="message"
         :class="msg.role"
       >
-        <div class="bubble" v-html="renderMessage(msg.content)" />
+        <div class="bubbleWrap">
+          <div class="bubble" v-html="renderMessage(msg.content)" />
+          <button
+            v-if="msg.role === 'assistant'"
+            class="copyBtn"
+            @click="copyMessage(msg)"
+          >
+            {{ copiedId === msg.id ? '已复制' : '复制' }}
+          </button>
+        </div>
       </div>
 
       <!-- Loading indicator -->
@@ -83,6 +92,13 @@ const emit = defineEmits<{
 const messagesRef = ref<HTMLElement | null>(null);
 const inputRef = ref<HTMLTextAreaElement | null>(null);
 const inputText = ref('');
+const copiedId = ref<number | null>(null);
+
+function copyMessage(msg: ChatMsg): void {
+  navigator.clipboard.writeText(msg.content);
+  copiedId.value = msg.id;
+  setTimeout(() => { copiedId.value = null; }, 1500);
+}
 
 function scrollToBottom(): void {
   nextTick(() => {
@@ -189,6 +205,29 @@ function autoResize(): void {
 
 .message.assistant {
   align-self: flex-start;
+}
+
+.bubbleWrap {
+  position: relative;
+}
+
+.copyBtn {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  padding: 2px var(--spacing-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.bubbleWrap:hover .copyBtn {
+  opacity: 1;
 }
 
 .bubble {

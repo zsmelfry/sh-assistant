@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { smDomains, smTopics, smPoints, smStages, smStagePoints } from '~/server/database/schema';
+import { smDomains, smTopics, smPoints, smTeachings, smNotes, smStages, smStagePoints } from '~/server/database/schema';
 import { resolveSkill } from '~/server/lib/skill-learning';
 import type { SeedDomain, SeedStage } from '~/server/database/seeds/startup-map';
 
@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
         }).returning().all();
 
         for (let pi = 0; pi < topic.points.length; pi++) {
-          const point = topic.points[pi];
+          const point = topic.points[pi] as any;
           totalPoints++;
 
           const [insertedPoint] = tx.insert(smPoints).values({
@@ -69,6 +69,30 @@ export default defineEventHandler(async (event) => {
           }).returning().all();
 
           pointNameToId.set(point.name, insertedPoint.id);
+
+          // Seed teaching content if provided (from export import)
+          if (point.teaching) {
+            tx.insert(smTeachings).values({
+              pointId: insertedPoint.id,
+              what: point.teaching.what ?? null,
+              how: point.teaching.how ?? null,
+              example: point.teaching.example ?? null,
+              apply: point.teaching.apply ?? null,
+              resources: point.teaching.resources ?? null,
+              createdAt: now,
+              updatedAt: now,
+            }).run();
+          }
+
+          // Seed note if provided
+          if (point.note) {
+            tx.insert(smNotes).values({
+              pointId: insertedPoint.id,
+              content: point.note,
+              createdAt: now,
+              updatedAt: now,
+            }).run();
+          }
         }
       }
     }

@@ -39,6 +39,10 @@
             <Pencil :size="14" />
             编辑
           </button>
+          <button class="actionBtn" @click="$emit('export', config)">
+            <Download :size="14" />
+            导出
+          </button>
           <button class="actionBtn danger" @click="$emit('delete', config)">
             <Trash2 :size="14" />
             删除
@@ -50,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { Pencil, Trash2 } from 'lucide-vue-next';
+import { Download, Pencil, Trash2 } from 'lucide-vue-next';
 import { resolveIcon } from '~/utils/icon-map';
 import type { SkillConfig } from '../types';
 
@@ -61,6 +65,7 @@ defineProps<{
 
 defineEmits<{
   edit: [config: SkillConfig];
+  export: [config: SkillConfig];
   delete: [config: SkillConfig];
 }>();
 

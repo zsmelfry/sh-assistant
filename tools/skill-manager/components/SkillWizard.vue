@@ -4,11 +4,15 @@
       <div class="wizard">
         <!-- Header -->
         <div class="wizardHeader">
-          <h2 class="wizardTitle">{{ editing ? '编辑技能' : '创建技能' }}</h2>
+          <div class="wizardTitleGroup">
+            <h2 class="wizardTitle">{{ editing ? '编辑技能' : '创建技能' }}</h2>
+            <button v-if="!editing" class="importBtn" @click="fileInputRef?.click()">导入模板</button>
+          </div>
           <button class="closeBtn" @click="$emit('close')">
             <X :size="18" />
           </button>
         </div>
+        <input ref="fileInputRef" type="file" accept=".json" style="display:none" @change="handleImportTemplate">
 
         <!-- Step indicators -->
         <div class="steps">
@@ -152,7 +156,7 @@ import { X } from 'lucide-vue-next';
 import IconPicker from './IconPicker.vue';
 import TreeEditor from './TreeEditor.vue';
 import PromptEditor from './PromptEditor.vue';
-import type { SkillConfig, GeneratedDomain, GeneratedStage } from '../types';
+import type { SkillConfig, SkillExport, GeneratedDomain, GeneratedStage } from '../types';
 
 const props = defineProps<{
   editing?: SkillConfig | null;
@@ -169,6 +173,7 @@ const saving = ref(false);
 const generating = ref(false);
 const genError = ref('');
 
+const fileInputRef = ref<HTMLInputElement>();
 const treeDomains = ref<GeneratedDomain[]>([]);
 const treeStages = ref<GeneratedStage[]>([]);
 
@@ -276,6 +281,58 @@ const canSave = computed(() => {
     form.taskUserPrompt.trim();
 });
 
+function handleImportTemplate(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result as string) as SkillExport;
+      if (data.version !== 1 || !data.config || !data.tree) {
+        alert('无效的模板文件：缺少 version、config 或 tree');
+        return;
+      }
+      // Pre-fill config
+      const c = data.config;
+      form.name = c.name;
+      form.description = c.description || '';
+      form.icon = c.icon;
+      form.skillId = c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      form.teachingSystemPrompt = c.teachingSystemPrompt;
+      form.teachingUserPrompt = c.teachingUserPrompt;
+      form.chatSystemPrompt = c.chatSystemPrompt;
+      form.taskSystemPrompt = c.taskSystemPrompt;
+      form.taskUserPrompt = c.taskUserPrompt;
+      // Pre-fill tree (preserve teaching/note if present)
+      treeDomains.value = data.tree.domains.map(d => ({
+        name: d.name,
+        description: d.description,
+        topics: d.topics.map(t => ({
+          name: t.name,
+          description: t.description,
+          points: t.points.map(p => ({
+            name: p.name,
+            description: p.description,
+            ...(p.teaching ? { teaching: p.teaching } : {}),
+            ...(p.note ? { note: p.note } : {}),
+          })),
+        })),
+      }));
+      treeStages.value = data.tree.stages.map(s => ({
+        name: s.name,
+        description: s.description,
+        objective: s.objective,
+        pointNames: s.pointNames,
+      }));
+    } catch {
+      alert('无法解析文件，请确保是有效的 JSON 格式');
+    }
+    // Reset input so same file can be re-imported
+    if (fileInputRef.value) fileInputRef.value.value = '';
+  };
+  reader.readAsText(file);
+}
+
 async function handleGenerateTree() {
   generating.value = true;
   genError.value = '';
@@ -381,9 +438,30 @@ async function handleSave() {
   border-bottom: 1px solid var(--color-border);
 }
 
+.wizardTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .wizardTitle {
   font-size: 18px;
   font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.importBtn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.importBtn:hover {
   color: var(--color-text-primary);
 }
 
