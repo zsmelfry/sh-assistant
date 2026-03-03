@@ -361,9 +361,6 @@ export function createSkillLearningStore(skillId: string) {
                 }
               } else if (data.type === 'done') {
                 teaching.value = data.teaching;
-                // Auto-generate quizzes and guidance after teaching
-                generateQuizzes(pointId);
-                loadGuidance(pointId);
               } else if (data.type === 'error') {
                 throw new Error(data.message);
               }
@@ -375,6 +372,12 @@ export function createSkillLearningStore(skillId: string) {
         }
       } finally {
         generating.value = false;
+      }
+
+      // Post-generation: load quizzes and guidance after stream is fully consumed
+      if (teaching.value) {
+        generateQuizzes(pointId);
+        await loadGuidance(pointId);
       }
     }
 

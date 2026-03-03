@@ -4,6 +4,7 @@ import { smTeachings } from '~/server/database/schema';
 import { resolveProvider } from '~/server/utils/llm-provider';
 import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { parseLlmJsonObject } from '~/server/utils/parse-llm-json';
 import { LlmError } from '~/server/lib/llm';
 
 export default defineEventHandler(async (event) => {
@@ -50,11 +51,9 @@ export default defineEventHandler(async (event) => {
     return buildDefaultGuidance(point.name);
   }
 
-  // Parse JSON
+  // Parse JSON (with robust extraction)
   try {
-    const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found');
-    const result = JSON.parse(jsonMatch[0]);
+    const result = parseLlmJsonObject<{ guidingQuestions?: string[]; quickButtons?: Array<{ label: string; prompt: string }> }>(fullContent);
 
     return {
       guidingQuestions: Array.isArray(result.guidingQuestions) ? result.guidingQuestions : [],

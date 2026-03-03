@@ -1,5 +1,6 @@
 import { useDB } from '~/server/database';
 import { resolveProvider } from '~/server/utils/llm-provider';
+import { parseLlmJsonObject } from '~/server/utils/parse-llm-json';
 import { LlmError } from '~/server/lib/llm';
 import type { SeedDomain, SeedStage } from '~/server/database/seeds/startup-map';
 
@@ -72,12 +73,10 @@ ${description ? `技能描述：${description}` : ''}
     throw createError({ statusCode: 502, message });
   }
 
-  // Parse JSON from LLM response
+  // Parse JSON from LLM response (with robust extraction)
   let result: { domains: SeedDomain[]; stages: SeedStage[] };
   try {
-    const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found');
-    result = JSON.parse(jsonMatch[0]);
+    result = parseLlmJsonObject(fullContent);
 
     if (!Array.isArray(result.domains) || !Array.isArray(result.stages)) {
       throw new Error('Invalid structure');

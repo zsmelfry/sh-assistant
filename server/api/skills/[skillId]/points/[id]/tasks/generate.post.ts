@@ -4,6 +4,7 @@ import { smTasks } from '~/server/database/schema';
 import { resolveProvider } from '~/server/utils/llm-provider';
 import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { parseLlmJsonArray } from '~/server/utils/parse-llm-json';
 import { LlmError } from '~/server/lib/llm';
 
 export default defineEventHandler(async (event) => {
@@ -37,12 +38,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 502, message });
   }
 
-  // Parse JSON from LLM response
+  // Parse JSON from LLM response (with robust extraction)
   let tasks: Array<{ description: string; expectedOutput?: string; hint?: string }>;
   try {
-    const jsonMatch = fullContent.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('No JSON array found');
-    tasks = JSON.parse(jsonMatch[0]);
+    tasks = parseLlmJsonArray(fullContent);
     // Cap at 2 tasks max per knowledge point
     if (tasks.length > 2) tasks = tasks.slice(0, 2);
   } catch {

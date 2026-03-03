@@ -4,7 +4,16 @@ import { smQuizzes, smTeachings } from '~/server/database/schema';
 import { resolveProvider } from '~/server/utils/llm-provider';
 import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { parseLlmJsonArray } from '~/server/utils/parse-llm-json';
 import { LlmError } from '~/server/lib/llm';
+
+interface QuizItem {
+  type: string;
+  question: string;
+  options?: string[] | null;
+  correctAnswer: string;
+  explanation?: string;
+}
 
 export default defineEventHandler(async (event) => {
   const { skillId, config } = await resolveSkill(event);
@@ -53,22 +62,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 502, message });
   }
 
-  // Parse JSON array from LLM response
-  let quizItems: Array<{
-    type: string;
-    question: string;
-    options?: string[] | null;
-    correctAnswer: string;
-    explanation?: string;
-  }>;
-
+  // Parse JSON array from LLM response (with robust extraction)
+  let quizItems: QuizItem[];
   try {
-    const jsonMatch = fullContent.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('No JSON array found');
-    quizItems = JSON.parse(jsonMatch[0]);
-    if (!Array.isArray(quizItems) || quizItems.length === 0) {
-      throw new Error('Empty array');
-    }
+    quizItems = parseLlmJsonArray<QuizItem>(fullContent);
   } catch {
     throw createError({ statusCode: 502, message: '测验解析失败，AI 返回格式异常' });
   }
