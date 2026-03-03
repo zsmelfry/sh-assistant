@@ -4,3 +4,4 @@ import './vocab-tracker';
 import './annual-planner';
 import './article-reader';
 import './skill-manager';
+import './project-tracker';
