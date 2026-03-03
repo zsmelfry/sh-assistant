@@ -1,0 +1,24 @@
+import { eq } from 'drizzle-orm';
+import { useDB } from '~/server/database';
+import { ptMilestones } from '~/server/database/schema';
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event);
+  const items = body.items as { id: number; sortOrder: number }[];
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw createError({ statusCode: 400, message: '排序数据不能为空' });
+  }
+
+  const db = useDB();
+  db.transaction((tx) => {
+    for (const item of items) {
+      tx.update(ptMilestones)
+        .set({ sortOrder: item.sortOrder })
+        .where(eq(ptMilestones.id, item.id))
+        .run();
+    }
+  });
+
+  return { success: true };
+});
