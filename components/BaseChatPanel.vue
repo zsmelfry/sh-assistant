@@ -71,8 +71,6 @@
 <script setup lang="ts">
 import { marked } from 'marked';
 
-marked.setOptions({ breaks: true });
-
 interface ChatMsg {
   id: number;
   role: string;
@@ -115,7 +113,7 @@ function scrollToBottom(): void {
 watch([() => props.messages.length, () => props.loading], () => scrollToBottom());
 
 function renderMessage(content: string): string {
-  return marked.parse(content) as string;
+  return marked.parse(content, { breaks: true }) as string;
 }
 
 function handleSend(): void {
