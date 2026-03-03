@@ -14,7 +14,7 @@ export async function registerSkillTools() {
     const { register, getAll, unregister } = useToolRegistry();
 
     // Remove previously registered skill tools (keep static tools)
-    const staticIds = new Set(['habit-tracker', 'vocab-tracker', 'annual-planner', 'article-reader', 'skill-manager']);
+    const staticIds = new Set(['habit-tracker', 'vocab-tracker', 'annual-planner', 'article-reader', 'skill-manager', 'project-tracker']);
     for (const tool of getAll()) {
       if (!staticIds.has(tool.id)) {
         unregister(tool.id);
