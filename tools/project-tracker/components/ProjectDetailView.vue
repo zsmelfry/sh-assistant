@@ -23,10 +23,23 @@
           v-else-if="activeTab === 'notes'"
           :project-id="projectId"
         />
-        <div v-else-if="activeTab === 'diagrams'" class="tabPlaceholder">
-          Diagram（待实现）
-        </div>
+        <DiagramTab
+          v-else-if="activeTab === 'diagrams'"
+          :project-id="projectId"
+        />
       </div>
+
+      <!-- AI Chat toggle button -->
+      <button class="chatToggle" @click="showChat = !showChat">
+        AI 对话
+      </button>
+
+      <!-- AI Chat panel -->
+      <AiChatPanel
+        :project-id="projectId"
+        :open="showChat"
+        @close="showChat = false"
+      />
     </template>
 
     <!-- Edit form -->
@@ -88,6 +101,8 @@ import ProjectHeader from './ProjectHeader.vue';
 import TabNav from './TabNav.vue';
 import ChecklistTab from './ChecklistTab.vue';
 import NotesTab from './NotesTab.vue';
+import DiagramTab from './DiagramTab.vue';
+import AiChatPanel from './AiChatPanel.vue';
 
 const props = defineProps<{
   projectId: number;
@@ -104,6 +119,7 @@ const project = ref<ProjectWithDetails | null>(null);
 const activeTab = ref('checklist');
 const showEditForm = ref(false);
 const showDeleteConfirm = ref(false);
+const showChat = ref(false);
 
 const editForm = reactive({
   title: '',
@@ -225,9 +241,33 @@ async function handleDelete() {
   flex: 1;
 }
 
+.chatToggle {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.chatToggle:hover {
+  opacity: 0.9;
+}
+
 @media (max-width: 768px) {
   .projectDetailView {
     padding: var(--spacing-md);
+  }
+
+  .chatToggle {
+    bottom: calc(var(--bottom-nav-height) + var(--spacing-md));
   }
 }
 </style>
