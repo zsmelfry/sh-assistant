@@ -43,6 +43,8 @@ export default defineEventHandler(async (event) => {
     const jsonMatch = fullContent.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array found');
     tasks = JSON.parse(jsonMatch[0]);
+    // Cap at 2 tasks max per knowledge point
+    if (tasks.length > 2) tasks = tasks.slice(0, 2);
   } catch {
     throw createError({ statusCode: 502, message: '任务解析失败，AI 返回格式异常' });
   }

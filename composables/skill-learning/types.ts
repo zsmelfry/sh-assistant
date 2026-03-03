@@ -2,8 +2,8 @@
 // Extracted from tools/startup-map/types.ts — generic types reusable across all skill tools.
 
 // Import shared constants from server (single source of truth)
-import type { PointStatus, ActivityType, TeachingSectionKey } from '~/server/lib/skill-learning/types';
-export type { PointStatus, ActivityType };
+import type { PointStatus, ActivityType, TeachingSectionKey, QuizType } from '~/server/lib/skill-learning/types';
+export type { PointStatus, ActivityType, QuizType };
 export type { TeachingSectionKey as TeachingSection };
 export {
   POINT_STATUS_LABELS,
@@ -227,4 +227,35 @@ export interface LinkedPoint {
 export interface ChatResponse {
   userMessage: SmChat;
   assistantMessage: SmChat;
+}
+
+// ===== 理解测验 =====
+
+export interface SmQuiz {
+  id: number;
+  pointId: number;
+  section: TeachingSectionKey;
+  type: QuizType;
+  question: string;
+  options: string[] | null;
+  correctAnswer: string;
+  explanation: string | null;
+  sortOrder: number;
+  createdAt: number;
+}
+
+export interface SmQuizWithAttempt extends SmQuiz {
+  passed: boolean;
+}
+
+// ===== AI 引导 =====
+
+export interface GuidanceResponse {
+  guidingQuestions: string[];
+  quickButtons: QuickButton[];
+}
+
+export interface QuickButton {
+  label: string;
+  prompt: string;
 }

@@ -1,10 +1,15 @@
 <template>
   <div class="linkedArticles">
     <div class="sectionHeader">
-      <h3 class="sectionTitle">关联文章</h3>
-      <button class="addBtn" @click="showPicker = true">添加关联</button>
+      <button class="collapseHeader" @click="collapsed = !collapsed">
+        <ChevronRight :size="16" class="chevron" :class="{ expanded: !collapsed }" />
+        <h3 class="sectionTitle">关联文章</h3>
+        <span v-if="store.linkedArticles.length > 0" class="badge">{{ store.linkedArticles.length }}</span>
+      </button>
+      <button v-if="!collapsed" class="addBtn" @click="showPicker = true">添加关联</button>
     </div>
 
+    <template v-if="!collapsed">
     <!-- Loading -->
     <div v-if="store.linkedArticlesLoading" class="loadingState">加载中...</div>
 
@@ -31,6 +36,7 @@
 
     <!-- Empty -->
     <p v-else class="emptyHint">暂无关联文章</p>
+    </template>
 
     <!-- Article picker modal -->
     <ArticlePicker
@@ -44,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { X } from 'lucide-vue-next';
+import { X, ChevronRight } from 'lucide-vue-next';
 import { SKILL_STORE_KEY } from '~/composables/skill-learning';
 import type { LinkedArticle } from '~/composables/skill-learning/types';
 import ArticlePicker from './ArticlePicker.vue';
@@ -54,6 +60,7 @@ const props = defineProps<{
 }>();
 
 const store = inject(SKILL_STORE_KEY)!;
+const collapsed = ref(true);
 const showPicker = ref(false);
 
 const existingArticleIds = computed(() =>
@@ -96,10 +103,39 @@ function handleUnlink(articleId: number) {
   align-items: center;
 }
 
+.collapseHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.chevron {
+  transition: transform var(--transition-fast);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.chevron.expanded {
+  transform: rotate(90deg);
+}
+
 .sectionTitle {
   font-size: 15px;
   font-weight: 600;
   color: var(--color-text-primary);
+  margin: 0;
+}
+
+.badge {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .addBtn {

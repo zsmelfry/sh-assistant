@@ -33,6 +33,11 @@
               @regenerate="handleRegenerate"
             />
 
+            <!-- Comprehension quizzes -->
+            <div class="panelSection">
+              <ComprehensionQuizzes :point-id="store.currentPoint.id" />
+            </div>
+
             <!-- Practice tasks -->
             <div class="panelSection">
               <PracticeTasks :point-id="store.currentPoint.id" />
@@ -46,6 +51,15 @@
             <!-- Linked articles -->
             <div class="panelSection">
               <LinkedArticles :point-id="store.currentPoint.id" />
+            </div>
+
+            <!-- Next point suggestion (shown after completion) -->
+            <div v-if="isCompleted" class="panelSection">
+              <NextPointCard
+                :recommendation="nextRecommendation"
+                :loading="store.recommendationsLoading"
+                @navigate="store.navigateToPoint($event)"
+              />
             </div>
           </div>
         </div>
@@ -67,6 +81,16 @@
         </div>
       </div>
     </template>
+
+    <!-- Completion celebration overlay -->
+    <CompletionCelebration
+      :visible="store.showCelebration"
+      :type="store.celebrationType"
+      :message="store.celebrationMessage"
+      :has-next="!!nextRecommendation"
+      @dismiss="store.dismissCelebration()"
+      @go-to-next="handleGoToNext"
+    />
   </div>
 </template>
 
@@ -76,15 +100,27 @@ import type { PointStatus } from '~/composables/skill-learning/types';
 import StatusSelector from './StatusSelector.vue';
 import TeachingContent from './TeachingContent.vue';
 import ChatPanel from './ChatPanel.vue';
+import ComprehensionQuizzes from './ComprehensionQuizzes.vue';
 import PracticeTasks from './PracticeTasks.vue';
 import NoteEditor from './NoteEditor.vue';
 import LinkedArticles from './LinkedArticles.vue';
+import CompletionCelebration from './CompletionCelebration.vue';
+import NextPointCard from './NextPointCard.vue';
 
 const props = defineProps<{
   productId?: number;
 }>();
 
 const store = inject(SKILL_STORE_KEY)!;
+
+// Completion state
+const isCompleted = computed(() =>
+  store.currentPoint?.status === 'understood' || store.currentPoint?.status === 'practiced',
+);
+
+const nextRecommendation = computed(() =>
+  store.recommendations[0] ?? null,
+);
 
 // Log view activity when point loads
 watch(() => store.currentPoint, (point) => {
@@ -94,7 +130,7 @@ watch(() => store.currentPoint, (point) => {
 });
 
 // ===== Split pane resize (same pattern as ArticleReader) =====
-const splitRatio = ref(55);
+const splitRatio = ref(65);
 const isDragging = ref(false);
 
 const leftPanelStyle = computed(() => ({
@@ -172,6 +208,14 @@ function handleGenerate() {
 function handleRegenerate() {
   if (store.currentPointId) {
     store.generateTeaching(store.currentPointId, true);
+  }
+}
+
+function handleGoToNext() {
+  store.dismissCelebration();
+  const next = store.recommendations[0];
+  if (next) {
+    store.navigateToPoint(next.pointId);
   }
 }
 </script>

@@ -165,7 +165,7 @@ export const smActivities = sqliteTable('sm_activities', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   pointId: integer('point_id')
     .references(() => smPoints.id, { onDelete: 'set null' }),
-  type: text('type', { enum: ['view', 'chat', 'note', 'task', 'status_change'] }).notNull(),
+  type: text('type', { enum: ['view', 'chat', 'note', 'task', 'status_change', 'quiz'] }).notNull(),
   skillId: text('skill_id').notNull().default('startup-map'),
   date: text('date').notNull(),   // 'YYYY-MM-DD'
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
@@ -173,5 +173,34 @@ export const smActivities = sqliteTable('sm_activities', {
   index('idx_sm_activities_date').on(table.date),
   index('idx_sm_activities_point').on(table.pointId),
   index('idx_sm_activities_skill').on(table.skillId),
+]);
+
+// ===== 理解测验 =====
+export const smQuizzes = sqliteTable('sm_quizzes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  pointId: integer('point_id').notNull()
+    .references(() => smPoints.id, { onDelete: 'cascade' }),
+  section: text('section', { enum: ['what', 'how', 'example', 'apply', 'resources'] }).notNull(),
+  type: text('type', { enum: ['multiple_choice', 'true_false', 'fill_blank'] }).notNull(),
+  question: text('question').notNull(),
+  options: text('options'),       // JSON stringified array for multiple choice
+  correctAnswer: text('correct_answer').notNull(),
+  explanation: text('explanation'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+}, (table) => [
+  index('idx_sm_quizzes_point_section').on(table.pointId, table.section),
+]);
+
+// ===== 测验记录 =====
+export const smQuizAttempts = sqliteTable('sm_quiz_attempts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  quizId: integer('quiz_id').notNull()
+    .references(() => smQuizzes.id, { onDelete: 'cascade' }),
+  userAnswer: text('user_answer').notNull(),
+  isCorrect: integer('is_correct', { mode: 'boolean' }).notNull(),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+}, (table) => [
+  index('idx_sm_quiz_attempts_quiz').on(table.quizId),
 ]);
 

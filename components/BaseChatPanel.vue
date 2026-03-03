@@ -43,6 +43,9 @@
       </div>
     </div>
 
+    <!-- Quick questions slot -->
+    <slot name="above-input" />
+
     <!-- Input -->
     <div class="chatInput">
       <textarea

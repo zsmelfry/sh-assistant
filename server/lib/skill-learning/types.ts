@@ -12,7 +12,7 @@ export const POINT_STATUS_LABELS: Record<PointStatus, string> = {
 };
 
 /** Activity types — shared between server and frontend */
-export type ActivityType = 'view' | 'chat' | 'note' | 'task' | 'status_change';
+export type ActivityType = 'view' | 'chat' | 'note' | 'task' | 'status_change' | 'quiz';
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   view: '查看知识点',
@@ -20,7 +20,11 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   note: '编辑笔记',
   task: '完成任务',
   status_change: '状态变更',
+  quiz: '完成测验',
 };
+
+/** Quiz types */
+export type QuizType = 'multiple_choice' | 'true_false' | 'fill_blank';
 
 /** Teaching section keys (string union, distinct from TeachingSection interface below) */
 export type TeachingSectionKey = 'what' | 'how' | 'example' | 'apply' | 'resources';
@@ -59,6 +63,8 @@ export interface SkillConfig {
   buildTeachingPrompt: (ctx: SkillTeachingContext) => ChatMessage[];
   buildChatSystemMessage: (ctx: SkillTeachingContext & { teachingSummary: string }) => ChatMessage;
   buildTaskPrompt: (ctx: SkillTeachingContext) => ChatMessage[];
+  buildQuizPrompt: (ctx: SkillTeachingContext & { teachingSummary: string }) => ChatMessage[];
+  buildGuidancePrompt: (ctx: SkillTeachingContext & { teachingSummary: string }) => ChatMessage[];
 
   // Configurable labels
   teachingSections: TeachingSection[];

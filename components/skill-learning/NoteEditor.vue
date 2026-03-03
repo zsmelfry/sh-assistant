@@ -1,7 +1,12 @@
 <template>
   <div class="noteEditor">
-    <div class="editorHeader">
+    <button class="collapseHeader" @click="collapsed = !collapsed">
+      <ChevronRight :size="16" class="chevron" :class="{ expanded: !collapsed }" />
       <h3 class="sectionTitle">我的笔记</h3>
+    </button>
+
+    <template v-if="!collapsed">
+    <div class="editorHeader">
       <div class="headerRight">
         <div class="modeTabs">
           <button
@@ -35,10 +40,12 @@
       class="previewContent"
       v-html="renderedMarkdown"
     />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ChevronRight } from 'lucide-vue-next';
 import { marked } from 'marked';
 import { SKILL_STORE_KEY } from '~/composables/skill-learning';
 
@@ -48,6 +55,7 @@ const props = defineProps<{
 }>();
 
 const store = inject(SKILL_STORE_KEY)!;
+const collapsed = ref(true);
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const draft = ref('');
 const mode = ref<'edit' | 'preview'>('edit');
@@ -108,6 +116,26 @@ onUnmounted(() => {
   gap: var(--spacing-sm);
 }
 
+.collapseHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.chevron {
+  transition: transform var(--transition-fast);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.chevron.expanded {
+  transform: rotate(90deg);
+}
+
 .editorHeader {
   display: flex;
   justify-content: space-between;
@@ -120,6 +148,7 @@ onUnmounted(() => {
   font-size: 15px;
   font-weight: 600;
   color: var(--color-text-primary);
+  margin: 0;
 }
 
 .headerRight {

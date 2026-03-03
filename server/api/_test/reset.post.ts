@@ -9,6 +9,7 @@ import {
   articleChats, articleTagMap, articleTags, articleTranslations, articleBookmarks, articles,
   smChats, smTeachings, smPoints, smTopics, smDomains, smProducts,
   smActivities, smPointArticles, smNotes, smTasks, smStagePoints, smStages,
+  smQuizAttempts, smQuizzes,
   skillConfigs,
 } from '~/server/database/schema';
 
@@ -47,6 +48,8 @@ export default defineEventHandler(async () => {
   await db.delete(plannerDomains);
   await db.delete(plannerTags);
   // startup-map (child tables first)
+  await db.delete(smQuizAttempts);
+  await db.delete(smQuizzes);
   await db.delete(smActivities);
   await db.delete(smNotes);
   await db.delete(smTasks);

@@ -12,7 +12,7 @@
     <!-- Sections (existing or streaming) -->
     <template v-if="teaching || generating">
       <div
-        v-for="section in TEACHING_SECTIONS"
+        v-for="(section, idx) in TEACHING_SECTIONS"
         :key="section"
         class="section"
       >
@@ -52,6 +52,15 @@
           <template v-else>
             <p class="noContent">暂无内容</p>
           </template>
+
+          <!-- Progressive hint: suggest opening next section -->
+          <button
+            v-if="nextCollapsedSection(idx) != null && !generating"
+            class="nextHint"
+            @click="expandNext(idx)"
+          >
+            继续学习：{{ TEACHING_SECTION_LABELS[TEACHING_SECTIONS[nextCollapsedSection(idx)!]] }}  →
+          </button>
         </div>
       </div>
 
@@ -97,13 +106,14 @@ import {
 } from '~/composables/skill-learning/types';
 import type { SmTeaching, TeachingSection } from '~/composables/skill-learning/types';
 
-defineProps<{
+const props = defineProps<{
   teaching: SmTeaching | null;
   generating: boolean;
   streamingSections: Record<TeachingSection, string>;
 }>();
 
-const expandedSections = ref(new Set<TeachingSection>(TEACHING_SECTIONS));
+// Progressive mode: only expand "是什么" initially
+const expandedSections = ref(new Set<TeachingSection>(['what']));
 const showRegenConfirm = ref(false);
 
 function toggleSection(section: TeachingSection) {
@@ -115,6 +125,40 @@ function toggleSection(section: TeachingSection) {
   }
   expandedSections.value = next;
 }
+
+/** Find the next section after `idx` that has content but is not expanded */
+function nextCollapsedSection(idx: number): number | null {
+  for (let i = idx + 1; i < TEACHING_SECTIONS.length; i++) {
+    const s = TEACHING_SECTIONS[i];
+    if (!expandedSections.value.has(s) && (props.teaching?.[s] || (props.generating && props.streamingSections[s]))) {
+      return i;
+    }
+  }
+  return null;
+}
+
+function expandNext(currentIdx: number) {
+  const nextIdx = nextCollapsedSection(currentIdx);
+  if (nextIdx != null) {
+    const next = new Set(expandedSections.value);
+    next.add(TEACHING_SECTIONS[nextIdx]);
+    expandedSections.value = next;
+  }
+}
+
+// Auto-expand sections as they stream in during generation
+watch(() => props.generating, (isGenerating) => {
+  if (isGenerating) {
+    expandedSections.value = new Set<TeachingSection>(TEACHING_SECTIONS);
+  }
+});
+
+// Reset to progressive mode when teaching content changes (new point)
+watch(() => props.teaching?.pointId, () => {
+  if (!props.generating) {
+    expandedSections.value = new Set<TeachingSection>(['what']);
+  }
+});
 
 function renderMarkdown(content: string): string {
   return marked.parse(content) as string;
@@ -208,6 +252,25 @@ const emit = defineEmits<{
 .noContent {
   font-size: 13px;
   color: var(--color-text-disabled);
+}
+
+.nextHint {
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nextHint:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
 }
 
 /* Buttons */

@@ -23,6 +23,8 @@ import type {
   ActivityWithPointName,
   ActivitiesPage,
   LinkedArticle,
+  SmQuizWithAttempt,
+  GuidanceResponse,
 } from './types';
 
 /**
@@ -122,6 +124,20 @@ export function createSkillLearningStore(skillId: string) {
     const activitiesPage = ref(1);
     const activitiesTotalPages = ref(0);
 
+    // ===== 理解测验 =====
+    const quizzes = ref<SmQuizWithAttempt[]>([]);
+    const quizzesLoading = ref(false);
+    const quizzesGenerating = ref(false);
+
+    // ===== AI 引导 =====
+    const guidance = ref<GuidanceResponse | null>(null);
+    const guidanceLoading = ref(false);
+
+    // ===== 完成庆祝 =====
+    const showCelebration = ref(false);
+    const celebrationType = ref<'point' | 'stage' | null>(null);
+    const celebrationMessage = ref('');
+
     // ===== 种子数据 =====
     const seeding = ref(false);
 
@@ -207,11 +223,19 @@ export function createSkillLearningStore(skillId: string) {
       note.value = null;
       noteLastSaved.value = null;
       linkedArticles.value = [];
+      quizzes.value = [];
+      guidance.value = null;
+      showCelebration.value = false;
       try {
         const point = await $fetch<PointDetail>(`${baseUrl}/points/${id}`);
         currentPoint.value = point;
         currentDomainId.value = point.domain.id;
         teaching.value = point.teaching;
+        // Auto-load quizzes and guidance when teaching exists
+        if (point.teaching) {
+          loadQuizzes(id);
+          loadGuidance(id);
+        }
       } catch {
         currentPoint.value = null;
       } finally {
@@ -223,6 +247,9 @@ export function createSkillLearningStore(skillId: string) {
       if (!currentPoint.value || currentPoint.value.id !== pointId) return;
 
       const oldStatus = currentPoint.value.status;
+      const wasCompleted = oldStatus === 'understood' || oldStatus === 'practiced';
+      const isNowCompleted = status === 'understood' || status === 'practiced';
+
       currentPoint.value = { ...currentPoint.value, status, statusUpdatedAt: Date.now() };
 
       try {
@@ -230,6 +257,24 @@ export function createSkillLearningStore(skillId: string) {
           method: 'PATCH',
           body: { status },
         });
+
+        // Trigger celebration on transition to completed
+        if (!wasCompleted && isNowCompleted) {
+          triggerCelebration('point', '知识点学习完成！');
+          // Refresh recommendations for next point card
+          loadRecommendations();
+          // Check stage completion after a delay
+          loadStages().then(() => {
+            const justCompleted = stages.value.find(s =>
+              s.pointCount > 0 && s.completedCount >= s.pointCount,
+            );
+            if (justCompleted) {
+              setTimeout(() => {
+                triggerCelebration('stage', `恭喜！你已完成「${justCompleted.name}」阶段！`);
+              }, 2500);
+            }
+          });
+        }
       } catch {
         if (currentPoint.value?.id === pointId) {
           currentPoint.value = { ...currentPoint.value, status: oldStatus };
@@ -316,6 +361,9 @@ export function createSkillLearningStore(skillId: string) {
                 }
               } else if (data.type === 'done') {
                 teaching.value = data.teaching;
+                // Auto-generate quizzes and guidance after teaching
+                generateQuizzes(pointId);
+                loadGuidance(pointId);
               } else if (data.type === 'error') {
                 throw new Error(data.message);
               }
@@ -541,6 +589,84 @@ export function createSkillLearningStore(skillId: string) {
       finally { activitiesLoading.value = false; }
     }
 
+    // ===== 理解测验操作 =====
+    async function loadQuizzes(pointId: number) {
+      quizzesLoading.value = true;
+      try {
+        const data = await $fetch<SmQuizWithAttempt[]>(`${baseUrl}/points/${pointId}/quizzes`);
+        if (data.length === 0) {
+          // No quizzes yet — auto-generate
+          quizzesLoading.value = false;
+          generateQuizzes(pointId);
+          return;
+        }
+        quizzes.value = data;
+      } catch {
+        quizzes.value = [];
+      } finally {
+        quizzesLoading.value = false;
+      }
+    }
+
+    async function generateQuizzes(pointId: number) {
+      quizzesGenerating.value = true;
+      try {
+        const data = await $fetch<SmQuizWithAttempt[]>(`${baseUrl}/points/${pointId}/quizzes/generate`, {
+          method: 'POST',
+        });
+        quizzes.value = data.map(q => ({ ...q, passed: false }));
+      } catch {
+        // Silent — quiz generation is non-critical
+      } finally {
+        quizzesGenerating.value = false;
+      }
+    }
+
+    async function submitQuizAnswer(pointId: number, quizId: number, answer: string): Promise<{ isCorrect: boolean; explanation: string | null }> {
+      try {
+        const res = await $fetch<{ isCorrect: boolean; correctAnswer: string; explanation: string | null }>(
+          `${baseUrl}/points/${pointId}/quizzes/${quizId}/answer`,
+          { method: 'POST', body: { answer } },
+        );
+
+        if (res.isCorrect) {
+          quizzes.value = quizzes.value.map(q =>
+            q.id === quizId ? { ...q, passed: true } : q,
+          );
+          logActivity(pointId, 'quiz');
+        }
+
+        return { isCorrect: res.isCorrect, explanation: res.explanation };
+      } catch {
+        return { isCorrect: false, explanation: null };
+      }
+    }
+
+    // ===== AI 引导操作 =====
+    async function loadGuidance(pointId: number) {
+      guidanceLoading.value = true;
+      try {
+        guidance.value = await $fetch<GuidanceResponse>(`${baseUrl}/points/${pointId}/guidance`, {
+          method: 'POST',
+        });
+      } catch {
+        guidance.value = null;
+      } finally {
+        guidanceLoading.value = false;
+      }
+    }
+
+    // ===== 完成庆祝 =====
+    function triggerCelebration(type: 'point' | 'stage', message: string) {
+      celebrationType.value = type;
+      celebrationMessage.value = message;
+      showCelebration.value = true;
+    }
+
+    function dismissCelebration() {
+      showCelebration.value = false;
+    }
+
     return {
       // 视图状态
       currentView, globalTab, currentDomainId, currentPointId,
@@ -594,6 +720,14 @@ export function createSkillLearningStore(skillId: string) {
       // 学习记录
       activities, activitiesLoading, activitiesPage, activitiesTotalPages,
       logActivity, loadActivities,
+      // 理解测验
+      quizzes, quizzesLoading, quizzesGenerating,
+      loadQuizzes, generateQuizzes, submitQuizAnswer,
+      // AI 引导
+      guidance, guidanceLoading, loadGuidance,
+      // 完成庆祝
+      showCelebration, celebrationType, celebrationMessage,
+      triggerCelebration, dismissCelebration,
     };
   });
 }
