@@ -20,6 +20,15 @@ export default defineEventHandler(async (event) => {
   if (body.milestoneId !== undefined) {
     updates.milestoneId = body.milestoneId || null;
   }
+  if (body.description !== undefined) {
+    updates.description = body.description || null;
+  }
+  if (body.priority !== undefined) {
+    if (!['low', 'medium', 'high'].includes(body.priority)) {
+      throw createError({ statusCode: 400, message: '优先级必须是 low、medium 或 high' });
+    }
+    updates.priority = body.priority;
+  }
   if (body.dueDate !== undefined) {
     updates.dueDate = body.dueDate || null;
   }

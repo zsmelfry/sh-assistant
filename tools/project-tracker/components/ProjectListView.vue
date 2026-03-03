@@ -1,7 +1,25 @@
 <template>
-  <div class="projectListView">
+  <div class="projectListView" :class="{ kanbanMode: store.displayMode === 'kanban' }">
     <div class="listHeader">
       <h2>事项追踪</h2>
+      <div class="viewToggle">
+        <button
+          class="toggleBtn"
+          :class="{ active: store.displayMode === 'list' }"
+          title="列表视图"
+          @click="store.displayMode = 'list'"
+        >
+          ☰
+        </button>
+        <button
+          class="toggleBtn"
+          :class="{ active: store.displayMode === 'kanban' }"
+          title="看板视图"
+          @click="store.displayMode = 'kanban'"
+        >
+          ⊞
+        </button>
+      </div>
       <div class="headerActions">
         <BaseButton @click="$emit('create-project')">+ 新事项</BaseButton>
         <BaseButton variant="ghost" @click="$emit('manage-categories')">管理分类</BaseButton>
@@ -23,21 +41,32 @@
 
     <!-- Grouped project list -->
     <template v-else>
-      <!-- Active projects grouped by category -->
-      <div v-for="group in groupedProjects" :key="group.categoryId" class="categoryGroup">
-        <h3 class="groupTitle">{{ group.categoryName }}</h3>
-        <div class="projectList">
-          <ProjectCard
-            v-for="p in group.projects"
-            :key="p.id"
-            :project="p"
-            @click="$emit('open-project', p.id)"
-            @update-status="$emit('update-status', p.id, $event)"
-          />
-        </div>
-      </div>
+      <!-- Kanban mode -->
+      <KanbanBoard
+        v-if="store.displayMode === 'kanban'"
+        :projects="nonIdeaProjects"
+        :categories="categories"
+        :tags="tags"
+        @open-project="$emit('open-project', $event)"
+      />
 
-      <!-- Idea pool -->
+      <!-- List mode: Active projects grouped by category -->
+      <template v-else>
+        <div v-for="group in groupedProjects" :key="group.categoryId" class="categoryGroup">
+          <h3 class="groupTitle">{{ group.categoryName }}</h3>
+          <div class="projectList">
+            <ProjectCard
+              v-for="p in group.projects"
+              :key="p.id"
+              :project="p"
+              @click="$emit('open-project', p.id)"
+              @update-status="$emit('update-status', p.id, $event)"
+            />
+          </div>
+        </div>
+      </template>
+
+      <!-- Idea pool (always visible) -->
       <div v-if="ideaProjects.length > 0" class="categoryGroup ideaPool">
         <h3 class="groupTitle">灵感池</h3>
         <div class="projectList">
@@ -59,9 +88,12 @@ import type { ProjectWithDetails, Category, Tag, ProjectFilters, ProjectStatus }
 import { STATUS_ORDER } from '../types';
 import ProjectCard from './ProjectCard.vue';
 import ProjectFiltersComp from './ProjectFilters.vue';
+import KanbanBoard from './KanbanBoard.vue';
 
 // Rename to avoid collision with prop name
 const ProjectFilters = ProjectFiltersComp;
+
+const store = useProjectTrackerStore();
 
 const props = defineProps<{
   projects: ProjectWithDetails[];
@@ -83,6 +115,11 @@ const ideaProjects = computed(() =>
   props.projects
     .filter(p => p.status === 'idea')
     .sort((a, b) => a.sortOrder - b.sortOrder),
+);
+
+// Non-idea projects (used by kanban board)
+const nonIdeaProjects = computed(() =>
+  props.projects.filter(p => p.status !== 'idea'),
 );
 
 // Group non-idea projects by category, sorted by status priority
@@ -130,6 +167,10 @@ const groupedProjects = computed(() => {
   margin: 0 auto;
 }
 
+.projectListView.kanbanMode {
+  max-width: 1200px;
+}
+
 .listHeader {
   display: flex;
   align-items: center;
@@ -140,6 +181,37 @@ const groupedProjects = computed(() => {
 .listHeader h2 {
   font-size: 20px;
   font-weight: 700;
+}
+
+.viewToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.toggleBtn {
+  padding: 4px 8px;
+  border: none;
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toggleBtn:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.toggleBtn:hover {
+  background: var(--color-bg-hover);
+}
+
+.toggleBtn.active {
+  background: var(--color-accent);
+  color: var(--color-bg-primary);
 }
 
 .headerActions {

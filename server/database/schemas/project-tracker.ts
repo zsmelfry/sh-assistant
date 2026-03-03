@@ -78,6 +78,10 @@ export const ptChecklistItems = sqliteTable('pt_checklist_items', {
   projectId: integer('project_id').notNull()
     .references(() => ptProjects.id, { onDelete: 'cascade' }),
   content: text('content').notNull(),
+  description: text('description'),
+  priority: text('priority', { enum: ['low', 'medium', 'high'] })
+    .notNull()
+    .default('medium'),
   isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(false),
   completedAt: integer('completed_at', { mode: 'number' }),
   dueDate: text('due_date'),
@@ -92,6 +96,21 @@ export const ptChecklistItems = sqliteTable('pt_checklist_items', {
   index('idx_pt_checklist_project').on(table.projectId),
   index('idx_pt_checklist_milestone').on(table.milestoneId),
   index('idx_pt_checklist_sort').on(table.projectId, table.milestoneId, table.sortOrder),
+]);
+
+// ===== Checklist 任务附件 =====
+export const ptChecklistAttachments = sqliteTable('pt_checklist_attachments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  checklistItemId: integer('checklist_item_id').notNull()
+    .references(() => ptChecklistItems.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['url', 'image', 'file'] }).notNull(),
+  url: text('url'),
+  filePath: text('file_path'),
+  originalName: text('original_name'),
+  caption: text('caption'),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+}, (table) => [
+  index('idx_pt_checklist_att_item').on(table.checklistItemId),
 ]);
 
 // ===== 笔记 =====
@@ -164,3 +183,4 @@ export const ptNotifications = sqliteTable('pt_notifications', {
 export const PT_STATUSES = ['idea', 'todo', 'in_progress', 'blocked', 'done', 'dropped'] as const;
 export const PT_PRIORITIES = ['low', 'medium', 'high'] as const;
 export const PT_ATTACHMENT_TYPES = ['url', 'image'] as const;
+export const PT_CHECKLIST_ATTACHMENT_TYPES = ['url', 'image', 'file'] as const;

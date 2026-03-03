@@ -7,13 +7,26 @@
       @change="$emit('toggle')"
     />
     <div class="itemContent">
-      <span class="itemText">{{ item.content }}</span>
+      <div class="itemTopRow">
+        <span v-if="item.priority !== 'medium'" class="priorityDot" :class="item.priority" />
+        <span class="itemText">{{ item.content }}</span>
+        <span v-if="item.attachmentCount" class="indicatorBadge" title="附件">
+          {{ item.attachmentCount }}
+        </span>
+        <span v-if="item.linkedNoteTitle" class="indicatorBadge" :title="'笔记: ' + item.linkedNoteTitle">
+          N
+        </span>
+        <span v-if="item.linkedDiagramTitle" class="indicatorBadge" :title="'图表: ' + item.linkedDiagramTitle">
+          D
+        </span>
+      </div>
+      <p v-if="item.description" class="descPreview">{{ descriptionFirstLine }}</p>
       <div v-if="item.dueDate || item.reminderAt" class="itemMeta">
         <span v-if="item.dueDate" class="dueDate" :class="{ overdue: isOverdue && !item.isCompleted }">
           {{ item.dueDate }}
         </span>
         <span v-if="item.reminderAt" class="reminderBadge" :title="formatReminder(item.reminderAt)">
-          ⏰ {{ formatReminder(item.reminderAt) }}
+          {{ formatReminder(item.reminderAt) }}
         </span>
       </div>
     </div>
@@ -40,6 +53,12 @@ defineEmits<{
 const isOverdue = computed(() => {
   if (!props.item.dueDate) return false;
   return props.item.dueDate < new Date().toISOString().slice(0, 10);
+});
+
+const descriptionFirstLine = computed(() => {
+  if (!props.item.description) return '';
+  const line = props.item.description.split('\n')[0];
+  return line.length > 80 ? line.slice(0, 80) + '...' : line;
 });
 
 function formatReminder(ts: number): string {
@@ -73,11 +92,56 @@ function formatReminder(ts: number): string {
   min-width: 0;
 }
 
+.itemTopRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.priorityDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priorityDot.high {
+  background: var(--color-danger);
+}
+
+.priorityDot.low {
+  background: var(--color-text-disabled);
+}
+
 .itemText {
   font-size: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.indicatorBadge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.descPreview {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .itemMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   margin-top: 1px;
 }
 
@@ -94,7 +158,6 @@ function formatReminder(ts: number): string {
 .reminderBadge {
   font-size: 11px;
   color: var(--color-text-secondary);
-  margin-left: var(--spacing-xs);
 }
 
 .itemActions {

@@ -69,6 +69,15 @@
         />
       </template>
     </BaseModal>
+
+    <!-- Delete confirm dialog -->
+    <ConfirmDialog
+      :open="!!deletingItem"
+      title="删除确认"
+      message="确定要删除这个笔记/图表吗？"
+      @confirm="confirmDelete"
+      @cancel="deletingItem = null"
+    />
   </div>
 </template>
 
@@ -102,6 +111,9 @@ const summarizing = ref(false);
 
 // Diagram editing state
 const editingDiagram = ref<Diagram | null>(null);
+
+// Delete confirmation state
+const deletingItem = ref<MixedItem | null>(null);
 
 const items = computed<MixedItem[]>(() => {
   const list: MixedItem[] = [];
@@ -149,6 +161,11 @@ function formatDate(ts: number): string {
 // === Create ===
 
 async function handleCreateNote() {
+  const existing = notes.value.find(n => n.title === '新笔记' && (!n.content || n.content === ''));
+  if (existing) {
+    openNote(existing);
+    return;
+  }
   const note = await $fetch<Note>(`/api/project-tracker/projects/${props.projectId}/notes`, {
     method: 'POST',
     body: { title: '新笔记' },
@@ -158,6 +175,12 @@ async function handleCreateNote() {
 }
 
 async function handleCreateDiagram() {
+  const defaultMermaid = 'graph TD\n  A[开始] --> B[结束]';
+  const existing = diagrams.value.find(d => d.title === '新图表' && d.mermaidCode === defaultMermaid);
+  if (existing) {
+    openDiagram(existing);
+    return;
+  }
   const diagram = await $fetch<Diagram>(`/api/project-tracker/projects/${props.projectId}/diagrams`, {
     method: 'POST',
     body: { title: '新图表' },
@@ -273,7 +296,14 @@ function closeDiagramModal() {
 
 // === Delete ===
 
-async function handleDelete(item: MixedItem) {
+function handleDelete(item: MixedItem) {
+  deletingItem.value = item;
+}
+
+async function confirmDelete() {
+  const item = deletingItem.value;
+  if (!item) return;
+  deletingItem.value = null;
   if (item.kind === 'note') {
     await $fetch(`/api/project-tracker/projects/${props.projectId}/notes/${item.id}`, { method: 'DELETE' });
     await loadNotes();

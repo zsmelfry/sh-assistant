@@ -134,6 +134,13 @@
       "when": 1772700000000,
       "tag": "0018_add_reminder_at",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1772780000000,
+      "tag": "0019_checklist_enhancements",
+      "breakpoints": true
     }
   ]
 }

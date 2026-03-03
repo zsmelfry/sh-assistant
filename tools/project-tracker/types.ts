@@ -3,6 +3,7 @@
 export type ProjectStatus = 'idea' | 'todo' | 'in_progress' | 'blocked' | 'done' | 'dropped';
 export type Priority = 'low' | 'medium' | 'high';
 export type AttachmentType = 'url' | 'image';
+export type ChecklistAttachmentType = 'url' | 'image' | 'file';
 export type ChatRole = 'user' | 'assistant' | 'system';
 
 export const STATUS_LABELS: Record<ProjectStatus, string> = {
@@ -92,6 +93,8 @@ export interface ChecklistItem {
   id: number;
   projectId: number;
   content: string;
+  description: string | null;
+  priority: Priority;
   isCompleted: boolean;
   completedAt: number | null;
   dueDate: string | null;
@@ -100,6 +103,20 @@ export interface ChecklistItem {
   linkedNoteId: number | null;
   linkedDiagramId: number | null;
   sortOrder: number;
+  createdAt: number;
+  attachmentCount?: number;
+  linkedNoteTitle?: string | null;
+  linkedDiagramTitle?: string | null;
+}
+
+export interface ChecklistAttachment {
+  id: number;
+  checklistItemId: number;
+  type: ChecklistAttachmentType;
+  url: string | null;
+  filePath: string | null;
+  originalName: string | null;
+  caption: string | null;
   createdAt: number;
 }
 

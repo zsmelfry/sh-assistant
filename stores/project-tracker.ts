@@ -17,6 +17,8 @@ export const useProjectTrackerStore = defineStore('project-tracker', () => {
   const tags = ref<Tag[]>([]);
   const loading = ref(false);
 
+  const displayMode = ref<'list' | 'kanban'>('list');
+
   const filters = ref<ProjectFilters>({
     statuses: [],
     categoryId: null,
@@ -126,6 +128,7 @@ export const useProjectTrackerStore = defineStore('project-tracker', () => {
     tags,
     loading,
     filters,
+    displayMode,
     // Navigation
     navigateTo,
     // Categories
