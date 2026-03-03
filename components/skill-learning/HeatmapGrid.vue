@@ -7,23 +7,30 @@
       <button class="navBtn" @click="emit('change-year', year + 1)">&gt;</button>
     </div>
 
-    <!-- Weekday labels + daily grid -->
+    <!-- Month labels (vertical) + daily grid -->
     <div class="gridWrapper">
-      <div class="weekdayLabels">
-        <span v-for="label in ['', '一', '', '三', '', '五', '']" :key="label">
-          {{ label }}
-        </span>
+      <div class="monthLabels">
+        <span v-for="m in 12" :key="m">{{ m }}月</span>
       </div>
-      <div class="dailyGrid">
-        <div
-          v-for="day in gridDays"
-          :key="day.date"
-          class="cell"
-          :class="cellClass(day)"
-          @mouseenter="showTooltip(day, $event)"
-          @mouseleave="hideTooltip"
-          @click="emit('select-date', day.date)"
-        />
+      <div class="gridContent">
+        <!-- Day-of-month header -->
+        <div class="dayHeader">
+          <span v-for="d in 31" :key="d">{{ d }}</span>
+        </div>
+        <!-- 12 rows × 31 columns -->
+        <div class="dailyGrid">
+          <template v-for="cell in gridCells" :key="cell.key">
+            <div
+              v-if="cell.exists"
+              class="cell"
+              :class="cellClass(cell)"
+              @mouseenter="showTooltip(cell, $event)"
+              @mouseleave="hideTooltip"
+              @click="emit('select-date', cell.date)"
+            />
+            <div v-else class="cell placeholder" />
+          </template>
+        </div>
       </div>
     </div>
 
@@ -51,15 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  format,
-  startOfYear,
-  endOfYear,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameYear,
-} from 'date-fns';
+import { format, getDaysInMonth } from 'date-fns';
 
 const props = defineProps<{
   year: number;
@@ -71,9 +70,10 @@ const emit = defineEmits<{
   'select-date': [date: string];
 }>();
 
-interface GridDay {
+interface GridCell {
+  key: string;
   date: string;
-  inYear: boolean;
+  exists: boolean;
   count: number;
 }
 
@@ -84,39 +84,42 @@ const tooltip = reactive({
   text: '',
 });
 
-const gridDays = computed<GridDay[]>(() => {
-  const yearStart = startOfYear(new Date(props.year, 0, 1));
-  const yearEnd = endOfYear(yearStart);
-
-  const gridStart = startOfWeek(yearStart, { weekStartsOn: 1 });
-  const gridEnd = endOfWeek(yearEnd, { weekStartsOn: 1 });
-
-  const allDays = eachDayOfInterval({ start: gridStart, end: gridEnd });
-
-  return allDays.map(d => {
-    const dateStr = format(d, 'yyyy-MM-dd');
-    const inYear = isSameYear(d, yearStart);
-    const count = inYear ? (props.data[dateStr] || 0) : 0;
-    return { date: dateStr, inYear, count };
-  });
+const gridCells = computed<GridCell[]>(() => {
+  const cells: GridCell[] = [];
+  for (let month = 1; month <= 12; month++) {
+    const daysInMonth = getDaysInMonth(new Date(props.year, month - 1));
+    for (let day = 1; day <= 31; day++) {
+      const exists = day <= daysInMonth;
+      const dateStr = exists
+        ? format(new Date(props.year, month - 1, day), 'yyyy-MM-dd')
+        : '';
+      cells.push({
+        key: `${month}-${day}`,
+        date: dateStr,
+        exists,
+        count: exists ? (props.data[dateStr] || 0) : 0,
+      });
+    }
+  }
+  return cells;
 });
 
-function cellClass(day: GridDay) {
-  if (!day.inYear) return 'outside';
-  if (day.count === 0) return 'empty';
-  if (day.count <= 2) return 'level1';
-  if (day.count <= 5) return 'level2';
+function cellClass(cell: GridCell) {
+  if (!cell.exists) return 'placeholder';
+  if (cell.count === 0) return 'empty';
+  if (cell.count <= 2) return 'level1';
+  if (cell.count <= 5) return 'level2';
   return 'level3';
 }
 
-function showTooltip(day: GridDay, event: MouseEvent) {
-  if (!day.inYear) return;
+function showTooltip(cell: GridCell, event: MouseEvent) {
+  if (!cell.exists) return;
   tooltip.visible = true;
   tooltip.x = event.clientX;
   tooltip.y = event.clientY;
-  tooltip.text = day.count > 0
-    ? `${day.date}  ${day.count} 次学习行为`
-    : `${day.date}  无学习行为`;
+  tooltip.text = cell.count > 0
+    ? `${cell.date}  ${cell.count} 次学习行为`
+    : `${cell.date}  无学习行为`;
 }
 
 function hideTooltip() {
@@ -126,6 +129,8 @@ function hideTooltip() {
 
 <style scoped>
 .heatmapGrid {
+  --heatmap-cell: 18px;
+  --heatmap-gap: 3px;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -166,47 +171,68 @@ function hideTooltip() {
   display: flex;
 }
 
-.weekdayLabels {
+.monthLabels {
   display: grid;
-  grid-template-rows: repeat(7, var(--chart-cell-size));
-  gap: var(--chart-cell-gap);
+  grid-template-rows: repeat(12, var(--heatmap-cell));
+  gap: var(--heatmap-gap);
   margin-right: var(--spacing-xs);
+  margin-top: calc(var(--heatmap-cell) + var(--heatmap-gap));
 }
 
-.weekdayLabels span {
-  font-size: 9px;
+.monthLabels span {
+  font-size: 12px;
   color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: var(--chart-cell-size);
+  height: var(--heatmap-cell);
+  white-space: nowrap;
+}
+
+.gridContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--heatmap-gap);
+}
+
+.dayHeader {
+  display: grid;
+  grid-template-columns: repeat(31, var(--heatmap-cell));
+  gap: var(--heatmap-gap);
+}
+
+.dayHeader span {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--heatmap-cell);
 }
 
 .dailyGrid {
   display: grid;
-  grid-template-rows: repeat(7, var(--chart-cell-size));
-  grid-auto-flow: column;
-  grid-auto-columns: var(--chart-cell-size);
-  gap: var(--chart-cell-gap);
-  overflow-x: auto;
+  grid-template-columns: repeat(31, var(--heatmap-cell));
+  grid-template-rows: repeat(12, var(--heatmap-cell));
+  gap: var(--heatmap-gap);
 }
 
 .cell {
-  width: var(--chart-cell-size);
-  height: var(--chart-cell-size);
-  border-radius: 2px;
+  width: var(--heatmap-cell);
+  height: var(--heatmap-cell);
+  border-radius: 3px;
   cursor: default;
 }
 
-.cell.outside {
-  background-color: var(--color-chart-bg);
+.cell.placeholder {
+  background: transparent;
 }
 
 .cell.empty {
   background-color: var(--color-chart-empty);
 }
 
-/* Four grey levels: lighter → darker */
+/* Four grey levels: lighter -> darker */
 .cell.level1 {
   background-color: var(--color-border);
 }
@@ -223,7 +249,7 @@ function hideTooltip() {
 .legend {
   display: flex;
   align-items: center;
-  gap: var(--chart-cell-gap);
+  gap: var(--heatmap-gap);
   align-self: flex-end;
 }
 
@@ -252,10 +278,20 @@ function hideTooltip() {
 }
 
 @media (max-width: 768px) {
+  .heatmapGrid {
+    --heatmap-cell: 12px;
+    --heatmap-gap: 2px;
+  }
   .navBtn {
     width: var(--touch-target-min);
     height: var(--touch-target-min);
     font-size: 14px;
+  }
+  .monthLabels span {
+    font-size: 10px;
+  }
+  .dayHeader span {
+    font-size: 9px;
   }
 }
 </style>

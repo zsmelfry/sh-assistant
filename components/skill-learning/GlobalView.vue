@@ -37,21 +37,14 @@
       </div>
     </div>
 
-    <!-- Tab switch: 领域视图 / 阶段视图 -->
+    <!-- Tab switch: 知识概览 / 学习热力图 -->
     <div class="viewTabs">
       <button
         class="viewTab"
-        :class="{ active: store.globalTab === 'domains' }"
-        @click="store.switchGlobalTab('domains')"
+        :class="{ active: store.globalTab === 'overview' }"
+        @click="store.switchGlobalTab('overview')"
       >
-        领域视图
-      </button>
-      <button
-        class="viewTab"
-        :class="{ active: store.globalTab === 'stages' }"
-        @click="store.switchGlobalTab('stages')"
-      >
-        阶段视图
+        知识概览
       </button>
       <button
         class="viewTab"
@@ -62,8 +55,8 @@
       </button>
     </div>
 
-    <!-- Domains tab -->
-    <template v-if="store.globalTab === 'domains'">
+    <!-- Overview tab (merged domains + stages) -->
+    <template v-if="store.globalTab === 'overview'">
       <!-- Loading -->
       <div v-if="store.domainsLoading" class="loadingState">
         加载中...
@@ -82,34 +75,35 @@
         </button>
       </div>
 
-      <!-- Domain card grid -->
-      <div v-else class="domainGrid">
-        <DomainCard
-          v-for="domain in store.domains"
-          :key="domain.id"
-          :domain="domain"
-          @click="store.navigateToDomain(domain.id)"
-        />
-      </div>
-    </template>
+      <template v-else>
+        <!-- Domain card grid -->
+        <div class="domainGrid">
+          <DomainCard
+            v-for="domain in store.domains"
+            :key="domain.id"
+            :domain="domain"
+            @click="store.navigateToDomain(domain.id)"
+          />
+        </div>
 
-    <!-- Stages tab -->
-    <StageView v-else-if="store.globalTab === 'stages'" />
+        <!-- Stage timeline -->
+        <div v-if="store.stages.length > 0" class="stageSection">
+          <h3 class="sectionTitle">学习阶段</h3>
+          <StageTimeline :stages="store.stages" />
+        </div>
+      </template>
+    </template>
 
     <!-- Heatmap tab -->
     <LearningHeatmap v-else-if="store.globalTab === 'heatmap'" />
-
-    <!-- Learning recommendations (show only on domains/stages tabs) -->
-    <LearningRecommendation v-if="store.globalTab !== 'heatmap'" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { SKILL_STORE_KEY } from '~/composables/skill-learning';
 import DomainCard from './DomainCard.vue';
-import StageView from './StageView.vue';
+import StageTimeline from './StageTimeline.vue';
 import SegmentedProgress from './SegmentedProgress.vue';
-import LearningRecommendation from './LearningRecommendation.vue';
 import LearningHeatmap from './LearningHeatmap.vue';
 
 const store = inject(SKILL_STORE_KEY)!;
@@ -221,6 +215,18 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-md);
+}
+
+/* Stage section */
+.stageSection {
+  margin-top: var(--spacing-sm);
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
 }
 
 .loadingState {

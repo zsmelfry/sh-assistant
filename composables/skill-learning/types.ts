@@ -16,7 +16,7 @@ export {
 export type SkillLearningView = 'global' | 'domain' | 'point';
 
 // ===== 全局视图 Tab =====
-export type GlobalTab = 'domains' | 'stages' | 'heatmap';
+export type GlobalTab = 'overview' | 'heatmap';
 
 // ===== 数据库实体类型 =====
 

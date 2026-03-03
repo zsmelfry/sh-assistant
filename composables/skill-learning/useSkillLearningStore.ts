@@ -56,7 +56,7 @@ export function createSkillLearningStore(skillId: string) {
 
     // ===== 视图状态 =====
     const currentView = ref<SkillLearningView>('global');
-    const globalTab = ref<GlobalTab>('domains');
+    const globalTab = ref<GlobalTab>('overview');
     const currentDomainId = ref<number | null>(null);
     const currentPointId = ref<number | null>(null);
 
@@ -181,7 +181,7 @@ export function createSkillLearningStore(skillId: string) {
 
     function switchGlobalTab(tab: GlobalTab) {
       globalTab.value = tab;
-      if (tab === 'stages') {
+      if (tab === 'overview') {
         loadStages();
       } else if (tab === 'heatmap') {
         loadHeatmap();
