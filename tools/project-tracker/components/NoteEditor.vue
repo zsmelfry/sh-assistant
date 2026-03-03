@@ -63,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked';
 import type { Note, Attachment } from '../types';
 
 const props = defineProps<{
@@ -88,26 +89,14 @@ const newUrl = ref('');
 const newUrlCaption = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 
-function renderMarkdown(text: string): string {
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/\n/g, '<br>');
-}
-
 const renderedSummary = computed(() => {
   if (!props.note?.aiSummary) return '';
-  return renderMarkdown(props.note.aiSummary);
+  return marked.parse(props.note.aiSummary, { breaks: true }) as string;
 });
 
 const renderedContent = computed(() => {
   if (!props.content) return '<p style="color: var(--color-text-disabled)">无内容</p>';
-  return renderMarkdown(props.content);
+  return marked.parse(props.content, { breaks: true }) as string;
 });
 
 function handleAddUrl() {
