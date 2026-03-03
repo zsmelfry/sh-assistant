@@ -5,7 +5,7 @@ registerTool({
   id: 'article-reader',
   name: '文章阅读',
   icon: FileText,
-  order: 4,
+  order: 5,
   component: () => import('./ArticleReader.vue'),
   namespaces: ['articles', 'bookmarks'],
 });

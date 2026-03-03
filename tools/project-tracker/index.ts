@@ -5,7 +5,7 @@ registerTool({
   id: 'project-tracker',
   name: '事项追踪',
   icon: ClipboardList,
-  order: 6,
+  order: 4,
   component: () => import('./ProjectTracker.vue'),
   namespaces: ['project-tracker'],
 });
