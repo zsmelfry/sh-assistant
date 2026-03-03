@@ -15,9 +15,10 @@
 
       <!-- Tab content -->
       <div class="tabContent">
-        <div v-if="activeTab === 'checklist'" class="tabPlaceholder">
-          Checklist（待实现）
-        </div>
+        <ChecklistTab
+          v-if="activeTab === 'checklist'"
+          :project-id="projectId"
+        />
         <div v-else-if="activeTab === 'notes'" class="tabPlaceholder">
           笔记（待实现）
         </div>
@@ -84,6 +85,7 @@
 import type { ProjectWithDetails, ProjectStatus } from '../types';
 import ProjectHeader from './ProjectHeader.vue';
 import TabNav from './TabNav.vue';
+import ChecklistTab from './ChecklistTab.vue';
 
 const props = defineProps<{
   projectId: number;
