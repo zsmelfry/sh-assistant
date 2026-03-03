@@ -29,7 +29,12 @@
       <span v-for="tag in project.tags" :key="tag.id" class="tag">{{ tag.name }}</span>
     </div>
 
-    <p v-if="project.description" class="description">{{ project.description }}</p>
+    <div v-if="project.description" class="descriptionWrap">
+      <p class="description" :class="{ collapsed: !descExpanded }">{{ project.description }}</p>
+      <button v-if="descOverflows" class="expandBtn" @click="descExpanded = !descExpanded">
+        {{ descExpanded ? '收起' : '展开' }}
+      </button>
+    </div>
 
     <div v-if="project.status === 'blocked' && project.blockedReason" class="blockedBanner">
       受阻原因: {{ project.blockedReason }}
@@ -56,6 +61,25 @@ const emit = defineEmits<{
   delete: [];
   'update-status': [status: ProjectStatus];
 }>();
+
+const descExpanded = ref(false);
+const descOverflows = ref(false);
+const descEl = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+  nextTick(() => checkDescOverflow());
+});
+
+watch(() => props.project.description, () => {
+  nextTick(() => checkDescOverflow());
+});
+
+function checkDescOverflow() {
+  const el = document.querySelector('.description.collapsed') as HTMLElement | null;
+  if (el) {
+    descOverflows.value = el.scrollHeight > el.clientHeight;
+  }
+}
 
 function formatReminder(ts: number): string {
   const d = new Date(ts);
@@ -177,11 +201,37 @@ function handleStatusChange(e: Event) {
   color: var(--color-text-secondary);
 }
 
+.descriptionWrap {
+  margin-bottom: var(--spacing-sm);
+}
+
 .description {
   font-size: 14px;
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
   white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.description.collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.expandBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  padding: 0;
+  margin-top: 2px;
+  text-decoration: underline;
+}
+
+.expandBtn:hover {
+  color: var(--color-text-primary);
 }
 
 .blockedBanner {

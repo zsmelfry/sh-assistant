@@ -1,15 +1,9 @@
 <template>
   <div class="noteEditor">
     <div class="editorHeader">
-      <button class="backBtn" @click="$emit('back')">← 返回笔记列表</button>
-      <div class="editorActions">
-        <BaseButton variant="ghost" size="sm" @click="previewMode = !previewMode">
-          {{ previewMode ? '编辑' : '预览' }}
-        </BaseButton>
-        <BaseButton size="sm" :disabled="summarizing" @click="$emit('summarize')">
-          {{ summarizing ? '生成中...' : 'AI 摘要' }}
-        </BaseButton>
-      </div>
+      <BaseButton variant="ghost" size="sm" @click="previewMode = !previewMode">
+        {{ previewMode ? '编辑' : '预览' }}
+      </BaseButton>
     </div>
 
     <input
@@ -80,9 +74,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  back: [];
   save: [];
-  summarize: [];
   'update:title': [value: string];
   'update:content': [value: string];
   'add-url-attachment': [url: string, caption: string];
@@ -147,25 +139,8 @@ function handleFileChange(e: Event) {
 
 .editorHeader {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-}
-
-.backBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.backBtn:hover {
-  color: var(--color-text-primary);
-}
-
-.editorActions {
-  display: flex;
-  gap: var(--spacing-xs);
 }
 
 .titleInput {

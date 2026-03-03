@@ -2,33 +2,42 @@
   <div class="diagramTab">
     <!-- List view -->
     <template v-if="!editingDiagram">
-      <div class="diagramHeader">
+      <div class="paneHeader">
+        <h3 class="paneTitle">Diagram</h3>
         <BaseButton size="sm" @click="handleCreate">+ 新图表</BaseButton>
       </div>
 
-      <div v-if="diagrams.length === 0" class="emptyDiagrams">
-        还没有图表
-      </div>
+      <div class="paneBody">
+        <div v-if="diagrams.length === 0" class="emptyDiagrams">
+          还没有图表
+        </div>
 
-      <div v-else class="diagramList">
-        <DiagramCard
-          v-for="d in diagrams"
-          :key="d.id"
-          :diagram="d"
-          @click="openDiagram(d)"
-          @delete="handleDelete(d.id)"
-        />
+        <div v-else class="diagramList">
+          <DiagramCard
+            v-for="d in diagrams"
+            :key="d.id"
+            :diagram="d"
+            @click="openDiagram(d)"
+            @delete="handleDelete(d.id)"
+          />
+        </div>
       </div>
     </template>
 
     <!-- Editor view -->
-    <DiagramEditor
-      v-else
-      :diagram="editingDiagram"
-      :project-id="projectId"
-      @back="editingDiagram = null"
-      @save="handleSave"
-    />
+    <template v-else>
+      <div class="paneHeader">
+        <h3 class="paneTitle">Diagram</h3>
+        <BaseButton variant="ghost" size="sm" @click="editingDiagram = null">← 返回</BaseButton>
+      </div>
+      <div class="paneBody">
+        <DiagramEditor
+          :diagram="editingDiagram"
+          :project-id="projectId"
+          @save="handleSave"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -81,17 +90,39 @@ async function handleDelete(diagramId: number) {
 
 <style scoped>
 .diagramTab {
-  padding: var(--spacing-sm) 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
-.diagramHeader {
-  margin-bottom: var(--spacing-md);
+.paneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.paneTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.paneBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .emptyDiagrams {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-md);
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .diagramList {

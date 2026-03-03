@@ -2,42 +2,56 @@
   <div class="notesTab">
     <!-- Note list view -->
     <template v-if="!editingNote">
-      <div class="notesHeader">
+      <div class="paneHeader">
+        <h3 class="paneTitle">笔记</h3>
         <BaseButton size="sm" @click="handleCreate">+ 新笔记</BaseButton>
       </div>
 
-      <div v-if="notes.length === 0" class="emptyNotes">
-        还没有笔记
-      </div>
+      <div class="paneBody">
+        <div v-if="notes.length === 0" class="emptyNotes">
+          还没有笔记
+        </div>
 
-      <div v-else class="noteList">
-        <NoteCard
-          v-for="note in notes"
-          :key="note.id"
-          :note="note"
-          @click="openNote(note)"
-          @delete="handleDelete(note.id)"
-        />
+        <div v-else class="noteList">
+          <NoteCard
+            v-for="note in notes"
+            :key="note.id"
+            :note="note"
+            @click="openNote(note)"
+            @delete="handleDelete(note.id)"
+          />
+        </div>
       </div>
     </template>
 
     <!-- Note editor view -->
-    <NoteEditor
-      v-else
-      :note="editingNote"
-      :title="editTitle"
-      :content="editContent"
-      :attachments="editAttachments"
-      :summarizing="summarizing"
-      @back="editingNote = null"
-      @save="handleSave"
-      @summarize="handleSummarize"
-      @update:title="editTitle = $event"
-      @update:content="editContent = $event"
-      @add-url-attachment="handleAddUrlAttachment"
-      @add-image-attachment="handleAddImageAttachment"
-      @remove-attachment="handleRemoveAttachment"
-    />
+    <template v-else>
+      <div class="paneHeader">
+        <h3 class="paneTitle">笔记</h3>
+        <div class="editorActions">
+          <BaseButton variant="ghost" size="sm" @click="editingNote = null">← 返回</BaseButton>
+          <BaseButton size="sm" :disabled="summarizing" @click="handleSummarize">
+            {{ summarizing ? '生成中...' : 'AI 摘要' }}
+          </BaseButton>
+        </div>
+      </div>
+      <div class="paneBody">
+        <NoteEditor
+          :note="editingNote"
+          :title="editTitle"
+          :content="editContent"
+          :attachments="editAttachments"
+          :summarizing="summarizing"
+          @save="handleSave"
+          @summarize="handleSummarize"
+          @update:title="editTitle = $event"
+          @update:content="editContent = $event"
+          @add-url-attachment="handleAddUrlAttachment"
+          @add-image-attachment="handleAddImageAttachment"
+          @remove-attachment="handleRemoveAttachment"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -149,17 +163,44 @@ async function handleRemoveAttachment(attachmentId: number) {
 
 <style scoped>
 .notesTab {
-  padding: var(--spacing-sm) 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
-.notesHeader {
-  margin-bottom: var(--spacing-md);
+.paneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.paneTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.editorActions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.paneBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .emptyNotes {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-md);
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .noteList {

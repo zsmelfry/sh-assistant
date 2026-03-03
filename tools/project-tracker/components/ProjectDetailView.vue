@@ -11,7 +11,7 @@
         @update-status="handleStatusUpdate"
       />
 
-      <!-- Split layout: left checklist, right notes+diagrams -->
+      <!-- Split layout: left checklist (30%), right notes+diagrams (70%) -->
       <div class="splitLayout">
         <div class="leftPane">
           <h3 class="paneTitle">Checklist</h3>
@@ -19,11 +19,9 @@
         </div>
         <div class="rightPane">
           <div class="rightTop">
-            <h3 class="paneTitle">笔记</h3>
             <NotesTab :project-id="projectId" />
           </div>
           <div class="rightBottom">
-            <h3 class="paneTitle">Diagram</h3>
             <DiagramTab :project-id="projectId" />
           </div>
         </div>
@@ -210,14 +208,16 @@ async function handleDelete() {
 .splitLayout {
   display: flex;
   gap: var(--spacing-md);
-  min-height: 0;
+  height: calc(100vh - 200px);
+  min-height: 400px;
 }
 
 .leftPane {
-  flex: 1;
+  flex: 0 0 30%;
   min-width: 0;
   border-right: 1px solid var(--color-border);
   padding-right: var(--spacing-md);
+  overflow-y: auto;
 }
 
 .rightPane {
@@ -225,31 +225,26 @@ async function handleDelete() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 0;
+  min-height: 0;
 }
 
 .rightTop {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .rightBottom {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
   border-top: 1px solid var(--color-border);
-  padding-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
 }
 
-.paneTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
 .formGroup {
   margin-bottom: var(--spacing-md);
@@ -312,11 +307,21 @@ async function handleDelete() {
     flex-direction: column;
   }
 
+  .splitLayout {
+    height: auto;
+  }
+
   .leftPane {
+    flex: none;
     border-right: none;
     padding-right: 0;
     border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--spacing-md);
+  }
+
+  .rightTop,
+  .rightBottom {
+    min-height: 200px;
   }
 
   .chatToggle {

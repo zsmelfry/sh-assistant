@@ -1,7 +1,6 @@
 <template>
   <div class="diagramEditor">
     <div class="editorHeader">
-      <button class="backBtn" @click="$emit('back')">← 返回</button>
       <input
         v-model="title"
         type="text"
@@ -58,7 +57,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  back: [];
   save: [data: { title: string; mermaidCode: string; type: string }];
 }>();
 
@@ -147,18 +145,6 @@ async function handleGenerate() {
   align-items: center;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
-}
-
-.backBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.backBtn:hover {
-  color: var(--color-text-primary);
 }
 
 .titleInput {
