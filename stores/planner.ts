@@ -66,8 +66,7 @@ export const usePlannerStore = defineStore('planner', () => {
     currentView.value = { type: 'overview' };
     await loadDomains();
     if (domains.value.length > 0) {
-      await loadOverview();
-      await loadDomainGoalStats();
+      await Promise.all([loadOverview(), loadDomainGoalStats()]);
     }
   }
 
@@ -76,10 +75,8 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'POST',
       body: { sourceYear, targetYear: selectedYear.value },
     });
-    await loadAvailableYears();
-    await loadDomains();
-    await loadOverview();
-    await loadDomainGoalStats();
+    await Promise.all([loadAvailableYears(), loadDomains()]);
+    await Promise.all([loadOverview(), loadDomainGoalStats()]);
   }
 
   // ===== 领域操作 =====
@@ -129,16 +126,14 @@ export const usePlannerStore = defineStore('planner', () => {
   }
 
   async function initializeDefaults() {
-    for (const name of DEFAULT_DOMAINS) {
-      await $fetch('/api/planner/domains', {
+    await Promise.all(DEFAULT_DOMAINS.map(name =>
+      $fetch('/api/planner/domains', {
         method: 'POST',
         body: { name, year: selectedYear.value },
-      });
-    }
-    await loadAvailableYears();
-    await loadDomains();
-    await loadOverview();
-    await loadDomainGoalStats();
+      }),
+    ));
+    await Promise.all([loadAvailableYears(), loadDomains()]);
+    await Promise.all([loadOverview(), loadDomainGoalStats()]);
   }
 
   // ===== 目标操作 =====
@@ -153,8 +148,7 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'POST',
       body: data,
     });
-    await loadGoals(data.domainId);
-    await loadDomains();
+    await Promise.all([loadGoals(data.domainId), loadDomains()]);
   }
 
   async function updateGoal(id: number, data: UpdateGoalData) {
@@ -162,14 +156,12 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'PUT',
       body: data,
     });
-    await reloadCurrentDomainGoals();
-    await loadDomains();
+    await Promise.all([reloadCurrentDomainGoals(), loadDomains()]);
   }
 
   async function deleteGoal(id: number) {
     await $fetch(`/api/planner/goals/${id}`, { method: 'DELETE' });
-    await reloadCurrentDomainGoals();
-    await loadDomains();
+    await Promise.all([reloadCurrentDomainGoals(), loadDomains()]);
   }
 
   async function reorderGoals(items: { id: number; sortOrder: number }[]) {
@@ -193,8 +185,7 @@ export const usePlannerStore = defineStore('planner', () => {
       method: 'POST',
       body: { goalId, content },
     });
-    await reloadCurrentDomainGoals();
-    await loadDomains();
+    await Promise.all([reloadCurrentDomainGoals(), loadDomains()]);
   }
 
   async function updateCheckitem(id: number, content: string) {
@@ -207,8 +198,7 @@ export const usePlannerStore = defineStore('planner', () => {
 
   async function deleteCheckitem(id: number) {
     await $fetch(`/api/planner/checkitems/${id}`, { method: 'DELETE' });
-    await reloadCurrentDomainGoals();
-    await loadDomains();
+    await Promise.all([reloadCurrentDomainGoals(), loadDomains()]);
   }
 
   async function toggleCheckitem(id: number) {
@@ -232,8 +222,7 @@ export const usePlannerStore = defineStore('planner', () => {
       await loadDomains();
     } catch {
       // Rollback on failure
-      await reloadCurrentDomainGoals();
-      await loadDomains();
+      await Promise.all([reloadCurrentDomainGoals(), loadDomains()]);
     }
   }
 

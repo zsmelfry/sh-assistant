@@ -129,8 +129,7 @@ export const useHabitStore = defineStore('habit', () => {
       });
     } catch {
       // 失败回滚：重新加载服务端数据
-      await loadCheckIns();
-      await loadAllDates();
+      await Promise.all([loadCheckIns(), loadAllDates()]);
     }
   }
 
