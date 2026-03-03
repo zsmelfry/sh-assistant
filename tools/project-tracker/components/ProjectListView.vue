@@ -7,14 +7,63 @@
         <BaseButton variant="ghost" @click="$emit('manage-categories')">管理分类</BaseButton>
       </div>
     </div>
-    <p class="placeholder">列表视图（待实现）</p>
+
+    <ProjectFilters
+      :filters="filters"
+      :categories="categories"
+      :tags="tags"
+      @update="$emit('update-filters', $event)"
+    />
+
+    <!-- Empty state -->
+    <div v-if="projects.length === 0" class="emptyState">
+      <p>还没有事项</p>
+      <BaseButton @click="$emit('create-project')">创建第一个事项</BaseButton>
+    </div>
+
+    <!-- Grouped project list -->
+    <template v-else>
+      <!-- Active projects grouped by category -->
+      <div v-for="group in groupedProjects" :key="group.categoryId" class="categoryGroup">
+        <h3 class="groupTitle">{{ group.categoryName }}</h3>
+        <div class="projectList">
+          <ProjectCard
+            v-for="p in group.projects"
+            :key="p.id"
+            :project="p"
+            @click="$emit('open-project', p.id)"
+            @update-status="$emit('update-status', p.id, $event)"
+          />
+        </div>
+      </div>
+
+      <!-- Idea pool -->
+      <div v-if="ideaProjects.length > 0" class="categoryGroup ideaPool">
+        <h3 class="groupTitle">灵感池</h3>
+        <div class="projectList">
+          <ProjectCard
+            v-for="p in ideaProjects"
+            :key="p.id"
+            :project="p"
+            @click="$emit('open-project', p.id)"
+            @update-status="$emit('update-status', p.id, $event)"
+          />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ProjectWithDetails, Category, Tag, ProjectFilters } from '../types';
+import type { ProjectWithDetails, Category, Tag, ProjectFilters, ProjectStatus } from '../types';
+import { STATUS_ORDER } from '../types';
+import ProjectCard from './ProjectCard.vue';
+import ProjectFiltersComp from './ProjectFilters.vue';
 
-defineProps<{
+// Rename to avoid collision with prop name
+const ProjectFilters = ProjectFiltersComp;
+
+const props = defineProps<{
   projects: ProjectWithDetails[];
   categories: Category[];
   tags: Tag[];
@@ -26,13 +75,59 @@ defineEmits<{
   'create-project': [];
   'manage-categories': [];
   'update-filters': [filters: Partial<ProjectFilters>];
-  'update-status': [projectId: number, status: string];
+  'update-status': [projectId: number, status: ProjectStatus];
 }>();
+
+// Separate idea projects from active ones
+const ideaProjects = computed(() =>
+  props.projects
+    .filter(p => p.status === 'idea')
+    .sort((a, b) => a.sortOrder - b.sortOrder),
+);
+
+// Group non-idea projects by category, sorted by status priority
+const groupedProjects = computed(() => {
+  const active = props.projects.filter(p => p.status !== 'idea');
+
+  const groups = new Map<number, { categoryId: number; categoryName: string; projects: ProjectWithDetails[] }>();
+
+  for (const p of active) {
+    if (!groups.has(p.categoryId)) {
+      groups.set(p.categoryId, {
+        categoryId: p.categoryId,
+        categoryName: p.categoryName || '未分类',
+        projects: [],
+      });
+    }
+    groups.get(p.categoryId)!.projects.push(p);
+  }
+
+  // Sort projects within each group by status priority then due date
+  for (const group of groups.values()) {
+    group.projects.sort((a, b) => {
+      const statusDiff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+      if (statusDiff !== 0) return statusDiff;
+      // Due date: items with due date first, earlier date first
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      return a.sortOrder - b.sortOrder;
+    });
+  }
+
+  // Sort groups by category sort order
+  const catOrder = new Map(props.categories.map(c => [c.id, c.sortOrder]));
+  return [...groups.values()].sort((a, b) =>
+    (catOrder.get(a.categoryId) ?? 999) - (catOrder.get(b.categoryId) ?? 999),
+  );
+});
 </script>
 
 <style scoped>
 .projectListView {
   padding: var(--spacing-lg);
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .listHeader {
@@ -43,7 +138,7 @@ defineEmits<{
 }
 
 .listHeader h2 {
-  font-size: var(--font-size-xl);
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -52,9 +147,50 @@ defineEmits<{
   gap: var(--spacing-sm);
 }
 
-.placeholder {
-  color: var(--color-text-secondary);
+.emptyState {
   text-align: center;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-xl) 0;
+  color: var(--color-text-secondary);
+}
+
+.emptyState p {
+  margin-bottom: var(--spacing-md);
+}
+
+.categoryGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.groupTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--spacing-sm);
+}
+
+.ideaPool .groupTitle {
+  border-bottom-style: dashed;
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+@media (max-width: 768px) {
+  .projectListView {
+    padding: var(--spacing-md);
+  }
+
+  .listHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
 }
 </style>
