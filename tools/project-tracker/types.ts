@@ -1,7 +1,10 @@
 // ===== Enums & Constants =====
 
+export type { Priority } from '~/types/priority';
+export { PRIORITY_LABELS } from '~/types/priority';
+import type { Priority } from '~/types/priority';
+
 export type ProjectStatus = 'idea' | 'todo' | 'in_progress' | 'blocked' | 'done' | 'dropped';
-export type Priority = 'low' | 'medium' | 'high';
 export type AttachmentType = 'url' | 'image';
 export type ChecklistAttachmentType = 'url' | 'image' | 'file';
 export type ChatRole = 'user' | 'assistant' | 'system';
@@ -22,12 +25,6 @@ export const STATUS_ORDER: Record<ProjectStatus, number> = {
   idea: 3,
   done: 4,
   dropped: 5,
-};
-
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  high: '高',
-  medium: '中',
-  low: '低',
 };
 
 export const ACTIVE_STATUSES: ProjectStatus[] = ['todo', 'in_progress', 'blocked'];

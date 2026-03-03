@@ -2,8 +2,7 @@ import { eq, sql, inArray } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { ptChecklistItems, ptChecklistAttachments, ptMilestones, ptNotes, ptDiagrams, ptProjects } from '~/server/database/schema';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
-
-const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+import { PRIORITY_ORDER } from '~/types/priority';
 
 export default defineEventHandler(async (event) => {
   const projectId = requireNumericParam(event, 'id', '事项');

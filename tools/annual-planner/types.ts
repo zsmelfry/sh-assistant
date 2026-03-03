@@ -1,4 +1,5 @@
-export type Priority = 'high' | 'medium' | 'low';
+export type { Priority } from '~/types/priority';
+export { PRIORITY_LABELS, PRIORITY_ORDER } from '~/types/priority';
 
 export type PlannerView =
   | { type: 'overview' }
@@ -100,17 +101,5 @@ export interface UpdateGoalData {
   priority?: Priority;
   tagIds?: number[];
 }
-
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  high: '高',
-  medium: '中',
-  low: '低',
-};
-
-export const PRIORITY_ORDER: Record<Priority, number> = {
-  high: 0,
-  medium: 1,
-  low: 2,
-};
 
 export const DEFAULT_DOMAINS = ['事业', '财务', '健康', '兴趣'];
