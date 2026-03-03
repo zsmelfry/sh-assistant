@@ -1,41 +1,229 @@
 <template>
   <div class="projectDetailView">
-    <button class="backBtn" @click="$emit('back')">← 返回列表</button>
-    <p class="placeholder">事项详情页（待实现） - ID: {{ projectId }}</p>
+    <div v-if="loading" class="loadingState">加载中...</div>
+
+    <template v-else-if="project">
+      <ProjectHeader
+        :project="project"
+        @back="$emit('back')"
+        @edit="showEditForm = true"
+        @delete="showDeleteConfirm = true"
+        @update-status="handleStatusUpdate"
+      />
+
+      <TabNav v-model="activeTab" :tabs="tabs" />
+
+      <!-- Tab content -->
+      <div class="tabContent">
+        <div v-if="activeTab === 'checklist'" class="tabPlaceholder">
+          Checklist（待实现）
+        </div>
+        <div v-else-if="activeTab === 'notes'" class="tabPlaceholder">
+          笔记（待实现）
+        </div>
+        <div v-else-if="activeTab === 'diagrams'" class="tabPlaceholder">
+          Diagram（待实现）
+        </div>
+      </div>
+    </template>
+
+    <!-- Edit form -->
+    <BaseModal :open="showEditForm" title="编辑事项" @close="showEditForm = false">
+      <form v-if="project" @submit.prevent="handleEdit">
+        <div class="formGroup">
+          <label>标题</label>
+          <input v-model="editForm.title" type="text" required />
+        </div>
+        <div class="formGroup">
+          <label>分类</label>
+          <select v-model="editForm.categoryId">
+            <option v-for="cat in store.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+        <div class="formRow">
+          <div class="formGroup">
+            <label>优先级</label>
+            <select v-model="editForm.priority">
+              <option value="low">低</option>
+              <option value="medium">中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+          <div class="formGroup">
+            <label>截止日期</label>
+            <input v-model="editForm.dueDate" type="date" />
+          </div>
+        </div>
+        <div class="formGroup">
+          <label>描述</label>
+          <textarea v-model="editForm.description" rows="3" />
+        </div>
+        <div v-if="project.status === 'blocked'" class="formGroup">
+          <label>受阻原因</label>
+          <input v-model="editForm.blockedReason" type="text" />
+        </div>
+      </form>
+      <template #footer>
+        <BaseButton variant="ghost" @click="showEditForm = false">取消</BaseButton>
+        <BaseButton @click="handleEdit">保存</BaseButton>
+      </template>
+    </BaseModal>
+
+    <!-- Delete confirm -->
+    <ConfirmDialog
+      :open="showDeleteConfirm"
+      title="删除事项"
+      message="确定要删除这个事项吗？所有相关数据（任务、笔记、图表、对话）将一并删除。"
+      @confirm="handleDelete"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import type { ProjectWithDetails, ProjectStatus } from '../types';
+import ProjectHeader from './ProjectHeader.vue';
+import TabNav from './TabNav.vue';
+
+const props = defineProps<{
   projectId: number;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   back: [];
 }>();
+
+const store = useProjectTrackerStore();
+
+const loading = ref(true);
+const project = ref<ProjectWithDetails | null>(null);
+const activeTab = ref('checklist');
+const showEditForm = ref(false);
+const showDeleteConfirm = ref(false);
+
+const editForm = reactive({
+  title: '',
+  description: '',
+  categoryId: 0,
+  priority: 'medium' as string,
+  dueDate: '',
+  blockedReason: '',
+});
+
+const tabs = computed(() => [
+  { id: 'checklist', label: 'Checklist', count: project.value?.checklistTotal },
+  { id: 'notes', label: '笔记', count: project.value?.noteCount },
+  { id: 'diagrams', label: 'Diagram', count: project.value?.diagramCount },
+]);
+
+async function loadProject() {
+  project.value = await $fetch<ProjectWithDetails>(`/api/project-tracker/projects/${props.projectId}`);
+}
+
+onMounted(async () => {
+  try {
+    await loadProject();
+  } finally {
+    loading.value = false;
+  }
+});
+
+watch(() => showEditForm.value, (isOpen) => {
+  if (isOpen && project.value) {
+    editForm.title = project.value.title;
+    editForm.description = project.value.description || '';
+    editForm.categoryId = project.value.categoryId;
+    editForm.priority = project.value.priority;
+    editForm.dueDate = project.value.dueDate || '';
+    editForm.blockedReason = project.value.blockedReason || '';
+  }
+});
+
+async function handleStatusUpdate(status: ProjectStatus) {
+  await store.updateProject(props.projectId, { status });
+  await loadProject();
+}
+
+async function handleEdit() {
+  await store.updateProject(props.projectId, {
+    title: editForm.title,
+    description: editForm.description || undefined,
+    categoryId: editForm.categoryId,
+    priority: editForm.priority as any,
+    dueDate: editForm.dueDate || null,
+    blockedReason: editForm.blockedReason || null,
+  });
+  showEditForm.value = false;
+  await loadProject();
+}
+
+async function handleDelete() {
+  await store.deleteProject(props.projectId);
+  showDeleteConfirm.value = false;
+  emit('back');
+}
 </script>
 
 <style scoped>
 .projectDetailView {
   padding: var(--spacing-lg);
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.backBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
   color: var(--color-text-secondary);
-  padding: var(--spacing-xs) 0;
+}
+
+.tabContent {
+  min-height: 200px;
+}
+
+.tabPlaceholder {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+}
+
+.formGroup {
   margin-bottom: var(--spacing-md);
 }
 
-.backBtn:hover {
+.formGroup label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
 
-.placeholder {
-  color: var(--color-text-secondary);
-  text-align: center;
-  padding: var(--spacing-xl);
+.formRow {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.formRow .formGroup {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .projectDetailView {
+    padding: var(--spacing-md);
+  }
 }
 </style>
