@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 const route = useRoute();
-const router = useRouter();
 const { get, getAll } = useToolRegistry();
 
 const toolId = computed(() => {
@@ -31,7 +30,7 @@ const toolComponent = computed(() =>
 watch(toolId, (id) => {
   if (id && !get(id)) {
     const all = getAll();
-    router.replace(all.length > 0 ? `/${all[0].id}` : '/');
+    navigateTo(all.length > 0 ? `/${all[0].id}` : '/', { replace: true });
   }
 }, { immediate: true });
 </script>
