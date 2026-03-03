@@ -69,8 +69,6 @@ async function safeFetch(url: URL, remainingRedirects: number = MAX_REDIRECTS): 
       redirect: 'manual',
     });
 
-    clearTimeout(timeout);
-
     // 手动处理重定向，重新验证目标 URL
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
@@ -89,17 +87,18 @@ async function safeFetch(url: URL, remainingRedirects: number = MAX_REDIRECTS): 
     }
 
     return await response.text();
-  } catch (error: any) {
-    clearTimeout(timeout);
-    if (error?.name === 'AbortError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
       throw createError({ statusCode: 502, message: '抓取超时（15秒）' });
     }
     // Re-throw H3 errors
-    if (error?.statusCode) throw error;
+    if ((error as { statusCode?: number })?.statusCode) throw error;
     throw createError({
       statusCode: 502,
-      message: `抓取失败: ${error?.message || '未知错误'}`,
+      message: `抓取失败: ${error instanceof Error ? error.message : '未知错误'}`,
     });
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
