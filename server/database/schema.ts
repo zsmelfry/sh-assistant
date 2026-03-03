@@ -8,3 +8,4 @@ export * from './schemas/planner';
 export * from './schemas/articles';
 export * from './schemas/startup-map';
 export * from './schemas/skill-configs';
+export * from './schemas/project-tracker';
