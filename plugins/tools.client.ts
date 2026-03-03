@@ -6,8 +6,7 @@ export default defineNuxtPlugin(async () => {
 });
 
 export async function registerSkillTools() {
-  const token = localStorage.getItem('auth_token');
-  if (!token) return;
+  if (!useAuth().getToken()) return;
 
   try {
     const configs = await $fetch<Array<{ skillId: string; name: string; icon: string; sortOrder: number; isActive: boolean }>>('/api/skill-configs');

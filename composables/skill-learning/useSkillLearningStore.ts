@@ -293,12 +293,11 @@ export function createSkillLearningStore(skillId: string) {
           await updatePointStatus(pointId, 'learning');
         }
 
-        const token = localStorage.getItem('auth_token');
         const response = await fetch(`${baseUrl}/points/${pointId}/teaching`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...useAuth().getAuthHeaders(),
           },
           body: JSON.stringify({ regenerate }),
         });

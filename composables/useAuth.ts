@@ -38,11 +38,17 @@ export function useAuth() {
     return authState.token;
   }
 
+  /** Get Authorization headers for native fetch calls (e.g. SSE streaming) */
+  function getAuthHeaders(): Record<string, string> {
+    const token = authState.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   /** Clear token without redirect (used by 401 interceptor) */
   function clearToken() {
     authState.token = null;
     localStorage.removeItem(TOKEN_KEY);
   }
 
-  return { init, isAuthenticated, login, logout, getToken, clearToken };
+  return { init, isAuthenticated, login, logout, getToken, getAuthHeaders, clearToken };
 }
