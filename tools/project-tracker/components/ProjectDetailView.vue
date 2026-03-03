@@ -18,12 +18,7 @@
           <ChecklistTab :project-id="projectId" />
         </div>
         <div class="rightPane">
-          <div class="rightTop">
-            <NotesTab :project-id="projectId" />
-          </div>
-          <div class="rightBottom">
-            <DiagramTab :project-id="projectId" />
-          </div>
+          <NotesAndDiagramsPane :project-id="projectId" />
         </div>
       </div>
 
@@ -101,8 +96,7 @@
 import type { ProjectWithDetails, ProjectStatus } from '../types';
 import ProjectHeader from './ProjectHeader.vue';
 import ChecklistTab from './ChecklistTab.vue';
-import NotesTab from './NotesTab.vue';
-import DiagramTab from './DiagramTab.vue';
+import NotesAndDiagramsPane from './NotesAndDiagramsPane.vue';
 import AiChatPanel from './AiChatPanel.vue';
 
 const props = defineProps<{
@@ -205,6 +199,15 @@ async function handleDelete() {
   color: var(--color-text-secondary);
 }
 
+.paneTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .splitLayout {
   display: flex;
   gap: var(--spacing-md);
@@ -225,26 +228,8 @@ async function handleDelete() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0;
   min-height: 0;
 }
-
-.rightTop {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.rightBottom {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--spacing-sm);
-}
-
 
 .formGroup {
   margin-bottom: var(--spacing-md);
@@ -305,9 +290,6 @@ async function handleDelete() {
 
   .splitLayout {
     flex-direction: column;
-  }
-
-  .splitLayout {
     height: auto;
   }
 
@@ -317,11 +299,6 @@ async function handleDelete() {
     padding-right: 0;
     border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--spacing-md);
-  }
-
-  .rightTop,
-  .rightBottom {
-    min-height: 200px;
   }
 
   .chatToggle {
