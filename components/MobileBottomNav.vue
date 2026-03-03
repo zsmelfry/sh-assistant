@@ -36,18 +36,11 @@
 <script setup lang="ts">
 import { EllipsisVertical, Settings, LogOut } from 'lucide-vue-next';
 
-const route = useRoute();
-const { getAll } = useToolRegistry();
+const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
 
-const tools = computed(() => getAll());
 const showMenu = ref(false);
 const showLlmSettings = ref(false);
-
-const currentToolId = computed(() => {
-  const slug = route.params.slug;
-  return Array.isArray(slug) ? slug[0] : (slug || '');
-});
 
 function handleSettings() {
   showMenu.value = false;

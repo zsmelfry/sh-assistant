@@ -59,18 +59,9 @@ defineEmits<{
   toggle: [];
 }>();
 
-const route = useRoute();
-const { getAll } = useToolRegistry();
-
+const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
-const tools = computed(() => getAll());
 const showLlmSettings = ref(false);
-
-const currentToolId = computed(() => {
-  const slug = route.params.slug;
-  if (Array.isArray(slug)) return slug[0];
-  return slug || '';
-});
 </script>
 
 <style scoped>
