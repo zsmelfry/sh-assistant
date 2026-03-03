@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { ptProjects, ptCategories, PT_STATUSES, PT_PRIORITIES, ARCHIVE_STATUSES } from '~/server/database/schema';
+import { ptProjects, ptCategories, PT_STATUSES, PT_PRIORITIES } from '~/server/database/schema';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
