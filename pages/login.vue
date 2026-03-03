@@ -67,8 +67,8 @@ async function handleSubmit() {
     await login(username.value, password.value);
     await registerSkillTools();
     await navigateTo('/');
-  } catch (e: any) {
-    error.value = e?.data?.message || e?.message || '登录失败，请重试';
+  } catch (e: unknown) {
+    error.value = extractErrorMessage(e, '登录失败，请重试');
   } finally {
     loading.value = false;
   }

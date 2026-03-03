@@ -73,8 +73,8 @@ async function handleDelete(config: SkillConfig) {
     const { unregister } = useToolRegistry();
     unregister(config.skillId);
     await loadConfigs();
-  } catch (e: any) {
-    alert(e?.data?.message || '删除失败');
+  } catch (e: unknown) {
+    alert(extractErrorMessage(e, '删除失败'));
   }
 }
 

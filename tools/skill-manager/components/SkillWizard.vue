@@ -346,8 +346,8 @@ async function handleGenerateTree() {
     );
     treeDomains.value = result.domains;
     treeStages.value = result.stages;
-  } catch (e: any) {
-    genError.value = e?.data?.message || e?.message || '生成失败，请重试';
+  } catch (e: unknown) {
+    genError.value = extractErrorMessage(e, '生成失败，请重试');
   } finally {
     generating.value = false;
   }
@@ -400,8 +400,8 @@ async function handleSave() {
       }
     }
     emit('saved');
-  } catch (e: any) {
-    alert(e?.data?.message || e?.message || '保存失败');
+  } catch (e: unknown) {
+    alert(extractErrorMessage(e, '保存失败'));
   } finally {
     saving.value = false;
   }

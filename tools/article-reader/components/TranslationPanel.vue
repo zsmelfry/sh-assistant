@@ -142,8 +142,8 @@ async function handleTranslate(type: 'full' | 'summary') {
   translateError.value = null;
   try {
     await store.translateArticle(type);
-  } catch (e: any) {
-    translateError.value = e?.data?.message || e?.message || '翻译失败';
+  } catch (e: unknown) {
+    translateError.value = extractErrorMessage(e, '翻译失败');
   }
 }
 
@@ -154,8 +154,8 @@ async function handleTranslateBoth() {
       store.translateArticle('full'),
       store.translateArticle('summary'),
     ]);
-  } catch (e: any) {
-    translateError.value = e?.data?.message || e?.message || '翻译失败';
+  } catch (e: unknown) {
+    translateError.value = extractErrorMessage(e, '翻译失败');
   }
 }
 </script>

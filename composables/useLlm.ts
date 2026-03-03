@@ -4,6 +4,7 @@
 // ===== Types =====
 // Import shared LLM types from server (single source of truth)
 import type { ChatMessage, ChatResponse, TranslateResult } from '~/server/lib/llm/types';
+import { extractErrorMessage } from '~/utils/error';
 export type { ChatMessage, ChatResponse };
 export type { TranslateResult as TranslateResponse };
 
@@ -55,11 +56,6 @@ export function useLlm() {
   const defaultProvider = computed(() =>
     providers.value.find(p => p.isDefault),
   );
-
-  function extractErrorMessage(e: unknown, fallback: string): string {
-    return (e as { data?: { message?: string } })?.data?.message
-      || (e instanceof Error ? e.message : fallback);
-  }
 
   function buildOptionsBody(options?: ChatOptions): Record<string, unknown> {
     return {

@@ -72,8 +72,8 @@ async function handleExport() {
     link.download = `${props.config.skillId}-export.json`;
     link.click();
     URL.revokeObjectURL(link.href);
-  } catch (e: any) {
-    error.value = e?.data?.message || e?.message || '导出失败';
+  } catch (e: unknown) {
+    error.value = extractErrorMessage(e, '导出失败');
   } finally {
     exporting.value = false;
   }

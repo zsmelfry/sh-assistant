@@ -411,9 +411,9 @@ export function createSkillLearningStore(skillId: string) {
           res.userMessage,
           res.assistantMessage,
         ];
-      } catch (e: any) {
+      } catch (e: unknown) {
         chats.value = chats.value.filter(m => m.id !== tempMsg.id);
-        chatError.value = e?.data?.message || e?.message || 'AI 回复失败';
+        chatError.value = extractErrorMessage(e, 'AI 回复失败');
       } finally {
         chatSending.value = false;
       }

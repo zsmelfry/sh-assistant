@@ -72,8 +72,8 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
       });
       resetWithArticle(res);
       await loadTranslations();
-    } catch (e: any) {
-      fetchError.value = e?.data?.message || e?.message || '文章加载失败，请检查链接是否正确';
+    } catch (e: unknown) {
+      fetchError.value = extractErrorMessage(e, '文章加载失败，请检查链接是否正确');
       throw e;
     } finally {
       fetchLoading.value = false;
@@ -237,10 +237,10 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
         res.userMessage,
         res.assistantMessage,
       ];
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Remove temp message on error
       chatMessages.value = chatMessages.value.filter(m => m.id !== tempUserMsg.id);
-      chatError.value = e?.data?.message || e?.message || 'AI 回复失败';
+      chatError.value = extractErrorMessage(e, 'AI 回复失败');
     } finally {
       chatLoading.value = false;
     }
@@ -301,8 +301,8 @@ export const useArticleReaderStore = defineStore('article-reader', () => {
       resetWithArticle(res);
       currentView.value = 'reading';
       await loadTranslations();
-    } catch (e: any) {
-      fetchError.value = e?.data?.message || e?.message || '文章加载失败';
+    } catch (e: unknown) {
+      fetchError.value = extractErrorMessage(e, '文章加载失败');
       throw e;
     } finally {
       fetchLoading.value = false;

@@ -136,8 +136,8 @@ async function handleCreate() {
     await store.createTag(name, newTagColor.value);
     newTagName.value = '';
     newTagColor.value = PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
-  } catch (e: any) {
-    createError.value = e?.data?.message || '创建失败';
+  } catch (e: unknown) {
+    createError.value = extractErrorMessage(e, '创建失败');
   } finally {
     creating.value = false;
   }
@@ -159,8 +159,8 @@ async function saveEdit(id: number) {
   try {
     await store.updateTag(id, { name, color: editColor.value });
     editingId.value = null;
-  } catch (e: any) {
-    createError.value = e?.data?.message || '更新失败';
+  } catch (e: unknown) {
+    createError.value = extractErrorMessage(e, '更新失败');
   }
 }
 
