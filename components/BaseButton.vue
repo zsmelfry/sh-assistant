@@ -3,7 +3,6 @@
     class="btn"
     :class="[`btn-${variant}`, { 'btn-disabled': disabled }]"
     :disabled="disabled"
-    @click="$emit('click', $event)"
   >
     <slot />
   </button>
@@ -18,9 +17,6 @@ withDefaults(defineProps<{
   disabled: false,
 });
 
-defineEmits<{
-  click: [event: MouseEvent];
-}>();
 </script>
 
 <style scoped>
