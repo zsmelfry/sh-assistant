@@ -53,6 +53,10 @@ export default defineEventHandler(async (event) => {
     updates.blockedReason = body.blockedReason || null;
   }
 
+  if (body.reminderAt !== undefined) {
+    updates.reminderAt = body.reminderAt || null;
+  }
+
   await db.update(ptProjects).set(updates).where(eq(ptProjects.id, id));
 
   const [updated] = await db.select().from(ptProjects).where(eq(ptProjects.id, id)).limit(1);

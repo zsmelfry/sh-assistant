@@ -34,6 +34,7 @@ export const ptProjects = sqliteTable('pt_projects', {
     .notNull()
     .default('medium'),
   blockedReason: text('blocked_reason'),
+  reminderAt: integer('reminder_at', { mode: 'number' }), // Unix ms timestamp for manual reminder
   archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
@@ -63,6 +64,7 @@ export const ptMilestones = sqliteTable('pt_milestones', {
     .references(() => ptProjects.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   dueDate: text('due_date'),
+  reminderAt: integer('reminder_at', { mode: 'number' }),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [
@@ -79,6 +81,7 @@ export const ptChecklistItems = sqliteTable('pt_checklist_items', {
   isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(false),
   completedAt: integer('completed_at', { mode: 'number' }),
   dueDate: text('due_date'),
+  reminderAt: integer('reminder_at', { mode: 'number' }),
   milestoneId: integer('milestone_id')
     .references(() => ptMilestones.id, { onDelete: 'set null' }),
   linkedNoteId: integer('linked_note_id'),
@@ -151,10 +154,10 @@ export const ptNotifications = sqliteTable('pt_notifications', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   targetType: text('target_type', { enum: ['project', 'checklist', 'milestone'] }).notNull(),
   targetId: integer('target_id').notNull(),
-  remindType: text('remind_type', { enum: ['day_before', 'day_of'] }).notNull(),
+  reminderAt: integer('reminder_at', { mode: 'number' }).notNull(), // The reminder timestamp that was fired
   sentAt: integer('sent_at', { mode: 'number' }).notNull(),
 }, (table) => [
-  uniqueIndex('idx_pt_notifications_unique').on(table.targetType, table.targetId, table.remindType),
+  uniqueIndex('idx_pt_notifications_unique').on(table.targetType, table.targetId, table.reminderAt),
 ]);
 
 // ===== 常量 =====

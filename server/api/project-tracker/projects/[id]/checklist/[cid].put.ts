@@ -29,6 +29,9 @@ export default defineEventHandler(async (event) => {
   if (body.linkedDiagramId !== undefined) {
     updates.linkedDiagramId = body.linkedDiagramId || null;
   }
+  if (body.reminderAt !== undefined) {
+    updates.reminderAt = body.reminderAt || null;
+  }
 
   await db.update(ptChecklistItems).set(updates).where(eq(ptChecklistItems.id, cid));
 

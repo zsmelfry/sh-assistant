@@ -14,7 +14,7 @@
         @toggle-item="handleToggle($event)"
         @edit-item="editItem = $event"
         @delete-item="handleDeleteItem($event)"
-        @add-item="handleAddItem($event, $args)"
+        @add-item="(content: string, milestoneId: number | null) => handleAddItem(content, milestoneId)"
       />
     </div>
 
@@ -44,6 +44,10 @@
         <label>截止日期</label>
         <input v-model="editMilestoneForm.dueDate" type="date" />
       </div>
+      <div class="formGroup">
+        <label>提醒时间</label>
+        <input v-model="editMilestoneForm.reminderAt" type="datetime-local" />
+      </div>
       <template #footer>
         <BaseButton variant="ghost" @click="editMilestone = null">取消</BaseButton>
         <BaseButton @click="handleUpdateMilestone">保存</BaseButton>
@@ -59,6 +63,10 @@
       <div class="formGroup">
         <label>截止日期</label>
         <input v-model="editItemForm.dueDate" type="date" />
+      </div>
+      <div class="formGroup">
+        <label>提醒时间</label>
+        <input v-model="editItemForm.reminderAt" type="datetime-local" />
       </div>
       <template #footer>
         <BaseButton variant="ghost" @click="editItem = null">取消</BaseButton>
@@ -94,13 +102,14 @@ const editMilestone = ref<MilestoneWithItems | null>(null);
 const editItem = ref<ChecklistItem | null>(null);
 const deletingMilestoneId = ref<number | null>(null);
 
-const editMilestoneForm = reactive({ title: '', dueDate: '' });
-const editItemForm = reactive({ content: '', dueDate: '' });
+const editMilestoneForm = reactive({ title: '', dueDate: '', reminderAt: '' });
+const editItemForm = reactive({ content: '', dueDate: '', reminderAt: '' });
 
 watch(() => editMilestone.value, (m) => {
   if (m) {
     editMilestoneForm.title = m.title;
     editMilestoneForm.dueDate = m.dueDate || '';
+    editMilestoneForm.reminderAt = m.reminderAt ? timestampToDatetimeLocal(m.reminderAt) : '';
   }
 });
 
@@ -108,8 +117,20 @@ watch(() => editItem.value, (item) => {
   if (item) {
     editItemForm.content = item.content;
     editItemForm.dueDate = item.dueDate || '';
+    editItemForm.reminderAt = item.reminderAt ? timestampToDatetimeLocal(item.reminderAt) : '';
   }
 });
+
+function timestampToDatetimeLocal(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function datetimeLocalToTimestamp(val: string): number | null {
+  if (!val) return null;
+  return new Date(val).getTime();
+}
 
 async function loadData() {
   const [checklistData, progressData] = await Promise.all([
@@ -147,6 +168,7 @@ async function handleUpdateItem() {
     body: {
       content: editItemForm.content,
       dueDate: editItemForm.dueDate || null,
+      reminderAt: datetimeLocalToTimestamp(editItemForm.reminderAt),
     },
   });
   editItem.value = null;
@@ -172,6 +194,7 @@ async function handleUpdateMilestone() {
     body: {
       title: editMilestoneForm.title,
       dueDate: editMilestoneForm.dueDate || null,
+      reminderAt: datetimeLocalToTimestamp(editMilestoneForm.reminderAt),
     },
   });
   editMilestone.value = null;

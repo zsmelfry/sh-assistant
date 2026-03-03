@@ -8,9 +8,12 @@
     />
     <div class="itemContent">
       <span class="itemText">{{ item.content }}</span>
-      <div v-if="item.dueDate" class="itemMeta">
-        <span class="dueDate" :class="{ overdue: isOverdue && !item.isCompleted }">
+      <div v-if="item.dueDate || item.reminderAt" class="itemMeta">
+        <span v-if="item.dueDate" class="dueDate" :class="{ overdue: isOverdue && !item.isCompleted }">
           {{ item.dueDate }}
+        </span>
+        <span v-if="item.reminderAt" class="reminderBadge" :title="formatReminder(item.reminderAt)">
+          ⏰ {{ formatReminder(item.reminderAt) }}
         </span>
       </div>
     </div>
@@ -38,6 +41,12 @@ const isOverdue = computed(() => {
   if (!props.item.dueDate) return false;
   return props.item.dueDate < new Date().toISOString().slice(0, 10);
 });
+
+function formatReminder(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 </script>
 
 <style scoped>
@@ -80,6 +89,12 @@ const isOverdue = computed(() => {
 .dueDate.overdue {
   color: var(--color-danger);
   font-weight: 600;
+}
+
+.reminderBadge {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-left: var(--spacing-xs);
 }
 
 .itemActions {

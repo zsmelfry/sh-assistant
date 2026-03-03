@@ -22,7 +22,8 @@
     />
 
     <div v-if="note?.aiSummary" class="summaryBanner">
-      <strong>AI 摘要：</strong>{{ note.aiSummary }}
+      <strong>AI 摘要：</strong>
+      <div class="summaryContent" v-html="renderedSummary" />
     </div>
 
     <div class="editorBody">
@@ -95,10 +96,8 @@ const newUrl = ref('');
 const newUrlCaption = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 
-const renderedContent = computed(() => {
-  // Simple markdown rendering (basic)
-  if (!props.content) return '<p style="color: var(--color-text-disabled)">无内容</p>';
-  return props.content
+function renderMarkdown(text: string): string {
+  return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
@@ -107,6 +106,16 @@ const renderedContent = computed(() => {
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
     .replace(/^- (.+)$/gm, '<li>$1</li>')
     .replace(/\n/g, '<br>');
+}
+
+const renderedSummary = computed(() => {
+  if (!props.note?.aiSummary) return '';
+  return renderMarkdown(props.note.aiSummary);
+});
+
+const renderedContent = computed(() => {
+  if (!props.content) return '<p style="color: var(--color-text-disabled)">无内容</p>';
+  return renderMarkdown(props.content);
 });
 
 function handleAddUrl() {
@@ -177,6 +186,23 @@ function handleFileChange(e: Event) {
   font-size: 13px;
   color: var(--color-text-secondary);
   line-height: 1.4;
+}
+
+.summaryContent {
+  margin-top: var(--spacing-xs);
+}
+
+.summaryContent :deep(h1),
+.summaryContent :deep(h2),
+.summaryContent :deep(h3) {
+  margin: var(--spacing-xs) 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.summaryContent :deep(li) {
+  margin-left: var(--spacing-md);
+  list-style: disc;
 }
 
 .editorBody {

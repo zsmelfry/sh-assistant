@@ -11,22 +11,22 @@
         @update-status="handleStatusUpdate"
       />
 
-      <TabNav v-model="activeTab" :tabs="tabs" />
-
-      <!-- Tab content -->
-      <div class="tabContent">
-        <ChecklistTab
-          v-if="activeTab === 'checklist'"
-          :project-id="projectId"
-        />
-        <NotesTab
-          v-else-if="activeTab === 'notes'"
-          :project-id="projectId"
-        />
-        <DiagramTab
-          v-else-if="activeTab === 'diagrams'"
-          :project-id="projectId"
-        />
+      <!-- Split layout: left checklist, right notes+diagrams -->
+      <div class="splitLayout">
+        <div class="leftPane">
+          <h3 class="paneTitle">Checklist</h3>
+          <ChecklistTab :project-id="projectId" />
+        </div>
+        <div class="rightPane">
+          <div class="rightTop">
+            <h3 class="paneTitle">笔记</h3>
+            <NotesTab :project-id="projectId" />
+          </div>
+          <div class="rightBottom">
+            <h3 class="paneTitle">Diagram</h3>
+            <DiagramTab :project-id="projectId" />
+          </div>
+        </div>
       </div>
 
       <!-- AI Chat toggle button -->
@@ -73,6 +73,10 @@
           <label>描述</label>
           <textarea v-model="editForm.description" rows="3" />
         </div>
+        <div class="formGroup">
+          <label>提醒时间</label>
+          <input v-model="editForm.reminderAt" type="datetime-local" />
+        </div>
         <div v-if="project.status === 'blocked'" class="formGroup">
           <label>受阻原因</label>
           <input v-model="editForm.blockedReason" type="text" />
@@ -98,7 +102,6 @@
 <script setup lang="ts">
 import type { ProjectWithDetails, ProjectStatus } from '../types';
 import ProjectHeader from './ProjectHeader.vue';
-import TabNav from './TabNav.vue';
 import ChecklistTab from './ChecklistTab.vue';
 import NotesTab from './NotesTab.vue';
 import DiagramTab from './DiagramTab.vue';
@@ -116,7 +119,6 @@ const store = useProjectTrackerStore();
 
 const loading = ref(true);
 const project = ref<ProjectWithDetails | null>(null);
-const activeTab = ref('checklist');
 const showEditForm = ref(false);
 const showDeleteConfirm = ref(false);
 const showChat = ref(false);
@@ -127,14 +129,20 @@ const editForm = reactive({
   categoryId: 0,
   priority: 'medium' as string,
   dueDate: '',
+  reminderAt: '',
   blockedReason: '',
 });
 
-const tabs = computed(() => [
-  { id: 'checklist', label: 'Checklist', count: project.value?.checklistTotal },
-  { id: 'notes', label: '笔记', count: project.value?.noteCount },
-  { id: 'diagrams', label: 'Diagram', count: project.value?.diagramCount },
-]);
+function timestampToDatetimeLocal(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function datetimeLocalToTimestamp(val: string): number | null {
+  if (!val) return null;
+  return new Date(val).getTime();
+}
 
 async function loadProject() {
   project.value = await $fetch<ProjectWithDetails>(`/api/project-tracker/projects/${props.projectId}`);
@@ -155,6 +163,7 @@ watch(() => showEditForm.value, (isOpen) => {
     editForm.categoryId = project.value.categoryId;
     editForm.priority = project.value.priority;
     editForm.dueDate = project.value.dueDate || '';
+    editForm.reminderAt = project.value.reminderAt ? timestampToDatetimeLocal(project.value.reminderAt) : '';
     editForm.blockedReason = project.value.blockedReason || '';
   }
 });
@@ -171,6 +180,7 @@ async function handleEdit() {
     categoryId: editForm.categoryId,
     priority: editForm.priority as any,
     dueDate: editForm.dueDate || null,
+    reminderAt: datetimeLocalToTimestamp(editForm.reminderAt),
     blockedReason: editForm.blockedReason || null,
   });
   showEditForm.value = false;
@@ -186,9 +196,7 @@ async function handleDelete() {
 
 <style scoped>
 .projectDetailView {
-  padding: var(--spacing-lg);
-  max-width: 900px;
-  margin: 0 auto;
+  padding: var(--spacing-md);
 }
 
 .loadingState {
@@ -199,14 +207,48 @@ async function handleDelete() {
   color: var(--color-text-secondary);
 }
 
-.tabContent {
-  min-height: 200px;
+.splitLayout {
+  display: flex;
+  gap: var(--spacing-md);
+  min-height: 0;
 }
 
-.tabPlaceholder {
-  text-align: center;
-  padding: var(--spacing-xl);
+.leftPane {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--color-border);
+  padding-right: var(--spacing-md);
+}
+
+.rightPane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rightTop {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.rightBottom {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--spacing-md);
+}
+
+.paneTitle {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .formGroup {
@@ -263,7 +305,18 @@ async function handleDelete() {
 
 @media (max-width: 768px) {
   .projectDetailView {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
+  }
+
+  .splitLayout {
+    flex-direction: column;
+  }
+
+  .leftPane {
+    border-right: none;
+    padding-right: 0;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--spacing-md);
   }
 
   .chatToggle {

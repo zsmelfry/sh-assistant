@@ -62,6 +62,7 @@ export interface Project {
   dueDate: string | null;
   priority: Priority;
   blockedReason: string | null;
+  reminderAt: number | null;
   archived: boolean;
   sortOrder: number;
   createdAt: number;
@@ -82,6 +83,7 @@ export interface Milestone {
   projectId: number;
   title: string;
   dueDate: string | null;
+  reminderAt: number | null;
   sortOrder: number;
   createdAt: number;
 }
@@ -93,6 +95,7 @@ export interface ChecklistItem {
   isCompleted: boolean;
   completedAt: number | null;
   dueDate: string | null;
+  reminderAt: number | null;
   milestoneId: number | null;
   linkedNoteId: number | null;
   linkedDiagramId: number | null;
@@ -185,4 +188,5 @@ export interface UpdateProjectData {
   dueDate?: string | null;
   priority?: Priority;
   blockedReason?: string | null;
+  reminderAt?: number | null;
 }

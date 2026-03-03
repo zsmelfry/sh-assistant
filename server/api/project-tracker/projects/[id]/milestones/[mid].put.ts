@@ -19,6 +19,9 @@ export default defineEventHandler(async (event) => {
   if (body.dueDate !== undefined) {
     updates.dueDate = body.dueDate || null;
   }
+  if (body.reminderAt !== undefined) {
+    updates.reminderAt = body.reminderAt || null;
+  }
 
   await db.update(ptMilestones).set(updates).where(eq(ptMilestones.id, mid));
 

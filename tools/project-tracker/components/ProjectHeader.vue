@@ -3,6 +3,9 @@
     <div class="headerTop">
       <button class="backBtn" @click="$emit('back')">← 返回</button>
       <div class="headerActions">
+        <select class="statusSelect" :value="project.status" @change="handleStatusChange($event)">
+          <option v-for="s in allStatuses" :key="s" :value="s">{{ STATUS_LABELS[s] }}</option>
+        </select>
         <button class="iconBtn" @click="$emit('edit')">编辑</button>
         <button class="iconBtn danger" @click="$emit('delete')">删除</button>
       </div>
@@ -17,6 +20,9 @@
       <span v-if="project.dueDate" class="dueDate" :class="{ overdue: isOverdue }">
         截止: {{ project.dueDate }}
       </span>
+      <span v-if="project.reminderAt" class="reminderTag" :title="formatReminder(project.reminderAt)">
+        ⏰ {{ formatReminder(project.reminderAt) }}
+      </span>
     </div>
 
     <div v-if="project.tags.length" class="tagRow">
@@ -29,13 +35,6 @@
       受阻原因: {{ project.blockedReason }}
     </div>
 
-    <!-- Status quick-switch -->
-    <div class="statusSwitch">
-      <span class="label">状态:</span>
-      <select :value="project.status" @change="handleStatusChange($event)">
-        <option v-for="s in allStatuses" :key="s" :value="s">{{ STATUS_LABELS[s] }}</option>
-      </select>
-    </div>
   </div>
 </template>
 
@@ -57,6 +56,12 @@ const emit = defineEmits<{
   delete: [];
   'update-status': [status: ProjectStatus];
 }>();
+
+function formatReminder(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const isOverdue = computed(() => {
   if (!props.project.dueDate) return false;
@@ -150,6 +155,14 @@ function handleStatusChange(e: Event) {
   font-weight: 600;
 }
 
+.reminderTag {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 1px 6px;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+}
+
 .tagRow {
   display: flex;
   gap: 4px;
@@ -180,20 +193,7 @@ function handleStatusChange(e: Event) {
   margin-bottom: var(--spacing-sm);
 }
 
-.statusSwitch {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) 0;
-  border-top: 1px solid var(--color-border);
-}
-
-.statusSwitch .label {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-
-.statusSwitch select {
+.statusSelect {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);

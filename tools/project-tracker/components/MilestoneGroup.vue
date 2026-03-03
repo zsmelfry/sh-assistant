@@ -5,6 +5,7 @@
       <h4 class="groupTitle">{{ milestone.title }}</h4>
       <span class="groupStats">{{ milestone.done }}/{{ milestone.total }}</span>
       <span v-if="milestone.dueDate" class="groupDue">{{ milestone.dueDate }}</span>
+      <span v-if="milestone.reminderAt" class="groupReminder">⏰</span>
       <div v-if="milestone.id !== 0" class="groupActions" @click.stop>
         <button class="iconBtn" @click="$emit('edit-milestone')">✏️</button>
         <button class="iconBtn" @click="$emit('delete-milestone')">&times;</button>
@@ -104,6 +105,10 @@ function handleAdd() {
 .groupDue {
   font-size: 11px;
   color: var(--color-text-secondary);
+}
+
+.groupReminder {
+  font-size: 11px;
 }
 
 .groupActions {

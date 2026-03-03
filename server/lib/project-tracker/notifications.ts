@@ -1,4 +1,4 @@
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, isNotNull, lte } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import {
   ptProjects, ptChecklistItems, ptMilestones, ptNotifications,
@@ -7,7 +7,6 @@ import { execSync } from 'child_process';
 
 function sendMacNotification(title: string, message: string) {
   try {
-    // Escape special characters for AppleScript
     const safeTitle = title.replace(/"/g, '\\"');
     const safeMsg = message.replace(/"/g, '\\"');
     const script = `display notification "${safeMsg}" with title "${safeTitle}"`;
@@ -17,91 +16,64 @@ function sendMacNotification(title: string, message: string) {
   }
 }
 
-function getToday(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getTomorrow(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
-
 export async function checkAndSendNotifications() {
   const db = useDB();
-  const today = getToday();
-  const tomorrow = getTomorrow();
   const now = Date.now();
 
-  const activeStatuses = ['todo', 'in_progress', 'blocked'];
-
-  // 1. Project due date reminders
+  // 1. Project-level reminders
   const projects = await db.select({
     id: ptProjects.id,
     title: ptProjects.title,
-    dueDate: ptProjects.dueDate,
+    reminderAt: ptProjects.reminderAt,
   }).from(ptProjects)
-    .where(inArray(ptProjects.status, activeStatuses));
+    .where(and(
+      isNotNull(ptProjects.reminderAt),
+      lte(ptProjects.reminderAt, now),
+    ));
 
   for (const p of projects) {
-    if (!p.dueDate) continue;
-
-    if (p.dueDate === today) {
-      await sendIfNotSent(db, 'project', p.id, 'day_of', now, () => {
-        sendMacNotification('事项追踪 - 今日截止', `「${p.title}」今天到期`);
-      });
-    } else if (p.dueDate === tomorrow) {
-      await sendIfNotSent(db, 'project', p.id, 'day_before', now, () => {
-        sendMacNotification('事项追踪 - 明日截止', `「${p.title}」明天到期`);
-      });
-    }
+    await sendIfNotSent(db, 'project', p.id, p.reminderAt!, now, () => {
+      sendMacNotification('事项追踪 - 提醒', `「${p.title}」提醒时间到了`);
+    });
+    // Clear the reminder after sending
+    await db.update(ptProjects).set({ reminderAt: null }).where(eq(ptProjects.id, p.id));
   }
 
-  // 2. Checklist item due date reminders
+  // 2. Checklist item reminders
   const items = await db.select({
     id: ptChecklistItems.id,
     content: ptChecklistItems.content,
-    dueDate: ptChecklistItems.dueDate,
-    projectId: ptChecklistItems.projectId,
+    reminderAt: ptChecklistItems.reminderAt,
   }).from(ptChecklistItems)
-    .innerJoin(ptProjects, eq(ptChecklistItems.projectId, ptProjects.id))
     .where(and(
+      isNotNull(ptChecklistItems.reminderAt),
+      lte(ptChecklistItems.reminderAt, now),
       eq(ptChecklistItems.isCompleted, false),
-      inArray(ptProjects.status, activeStatuses),
     ));
 
   for (const item of items) {
-    if (!item.dueDate) continue;
-
-    if (item.dueDate === today) {
-      await sendIfNotSent(db, 'checklist', item.id, 'day_of', now, () => {
-        sendMacNotification('事项追踪 - 任务到期', `「${item.content}」今天到期`);
-      });
-    }
+    await sendIfNotSent(db, 'checklist', item.id, item.reminderAt!, now, () => {
+      sendMacNotification('事项追踪 - 任务提醒', `「${item.content}」提醒时间到了`);
+    });
+    await db.update(ptChecklistItems).set({ reminderAt: null }).where(eq(ptChecklistItems.id, item.id));
   }
 
-  // 3. Milestone due date reminders
+  // 3. Milestone reminders
   const milestones = await db.select({
     id: ptMilestones.id,
     title: ptMilestones.title,
-    dueDate: ptMilestones.dueDate,
-    projectId: ptMilestones.projectId,
+    reminderAt: ptMilestones.reminderAt,
   }).from(ptMilestones)
-    .innerJoin(ptProjects, eq(ptMilestones.projectId, ptProjects.id))
-    .where(inArray(ptProjects.status, activeStatuses));
+    .where(and(
+      isNotNull(ptMilestones.reminderAt),
+      lte(ptMilestones.reminderAt, now),
+    ));
 
   for (const m of milestones) {
-    if (!m.dueDate) continue;
-
-    if (m.dueDate === today) {
-      await sendIfNotSent(db, 'milestone', m.id, 'day_of', now, () => {
-        sendMacNotification('事项追踪 - 里程碑到期', `「${m.title}」今天到期`);
-      });
-    } else if (m.dueDate === tomorrow) {
-      await sendIfNotSent(db, 'milestone', m.id, 'day_before', now, () => {
-        sendMacNotification('事项追踪 - 里程碑即将到期', `「${m.title}」明天到期`);
-      });
-    }
+    await sendIfNotSent(db, 'milestone', m.id, m.reminderAt!, now, () => {
+      sendMacNotification('事项追踪 - 里程碑提醒', `「${m.title}」提醒时间到了`);
+    });
+    await db.update(ptMilestones).set({ reminderAt: null }).where(eq(ptMilestones.id, m.id));
   }
 }
 
@@ -109,17 +81,16 @@ async function sendIfNotSent(
   db: any,
   targetType: string,
   targetId: number,
-  remindType: string,
+  reminderAt: number,
   now: number,
   sendFn: () => void,
 ) {
-  // Check if already sent
   const existing = await db.select({ id: ptNotifications.id })
     .from(ptNotifications)
     .where(and(
       eq(ptNotifications.targetType, targetType),
       eq(ptNotifications.targetId, targetId),
-      eq(ptNotifications.remindType, remindType),
+      eq(ptNotifications.reminderAt, reminderAt),
     ))
     .limit(1);
 
@@ -130,7 +101,7 @@ async function sendIfNotSent(
   await db.insert(ptNotifications).values({
     targetType,
     targetId,
-    remindType,
+    reminderAt,
     sentAt: now,
   });
 }
