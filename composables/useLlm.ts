@@ -4,7 +4,6 @@
 // ===== Types =====
 // Import shared LLM types from server (single source of truth)
 import type { ChatMessage, ChatResponse, TranslateResult } from '~/server/lib/llm/types';
-import { extractErrorMessage } from '~/utils/error';
 export type { ChatMessage, ChatResponse };
 export type { TranslateResult as TranslateResponse };
 
