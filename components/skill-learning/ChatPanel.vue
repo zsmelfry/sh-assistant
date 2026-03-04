@@ -49,19 +49,19 @@ const allMessages = computed(() => {
   return msgs;
 });
 
+function buildGuidanceMessage(): SmChat | null {
+  const g = store.guidance;
+  if (!g || g.guidingQuestions.length === 0) return null;
+  const content = g.guidingQuestions
+    .map(q => `**思考一下：** ${q}`)
+    .join('\n\n');
+  return { id: -1, pointId: props.pointId, role: 'assistant', content, createdAt: Date.now() };
+}
+
 // Watch for guidance to load and create virtual message
-watch(() => store.guidance, (g) => {
-  if (g && g.guidingQuestions.length > 0 && store.chats.length === 0) {
-    const content = g.guidingQuestions
-      .map(q => `**思考一下：** ${q}`)
-      .join('\n\n');
-    virtualGuidance.value = {
-      id: -1,
-      pointId: props.pointId,
-      role: 'assistant',
-      content,
-      createdAt: Date.now(),
-    };
+watch(() => store.guidance, () => {
+  if (store.chats.length === 0) {
+    virtualGuidance.value = buildGuidanceMessage();
   }
 }, { immediate: true });
 
@@ -79,19 +79,7 @@ function handleSend(message: string) {
 
 function handleClear() {
   store.clearChats(props.pointId);
-  // Restore guidance after clearing
-  if (store.guidance?.guidingQuestions.length) {
-    const content = store.guidance.guidingQuestions
-      .map(q => `**思考一下：** ${q}`)
-      .join('\n\n');
-    virtualGuidance.value = {
-      id: -1,
-      pointId: props.pointId,
-      role: 'assistant',
-      content,
-      createdAt: Date.now(),
-    };
-  }
+  virtualGuidance.value = buildGuidanceMessage();
 }
 
 function handleQuickQuestion(prompt: string) {
