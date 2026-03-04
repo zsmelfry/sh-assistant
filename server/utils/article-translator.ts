@@ -2,7 +2,6 @@ import { eq, and } from 'drizzle-orm';
 import { articles, articleTranslations } from '../database/schema';
 import { resolveProvider } from './llm-provider';
 import { stripHtmlTags } from './article-sanitizer';
-import { LlmError } from '../lib/llm';
 import type { ChatMessage } from '../lib/llm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
@@ -62,6 +61,83 @@ interface TranslateArticleOptions {
   force?: boolean;
 }
 
+/** Check translation cache. Returns cached content or null. */
+export async function checkTranslationCache(
+  db: BetterSQLite3Database<any>,
+  articleId: number,
+  type: TranslationType,
+): Promise<string | null> {
+  const cached = await db.select()
+    .from(articleTranslations)
+    .where(and(
+      eq(articleTranslations.articleId, articleId),
+      eq(articleTranslations.type, type),
+    ))
+    .limit(1);
+  return cached.length > 0 ? cached[0].content : null;
+}
+
+/** Fetch article, build prompt, resolve provider — everything needed before calling LLM. */
+export async function prepareTranslation(
+  db: BetterSQLite3Database<any>,
+  articleId: number,
+  type: TranslationType,
+  providerId?: number,
+) {
+  const article = await db.select()
+    .from(articles)
+    .where(eq(articles.id, articleId))
+    .limit(1);
+
+  if (article.length === 0) {
+    throw createError({ statusCode: 404, message: '文章不存在' });
+  }
+
+  const plainText = stripHtmlTags(article[0].content);
+  const maxChars = 30000;
+  const truncated = plainText.length > maxChars
+    ? plainText.slice(0, maxChars) + '\n\n[... 文章过长，已截断]'
+    : plainText;
+
+  const messages = type === 'full'
+    ? buildFullTranslatePrompt(truncated)
+    : buildSummaryPrompt(truncated);
+
+  const { provider, config: providerConfig } = await resolveProvider(db, providerId);
+
+  const chatOptions = {
+    temperature: 0.3,
+    maxTokens: type === 'full' ? 8000 : 2000,
+    timeout: type === 'full' ? 120000 : 60000,
+  };
+
+  return { messages, provider, providerConfig, chatOptions };
+}
+
+/** Save translation result to cache (deletes old entry first when force=true). */
+export async function saveTranslationCache(
+  db: BetterSQLite3Database<any>,
+  articleId: number,
+  type: TranslationType,
+  content: string,
+  providerId: number,
+  force?: boolean,
+): Promise<void> {
+  if (force) {
+    await db.delete(articleTranslations).where(and(
+      eq(articleTranslations.articleId, articleId),
+      eq(articleTranslations.type, type),
+    ));
+  }
+  await db.insert(articleTranslations).values({
+    articleId,
+    type,
+    content,
+    providerId,
+    createdAt: Date.now(),
+  });
+}
+
 /**
  * 翻译文章（单个类型），先查缓存再调 LLM。
  * 返回翻译内容字符串。
@@ -72,68 +148,14 @@ export async function translateArticle(
   type: TranslationType,
   options?: TranslateArticleOptions,
 ): Promise<{ content: string; cached: boolean }> {
-  // 查缓存（force 模式跳过）
   if (!options?.force) {
-    const cached = await db.select()
-      .from(articleTranslations)
-      .where(and(
-        eq(articleTranslations.articleId, articleId),
-        eq(articleTranslations.type, type),
-      ))
-      .limit(1);
-
-    if (cached.length > 0) {
-      return { content: cached[0].content, cached: true };
-    }
+    const cached = await checkTranslationCache(db, articleId, type);
+    if (cached) return { content: cached, cached: true };
   }
 
-  // 获取文章正文
-  const article = await db.select()
-    .from(articles)
-    .where(eq(articles.id, articleId))
-    .limit(1);
-
-  if (article.length === 0) {
-    throw createError({ statusCode: 404, message: '文章不存在' });
-  }
-
-  // 转纯文本给 LLM
-  const plainText = stripHtmlTags(article[0].content);
-
-  // 截断过长文本（防止 token 超限）
-  const maxChars = 30000;
-  const truncated = plainText.length > maxChars
-    ? plainText.slice(0, maxChars) + '\n\n[... 文章过长，已截断]'
-    : plainText;
-
-  // 构建 prompt
-  const messages = type === 'full'
-    ? buildFullTranslatePrompt(truncated)
-    : buildSummaryPrompt(truncated);
-
-  // 调 LLM
-  const { provider, config: providerConfig } = await resolveProvider(db, options?.providerId);
-
-  const content = await provider.chat(messages, {
-    temperature: 0.3,
-    maxTokens: type === 'full' ? 8000 : 2000,
-    timeout: type === 'full' ? 120000 : 60000,
-  });
-
-  // 缓存到数据库（force 模式先删旧记录再插入）
-  if (options?.force) {
-    await db.delete(articleTranslations).where(and(
-      eq(articleTranslations.articleId, articleId),
-      eq(articleTranslations.type, type),
-    ));
-  }
-  await db.insert(articleTranslations).values({
-    articleId,
-    type,
-    content,
-    providerId: providerConfig.id,
-    createdAt: Date.now(),
-  });
+  const { messages, provider, providerConfig, chatOptions } = await prepareTranslation(db, articleId, type, options?.providerId);
+  const content = await provider.chat(messages, chatOptions);
+  await saveTranslationCache(db, articleId, type, content, providerConfig.id, options?.force);
 
   return { content, cached: false };
 }
