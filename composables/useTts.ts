@@ -13,9 +13,7 @@ const PREFERRED_FRENCH_VOICES = [
   'Microsoft Sylvie Online',
 ];
 
-let cachedVoice: SpeechSynthesisVoice | null = null;
-let cachedVoiceLang = '';
-let lastVoiceCheckTime = 0;
+let voiceCache = { voice: null as SpeechSynthesisVoice | null, lang: '', checkedAt: 0 };
 
 function findBestVoice(lang: string): SpeechSynthesisVoice | null {
   const voices = speechSynthesis.getVoices();
@@ -63,13 +61,11 @@ export function useTts() {
 
       const langPrefix = lang.split('-')[0];
       const now = Date.now();
-      if (!cachedVoice || cachedVoiceLang !== langPrefix || now - lastVoiceCheckTime > 30000) {
-        cachedVoice = findBestVoice(lang);
-        cachedVoiceLang = langPrefix;
-        lastVoiceCheckTime = now;
+      if (!voiceCache.voice || voiceCache.lang !== langPrefix || now - voiceCache.checkedAt > 30000) {
+        voiceCache = { voice: findBestVoice(lang), lang: langPrefix, checkedAt: now };
       }
-      if (cachedVoice) {
-        utterance.voice = cachedVoice;
+      if (voiceCache.voice) {
+        utterance.voice = voiceCache.voice;
       }
 
       speaking.value = true;
@@ -85,8 +81,7 @@ export function useTts() {
 
       utterance.onend = resolveOnce;
       utterance.onerror = () => {
-        cachedVoice = null;
-        lastVoiceCheckTime = 0;
+        voiceCache = { voice: null, lang: '', checkedAt: 0 };
         resolveOnce();
       };
 
