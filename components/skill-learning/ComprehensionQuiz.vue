@@ -239,7 +239,8 @@ defineExpose({ reportResult });
   color: var(--color-accent-inverse);
 }
 
-.optionBtn.correct .optionLabel {
+.optionBtn.correct .optionLabel,
+.optionBtn.correct .optionText {
   color: var(--color-accent-inverse);
 }
 
@@ -251,6 +252,10 @@ defineExpose({ reportResult });
 .optionBtn:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+.optionBtn.correct:disabled {
+  opacity: 1;
 }
 
 .optionLabel {
@@ -307,6 +312,10 @@ defineExpose({ reportResult });
 .tfBtn:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+.tfBtn.correct:disabled {
+  opacity: 1;
 }
 
 /* Fill blank */
