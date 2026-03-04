@@ -84,10 +84,9 @@ export const useStudyStore = defineStore('study', () => {
   const overview = ref<StudyOverview | null>(null);
 
   // Computed
-  const currentCard = computed<StudyCard | null>(() => {
-    if (currentIndex.value >= cardQueue.value.length) return null;
-    return cardQueue.value[currentIndex.value] ?? null;
-  });
+  const currentCard = computed<StudyCard | null>(() =>
+    cardQueue.value[currentIndex.value] ?? null,
+  );
 
   const progress = computed(() => ({
     current: currentIndex.value,
@@ -115,8 +114,8 @@ export const useStudyStore = defineStore('study', () => {
     try {
       const def = await $fetch<Definition>(`/api/vocab/definitions/${card.wordId}`);
       cardQueue.value[index] = { ...card, definition: def };
-    } catch (e) {
-      console.error(`Failed to load definition for ${card.word}:`, e);
+    } catch {
+      // Silent: definition load failure is non-critical
     }
   }
 
