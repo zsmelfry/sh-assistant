@@ -162,7 +162,6 @@ const groupedProjects = computed(() => {
 
 <style scoped>
 .projectListView {
-  padding: var(--spacing-lg);
   max-width: 900px;
   margin: 0 auto;
 }
@@ -255,10 +254,6 @@ const groupedProjects = computed(() => {
 }
 
 @media (max-width: 768px) {
-  .projectListView {
-    padding: var(--spacing-md);
-  }
-
   .listHeader {
     flex-direction: column;
     align-items: flex-start;

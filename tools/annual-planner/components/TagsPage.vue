@@ -43,7 +43,6 @@ defineEmits<{
 
 <style scoped>
 .tagsPage {
-  padding: var(--spacing-lg);
 }
 
 .pageHeader {

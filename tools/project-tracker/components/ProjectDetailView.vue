@@ -188,7 +188,6 @@ async function handleDelete() {
 
 <style scoped>
 .projectDetailView {
-  padding: var(--spacing-md);
 }
 
 .loadingState {
@@ -284,10 +283,6 @@ async function handleDelete() {
 }
 
 @media (max-width: 768px) {
-  .projectDetailView {
-    padding: var(--spacing-sm);
-  }
-
   .splitLayout {
     flex-direction: column;
     height: auto;

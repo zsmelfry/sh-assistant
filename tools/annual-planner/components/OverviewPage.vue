@@ -113,7 +113,6 @@ function onDrop(_e: DragEvent, targetId: number) {
 
 <style scoped>
 .overviewPage {
-  padding: var(--spacing-lg);
 }
 
 .domainHeader {
@@ -150,9 +149,6 @@ function onDrop(_e: DragEvent, targetId: number) {
 }
 
 @media (max-width: 768px) {
-  .overviewPage {
-    padding: var(--spacing-md);
-  }
   .domainGrid {
     grid-template-columns: 1fr;
   }

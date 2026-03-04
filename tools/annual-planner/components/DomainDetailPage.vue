@@ -113,7 +113,6 @@ function onGoalDrop(_e: DragEvent, targetId: number) {
 
 <style scoped>
 .domainDetailPage {
-  padding: var(--spacing-lg);
 }
 
 .pageHeader {
@@ -164,9 +163,6 @@ function onGoalDrop(_e: DragEvent, targetId: number) {
 }
 
 @media (max-width: 768px) {
-  .domainDetailPage {
-    padding: var(--spacing-md);
-  }
   .pageHeader {
     flex-wrap: wrap;
     gap: var(--spacing-sm);

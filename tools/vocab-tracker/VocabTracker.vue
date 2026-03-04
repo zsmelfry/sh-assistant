@@ -126,7 +126,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg);
   max-width: 900px;
   margin: 0 auto;
 }
@@ -244,7 +243,6 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .vocabTracker {
-    padding: var(--spacing-md);
   }
   .mainTabs {
     display: flex;
