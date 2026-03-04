@@ -44,7 +44,7 @@ export const usePlannerStore = defineStore('planner', () => {
   }
 
   // ===== 导航 =====
-  function navigateTo(view: PlannerView) {
+  function switchView(view: PlannerView) {
     currentView.value = view;
     if (view.type === 'domain') {
       loadGoals(view.domainId);
@@ -106,7 +106,7 @@ export const usePlannerStore = defineStore('planner', () => {
     await $fetch(`/api/planner/domains/${id}`, { method: 'DELETE' });
     await loadDomains();
     if (currentView.value.type === 'domain' && currentView.value.domainId === id) {
-      navigateTo({ type: 'overview' });
+      switchView({ type: 'overview' });
     }
   }
 
@@ -301,7 +301,7 @@ export const usePlannerStore = defineStore('planner', () => {
     // 计算属性
     currentDomain, globalCompletionRate,
     // 导航
-    navigateTo,
+    switchView,
     // 年份操作
     loadAvailableYears, setYear, copyYearStructure,
     // 领域操作
