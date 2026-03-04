@@ -1,5 +1,6 @@
 import type { ChatMessage, TranslateResult } from '../lib/llm';
 import { resolveProvider } from './llm-provider';
+import { parseLlmJsonObject } from './parse-llm-json';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { definitions } from '../database/schemas/srs';
 
@@ -34,63 +35,9 @@ JSON 格式：
 }`;
 }
 
-/** 修复 LLM 返回的 JSON 中未转义的双引号 */
-function repairJson(raw: string): string {
-  let result = '';
-  let inString = false;
-
-  for (let i = 0; i < raw.length; i++) {
-    const ch = raw[i];
-
-    // 已转义的字符，原样保留
-    if (ch === '\\' && inString) {
-      result += ch + (raw[i + 1] || '');
-      i++;
-      continue;
-    }
-
-    if (ch === '"') {
-      if (!inString) {
-        inString = true;
-        result += ch;
-      } else {
-        // 判断这个引号是字符串结束还是未转义的内嵌引号
-        const after = raw.slice(i + 1).trimStart();
-        if (after.length === 0 || /^[,}\]:]/.test(after)) {
-          // 后面是 JSON 结构符号，说明是真正的闭合引号
-          inString = false;
-          result += ch;
-        } else {
-          // 未转义的内嵌引号，加反斜杠
-          result += '\\"';
-        }
-      }
-    } else {
-      result += ch;
-    }
-  }
-
-  return result;
-}
-
 /** 解析翻译 JSON 响应 */
 function parseTranslationJson(text: string) {
-  // 去除 markdown 代码块
-  const cleaned = text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error(`翻译响应中未找到 JSON: ${text.slice(0, 200)}`);
-  }
-
-  let data: Record<string, unknown>;
-  const jsonStr = jsonMatch[0];
-
-  try {
-    data = JSON.parse(jsonStr) as Record<string, unknown>;
-  } catch {
-    // JSON 解析失败，尝试修复未转义的引号后重试
-    data = JSON.parse(repairJson(jsonStr)) as Record<string, unknown>;
-  }
+  const data = parseLlmJsonObject<Record<string, unknown>>(text);
 
   // 验证必需字段
   if (!data.definition || typeof data.definition !== 'string') {
