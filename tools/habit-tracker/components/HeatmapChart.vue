@@ -276,6 +276,10 @@ function hideTooltip() {
   max-width: calc(52 * (var(--chart-cell-size) + var(--chart-cell-gap)));
 }
 
+.monthlyLabels {
+  max-width: 300px;
+}
+
 .cell {
   width: var(--chart-cell-size);
   height: var(--chart-cell-size);
