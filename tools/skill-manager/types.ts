@@ -82,6 +82,11 @@ export interface SkillExport {
     chatSystemPrompt: string;
     taskSystemPrompt: string;
     taskUserPrompt: string;
+    quizSystemPrompt?: string;
+    quizUserPrompt?: string;
+    guidanceSystemPrompt?: string;
+    guidanceUserPrompt?: string;
+    features?: string;
   };
   tree: {
     domains: SkillExportDomain[];

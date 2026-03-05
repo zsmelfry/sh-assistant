@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
   return quizzes.map(q => ({
     ...q,
     options: q.options ? JSON.parse(q.options) : null,
+    audioSpec: q.audioSpec ? JSON.parse(q.audioSpec) : null,
     passed: passedQuizIds.has(q.id),
   }));
 });

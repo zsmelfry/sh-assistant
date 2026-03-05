@@ -173,6 +173,7 @@ const saving = ref(false);
 const generating = ref(false);
 const genError = ref('');
 
+let importedFeatures = '';
 const fileInputRef = ref<HTMLInputElement>();
 const treeDomains = ref<GeneratedDomain[]>([]);
 const treeStages = ref<GeneratedStage[]>([]);
@@ -250,6 +251,10 @@ const form = reactive({
   chatSystemPrompt: DEFAULT_CHAT_SYSTEM,
   taskSystemPrompt: DEFAULT_TASK_SYSTEM,
   taskUserPrompt: DEFAULT_TASK_USER,
+  quizSystemPrompt: '',
+  quizUserPrompt: '',
+  guidanceSystemPrompt: '',
+  guidanceUserPrompt: '',
 });
 
 // Initialize form for editing
@@ -297,12 +302,17 @@ function handleImportTemplate(event: Event) {
       form.name = c.name;
       form.description = c.description || '';
       form.icon = c.icon;
-      form.skillId = c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      form.skillId = c.skillId || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       form.teachingSystemPrompt = c.teachingSystemPrompt;
       form.teachingUserPrompt = c.teachingUserPrompt;
       form.chatSystemPrompt = c.chatSystemPrompt;
       form.taskSystemPrompt = c.taskSystemPrompt;
       form.taskUserPrompt = c.taskUserPrompt;
+      if (c.quizSystemPrompt) form.quizSystemPrompt = c.quizSystemPrompt;
+      if (c.quizUserPrompt) form.quizUserPrompt = c.quizUserPrompt;
+      if (c.guidanceSystemPrompt) form.guidanceSystemPrompt = c.guidanceSystemPrompt;
+      if (c.guidanceUserPrompt) form.guidanceUserPrompt = c.guidanceUserPrompt;
+      if (c.features) importedFeatures = c.features;
       // Pre-fill tree (preserve teaching/note if present)
       treeDomains.value = data.tree.domains.map(d => ({
         name: d.name,
@@ -385,6 +395,11 @@ async function handleSave() {
           chatSystemPrompt: form.chatSystemPrompt,
           taskSystemPrompt: form.taskSystemPrompt,
           taskUserPrompt: form.taskUserPrompt,
+          ...(form.quizSystemPrompt ? { quizSystemPrompt: form.quizSystemPrompt } : {}),
+          ...(form.quizUserPrompt ? { quizUserPrompt: form.quizUserPrompt } : {}),
+          ...(form.guidanceSystemPrompt ? { guidanceSystemPrompt: form.guidanceSystemPrompt } : {}),
+          ...(form.guidanceUserPrompt ? { guidanceUserPrompt: form.guidanceUserPrompt } : {}),
+          ...(importedFeatures ? { features: importedFeatures } : {}),
         },
       });
 

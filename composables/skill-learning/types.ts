@@ -229,6 +229,32 @@ export interface ChatResponse {
   assistantMessage: SmChat;
 }
 
+// ===== 音频测验 =====
+
+export interface AudioSpec {
+  type: 'note' | 'interval' | 'scale_fragment';
+  notes: string[];
+  simultaneous?: boolean;
+}
+
+// ===== 歌曲关联 =====
+
+export interface MelodyNote {
+  note: string;
+  duration: number;
+  time: number;
+}
+
+export interface LinkedSong {
+  songId: number;
+  title: string;
+  artist: string;
+  year: number | null;
+  youtubeUrl: string | null;
+  melody: MelodyNote[] | null;
+  linkedAt: number;
+}
+
 // ===== 理解测验 =====
 
 export interface SmQuiz {
@@ -240,6 +266,7 @@ export interface SmQuiz {
   options: string[] | null;
   correctAnswer: string;
   explanation: string | null;
+  audioSpec: AudioSpec | null;
   sortOrder: number;
   createdAt: number;
 }

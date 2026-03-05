@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "exportedAt": 0,
+  "config": {
+    "name": "音乐听觉训练",
+    "description": "通过听觉训练建立音乐感知能力，用唱名(do-re-mi)体系理解音高关系，结合华语经典歌曲实例加深理解",
+    "icon": "Music",
+    "skillId": "music-ear",
+    "features": "{\"showPiano\": true}",
+    "teachingSystemPrompt": "你是一位善于用通俗方式教音乐的导师。你的学生会唱歌、音准好，但不懂乐理、看不懂五线谱、听不出音程名称。\n\n你正在为以下知识点生成教学内容：\n- 所属领域：{{domain.name}}\n- 所属主题：{{topic.name}}\n- 知识点：{{point.name}}\n- 简介：{{point.description}}\n\n请按以下 5 个板块生成内容，每个板块使用 Markdown 格式。板块之间必须用 \"---SECTION_BREAK---\" 分隔（单独一行）：\n\n1. **是什么 (What)** — 用唱名(do-re-mi)解释概念，强调\"听起来什么感觉\"而非理论术语\n2. **怎么做 (How)** — 具体的听辨练习方法、哼唱练习步骤\n3. **案例 (Example)** — 必须用2-3首1990-2010年的华语经典歌曲举例（标注歌名、歌手、具体哪几个音/旋律片段体现了这个知识点）\n4. **我的应用 (Apply)** — 2-3个可以马上动手的听辨小练习\n5. **推荐资源 (Resources)** — 推荐练耳APP、YouTube频道、歌曲练习列表\n\n要求：\n- 全程用唱名(do re mi fa sol la si)而非C D E F G A B\n- 用\"听起来像什么感觉\"来描述音程和音阶，不要堆术语\n- 华语歌曲举例必须具体到哪一句歌词对应哪些音\n- 每个板块 300-800 字\n- 直接输出内容，不要重复板块标题",
+    "teachingUserPrompt": "请为\"{{point.name}}\"生成教学内容。",
+    "chatSystemPrompt": "你是一位亲切的音乐听觉训练导师。用户会唱歌但不懂乐理。请用通俗语言帮助用户理解音乐概念。\n\n知识点信息：\n- 领域：{{domain.name}}\n- 主题：{{topic.name}}\n- 知识点：{{point.name}} — {{point.description}}\n{{teachingSummary}}\n\n你的角色：\n1. 用唱名(do-re-mi)而非字母音名来解释\n2. 多用华语歌曲举例（尤其1990-2010年经典）\n3. 引导用户通过\"哼唱\"来感受音程/音阶\n4. 避免堆砌乐理术语，用\"听起来的感觉\"来描述\n5. 鼓励用户去钢琴键盘上试弹",
+    "taskSystemPrompt": "你是一位音乐听觉训练导师。你需要生成可以马上动手做的听辨练习任务。\n\n知识点信息：\n- 所属领域：{{domain.name}}\n- 所属主题：{{topic.name}}\n- 知识点：{{point.name}}\n- 简介：{{point.description}}\n\n根据知识点复杂程度生成 1-2 个实践任务。任务应该是可以在页面上的虚拟钢琴或者通过哼唱来完成的。\n\n严格按以下 JSON 格式输出（不要添加任何其他文字）：\n[\n  {\n    \"description\": \"任务描述（1-2句话，说明要做什么）\",\n    \"expectedOutput\": \"预期产出（具体要完成什么）\",\n    \"hint\": \"参考提示（帮助完成任务的建议）\"\n  }\n]\n\n要求：\n- 任务围绕\"听\"和\"唱\"来设计\n- 用唱名而非字母音名\n- 可以要求用户在钢琴键盘上弹出特定音",
+    "taskUserPrompt": "请为\"{{point.name}}\"生成实践任务。",
+    "quizSystemPrompt": "你是一个音乐听觉训练测验出题专家。根据给定的教学内容，生成理解测验题来检测学生是否真正理解了核心概念。\n\n要求：\n- 根据内容复杂程度生成 2-5 道题（简单概念2-3道，复杂概念4-5道）\n- 题目类型可用：multiple_choice（选择题，4个选项）、true_false（判断题）、fill_blank（填空题）、audio_choice（听音选择题）\n- audio_choice 类型的题目需要额外提供 audioSpec 字段，指定要播放的音符\n- 题目要考察听觉理解，不是简单的记忆复述\n- 难度从易到难排列\n- 用唱名(do-re-mi)而非字母音名\n\n返回严格的JSON数组格式（不要用markdown代码块包裹）：\n[\n  {\n    \"type\": \"multiple_choice\",\n    \"question\": \"题目文本\",\n    \"options\": [\"A选项\", \"B选项\", \"C选项\", \"D选项\"],\n    \"correctAnswer\": \"正确答案文本\",\n    \"explanation\": \"为什么这个答案是对的（简短解释）\",\n    \"audioSpec\": null\n  },\n  {\n    \"type\": \"audio_choice\",\n    \"question\": \"听一下这两个音，它们构成什么音程？\",\n    \"options\": [\"大二度\", \"大三度\", \"纯四度\", \"纯五度\"],\n    \"correctAnswer\": \"大三度\",\n    \"explanation\": \"do到mi是大三度，听起来明亮温暖\",\n    \"audioSpec\": {\n      \"type\": \"interval\",\n      \"notes\": [\"C4\", \"E4\"],\n      \"simultaneous\": false\n    }\n  }\n]\n\naudioSpec 格式说明：\n- type: \"note\"(单音) | \"interval\"(音程) | \"scale_fragment\"(音阶片段)\n- notes: 音符数组，用科学记谱法如 \"C4\", \"D4\", \"E4\"（C4=中央do）\n- simultaneous: true=同时播放 false=依次播放（默认false）\n\n注意：fill_blank类型的options为null，audioSpec为null。非audio_choice类型的audioSpec也为null。",
+    "quizUserPrompt": "知识点：{{point.name}}\n所属领域：{{domain.name}} > {{topic.name}}\n\n教学内容：\n{{teachingSummary}}\n\n请针对以上内容生成理解测验题，至少包含1道audio_choice类型的听音题。"
+  },
+  "tree": {
+    "domains": [
+      {
+        "name": "基础音感",
+        "description": "建立音高感知和唱名体系的基础",
+        "sortOrder": 0,
+        "topics": [
+          {
+            "name": "音高基础",
+            "description": "理解音的高低和唱名对应关系",
+            "sortOrder": 0,
+            "points": [
+              { "name": "音名与唱名", "description": "认识do-re-mi-fa-sol-la-si七个唱名，理解它们和钢琴白键的对应关系", "sortOrder": 0, "status": "not_started" },
+              { "name": "音高感知", "description": "训练分辨两个音谁高谁低的能力，从大跨度到小跨度逐步提升", "sortOrder": 1, "status": "not_started" },
+              { "name": "八度关系", "description": "理解为什么高音do和低音do听起来\"一样\"，感受八度的特殊亲和感", "sortOrder": 2, "status": "not_started" }
+            ]
+          },
+          {
+            "name": "键盘认知",
+            "description": "熟悉钢琴键盘布局，建立音高的空间概念",
+            "sortOrder": 1,
+            "points": [
+              { "name": "中央do的位置", "description": "找到钢琴键盘上的中央C(do)，以此为基准定位其他音", "sortOrder": 0, "status": "not_started" },
+              { "name": "钢琴键盘认知", "description": "理解黑键白键的排列规律，知道哪个键是哪个音", "sortOrder": 1, "status": "not_started" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "音程听辨",
+        "description": "学会分辨两个音之间的距离（音程），建立音程的听觉色彩感",
+        "sortOrder": 1,
+        "topics": [
+          {
+            "name": "基本音程",
+            "description": "从最容易分辨的音程开始，逐步掌握常见音程",
+            "sortOrder": 0,
+            "points": [
+              { "name": "二度：相邻的音", "description": "大二度像\"do-re\"，小二度像\"mi-fa\"——学会分辨\"走一步\"的两种不同感觉", "sortOrder": 0, "status": "not_started" },
+              { "name": "三度：和声基础", "description": "大三度(do-mi)明亮温暖，小三度(la-do)柔和忧伤——和弦色彩的基础", "sortOrder": 1, "status": "not_started" },
+              { "name": "纯四度与纯五度", "description": "纯四度(do-fa)像\"生日快乐\"开头，纯五度(do-sol)空旷有力——两个最容易记住的音程", "sortOrder": 2, "status": "not_started" },
+              { "name": "八度跳跃", "description": "从低音do到高音do的大跳，听起来像\"同一个音的高低版本\"", "sortOrder": 3, "status": "not_started" },
+              { "name": "音程的情绪色彩", "description": "每个音程都有自己的情绪：二度紧张、三度温暖、四度庄严、五度空旷、六度抒情", "sortOrder": 4, "status": "not_started" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "音阶与调式",
+        "description": "理解音阶的结构和调式的听觉特征",
+        "sortOrder": 2,
+        "topics": [
+          {
+            "name": "音阶基础",
+            "description": "掌握最常见的大调和小调音阶",
+            "sortOrder": 0,
+            "points": [
+              { "name": "大调音阶", "description": "do-re-mi-fa-sol-la-si-do的完整排列，明亮积极的\"阳光感\"", "sortOrder": 0, "status": "not_started" },
+              { "name": "自然小调音阶", "description": "la-si-do-re-mi-fa-sol-la的排列，忧伤柔和的\"月光感\"", "sortOrder": 1, "status": "not_started" },
+              { "name": "大调与小调的听觉区别", "description": "同一首歌用大调和小调演奏，感受截然不同的情绪色彩", "sortOrder": 2, "status": "not_started" },
+              { "name": "全音与半音", "description": "半音是钢琴上最近的两个键（如mi-fa），全音隔一个键（如do-re）——音阶的\"砖块\"", "sortOrder": 3, "status": "not_started" },
+              { "name": "调式色彩感知", "description": "不只是大调小调——五声音阶、布鲁斯音阶等不同调式各有独特色彩", "sortOrder": 4, "status": "not_started" }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "节奏与和声",
+        "description": "感受节奏律动和和弦色彩",
+        "sortOrder": 3,
+        "topics": [
+          {
+            "name": "节奏基础",
+            "description": "建立稳定的节拍感和常见节奏型的识别能力",
+            "sortOrder": 0,
+            "points": [
+              { "name": "拍号与节拍", "description": "4/4拍、3/4拍、6/8拍——不同拍号带来不同的律动感", "sortOrder": 0, "status": "not_started" },
+              { "name": "常见节奏型", "description": "四分音符、八分音符、附点——华语流行歌中最常出现的节奏组合", "sortOrder": 1, "status": "not_started" },
+              { "name": "切分节奏", "description": "重音出现在\"不该出现\"的位置——让音乐有\"摇摆感\"的秘密", "sortOrder": 2, "status": "not_started" }
+            ]
+          },
+          {
+            "name": "和声基础",
+            "description": "认识最基本的和弦，感受和声的色彩变化",
+            "sortOrder": 1,
+            "points": [
+              { "name": "大三和弦", "description": "do-mi-sol三个音叠在一起——明亮、稳定、积极的和声色彩", "sortOrder": 0, "status": "not_started" },
+              { "name": "小三和弦", "description": "la-do-mi三个音叠在一起——柔和、忧伤、内敛的和声色彩", "sortOrder": 1, "status": "not_started" },
+              { "name": "七和弦初探", "description": "在三和弦上再加一个音——蓝调和爵士的标志性声音", "sortOrder": 2, "status": "not_started" },
+              { "name": "和弦进行感知", "description": "华语流行歌最常见的和弦套路：I-V-vi-IV（\"万能和弦进行\"）", "sortOrder": 3, "status": "not_started" },
+              { "name": "旋律听写入门", "description": "听一段简单旋律，用唱名把它\"写\"下来——综合运用所有听觉技能", "sortOrder": 4, "status": "not_started" }
+            ]
+          }
+        ]
+      }
+    ],
+    "stages": [
+      {
+        "name": "听音入门",
+        "description": "建立基本音感，能分辨音高的上下和远近",
+        "objective": "能用唱名哼唱简单旋律，分辨音的高低和远近",
+        "pointNames": ["音名与唱名", "音高感知", "八度关系", "中央do的位置", "钢琴键盘认知"]
+      },
+      {
+        "name": "音程感知",
+        "description": "听辨常见音程，建立音程的\"听觉色彩\"感",
+        "objective": "听到两个音能说出大致是什么音程",
+        "pointNames": ["二度：相邻的音", "三度：和声基础", "纯四度与纯五度", "八度跳跃", "音程的情绪色彩"]
+      },
+      {
+        "name": "音阶与调式",
+        "description": "理解大调/小调的听觉特征，感受调式色彩",
+        "objective": "能分辨大调和小调，听出歌曲的调式感觉",
+        "pointNames": ["大调音阶", "自然小调音阶", "大调与小调的听觉区别", "全音与半音", "调式色彩感知"]
+      },
+      {
+        "name": "节奏与和声",
+        "description": "感受节奏型和基本和弦色彩",
+        "objective": "能跟着拍子打节奏，分辨大三和弦和小三和弦",
+        "pointNames": ["拍号与节拍", "常见节奏型", "切分节奏", "大三和弦", "小三和弦"]
+      },
+      {
+        "name": "综合运用",
+        "description": "将听觉能力运用到真实歌曲分析中",
+        "objective": "能听出一首歌的调式、主要音程和和弦走向",
+        "pointNames": ["七和弦初探", "和弦进行感知", "旋律听写入门"]
+      }
+    ]
+  }
+}

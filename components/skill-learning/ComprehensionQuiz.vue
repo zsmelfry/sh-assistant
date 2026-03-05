@@ -8,8 +8,33 @@
 
     <p class="quizQuestion">{{ quiz.question }}</p>
 
+    <!-- Audio choice -->
+    <div v-if="quiz.type === 'audio_choice'" class="audioChoiceSection">
+      <PianoKeyboard
+        :audio-spec="quiz.audioSpec"
+        :show-keyboard="false"
+      />
+      <div v-if="quiz.options" class="optionsList">
+        <button
+          v-for="(option, i) in quiz.options"
+          :key="i"
+          class="optionBtn"
+          :class="{
+            selected: selectedAnswer === option,
+            correct: showResult && option === quiz.correctAnswer,
+            wrong: showResult && selectedAnswer === option && !lastResult?.isCorrect,
+          }"
+          :disabled="quiz.passed || submitting"
+          @click="selectedAnswer = option"
+        >
+          <span class="optionLabel">{{ String.fromCharCode(65 + i) }}</span>
+          <span class="optionText">{{ option }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Multiple choice -->
-    <div v-if="quiz.type === 'multiple_choice' && quiz.options" class="optionsList">
+    <div v-else-if="quiz.type === 'multiple_choice' && quiz.options" class="optionsList">
       <button
         v-for="(option, i) in quiz.options"
         :key="i"
@@ -90,6 +115,7 @@
 
 <script setup lang="ts">
 import type { SmQuizWithAttempt } from '~/composables/skill-learning/types';
+import PianoKeyboard from './PianoKeyboard.vue';
 
 const props = defineProps<{
   quiz: SmQuizWithAttempt;
@@ -112,6 +138,7 @@ const quizTypeLabel = computed(() => {
     case 'multiple_choice': return '选择题';
     case 'true_false': return '判断题';
     case 'fill_blank': return '填空题';
+    case 'audio_choice': return '听音选择';
     default: return '测验';
   }
 });
@@ -202,6 +229,13 @@ defineExpose({ reportResult });
   color: var(--color-text-primary);
   line-height: 1.5;
   margin-bottom: var(--spacing-sm);
+}
+
+/* Audio choice */
+.audioChoiceSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 /* Multiple choice options */

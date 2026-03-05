@@ -181,11 +181,12 @@ export const smQuizzes = sqliteTable('sm_quizzes', {
   pointId: integer('point_id').notNull()
     .references(() => smPoints.id, { onDelete: 'cascade' }),
   section: text('section', { enum: ['what', 'how', 'example', 'apply', 'resources'] }).notNull(),
-  type: text('type', { enum: ['multiple_choice', 'true_false', 'fill_blank'] }).notNull(),
+  type: text('type', { enum: ['multiple_choice', 'true_false', 'fill_blank', 'audio_choice'] }).notNull(),
   question: text('question').notNull(),
   options: text('options'),       // JSON stringified array for multiple choice
   correctAnswer: text('correct_answer').notNull(),
   explanation: text('explanation'),
+  audioSpec: text('audio_spec'),  // JSON: { type, notes[], simultaneous? }
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [

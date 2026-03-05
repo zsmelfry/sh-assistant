@@ -23,6 +23,7 @@ import type {
   ActivityWithPointName,
   ActivitiesPage,
   LinkedArticle,
+  LinkedSong,
   SmQuizWithAttempt,
   GuidanceResponse,
 } from './types';
@@ -51,6 +52,18 @@ export function createSkillLearningStore(skillId: string) {
         target.value = fallback;
       } finally {
         loading.value = false;
+      }
+    }
+
+    // ===== 技能特性配置 =====
+    const skillFeatures = ref<Record<string, any>>({});
+
+    async function loadSkillFeatures() {
+      try {
+        const res = await $fetch<{ features: Record<string, any> }>(`${baseUrl}/config`);
+        skillFeatures.value = res.features;
+      } catch {
+        skillFeatures.value = {};
       }
     }
 
@@ -112,6 +125,10 @@ export function createSkillLearningStore(skillId: string) {
     // ===== 文章关联 =====
     const linkedArticles = ref<LinkedArticle[]>([]);
     const linkedArticlesLoading = ref(false);
+
+    // ===== 歌曲关联 =====
+    const linkedSongs = ref<LinkedSong[]>([]);
+    const linkedSongsLoading = ref(false);
 
     // ===== 热力图 + 连续天数 =====
     const heatmapData = ref<Record<string, number>>({});
@@ -206,6 +223,8 @@ export function createSkillLearningStore(skillId: string) {
     async function loadDomains() {
       await fetchTo(domainsLoading, domains,
         () => $fetch<DomainWithStats[]>(`${baseUrl}/domains`), []);
+      // Load features config alongside domains
+      loadSkillFeatures();
     }
 
     async function loadDomain(id: number) {
@@ -223,6 +242,7 @@ export function createSkillLearningStore(skillId: string) {
       note.value = null;
       noteLastSaved.value = null;
       linkedArticles.value = [];
+      linkedSongs.value = [];
       quizzes.value = [];
       guidance.value = null;
       showCelebration.value = false;
@@ -550,6 +570,33 @@ export function createSkillLearningStore(skillId: string) {
       }
     }
 
+    // ===== 歌曲关联操作 =====
+    async function loadPointSongs(pointId: number) {
+      await fetchTo(linkedSongsLoading, linkedSongs,
+        () => $fetch<LinkedSong[]>(`${baseUrl}/points/${pointId}/songs`), []);
+    }
+
+    async function linkSongs(pointId: number, songIds: number[]) {
+      if (songIds.length === 0) return;
+      await $fetch(`${baseUrl}/points/${pointId}/songs`, {
+        method: 'POST',
+        body: { songIds },
+      });
+      await loadPointSongs(pointId);
+    }
+
+    async function unlinkSong(pointId: number, songId: number) {
+      const old = linkedSongs.value;
+      linkedSongs.value = linkedSongs.value.filter(s => s.songId !== songId);
+      try {
+        await $fetch(`${baseUrl}/points/${pointId}/songs/${songId}`, {
+          method: 'DELETE',
+        });
+      } catch {
+        linkedSongs.value = old;
+      }
+    }
+
     // ===== 热力图 + 连续天数 =====
     async function loadHeatmap(year?: number) {
       if (year !== undefined) heatmapYear.value = year;
@@ -670,6 +717,10 @@ export function createSkillLearningStore(skillId: string) {
     }
 
     return {
+      // 技能标识
+      skillId,
+      // 技能特性
+      skillFeatures, loadSkillFeatures,
       // 视图状态
       currentView, globalTab, currentDomainId, currentPointId,
       // 领域数据
@@ -716,6 +767,9 @@ export function createSkillLearningStore(skillId: string) {
       // 文章关联
       linkedArticles, linkedArticlesLoading,
       loadPointArticles, linkArticles, unlinkArticle,
+      // 歌曲关联
+      linkedSongs, linkedSongsLoading,
+      loadPointSongs, linkSongs, unlinkSong,
       // 热力图 + 连续天数
       heatmapData, heatmapYear, currentStreak,
       loadHeatmap, loadStreak,

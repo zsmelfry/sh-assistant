@@ -24,7 +24,7 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
 };
 
 /** Quiz types */
-export type QuizType = 'multiple_choice' | 'true_false' | 'fill_blank';
+export type QuizType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'audio_choice';
 
 /** Teaching section keys (string union, distinct from TeachingSection interface below) */
 export type TeachingSectionKey = 'what' | 'how' | 'example' | 'apply' | 'resources';

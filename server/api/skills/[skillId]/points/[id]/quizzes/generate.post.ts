@@ -13,6 +13,7 @@ interface QuizItem {
   options?: string[] | null;
   correctAnswer: string;
   explanation?: string;
+  audioSpec?: { type: string; notes: string[]; simultaneous?: boolean } | null;
 }
 
 export default defineEventHandler(async (event) => {
@@ -84,15 +85,17 @@ export default defineEventHandler(async (event) => {
         options: q.options ? JSON.stringify(q.options) : null,
         correctAnswer: q.correctAnswer,
         explanation: q.explanation || null,
+        audioSpec: q.audioSpec ? JSON.stringify(q.audioSpec) : null,
         sortOrder: i,
         createdAt: now,
       }).returning().get(),
     );
   });
 
-  // Parse options for response
+  // Parse options and audioSpec for response
   return inserted.map(q => ({
     ...q,
     options: q.options ? JSON.parse(q.options) : null,
+    audioSpec: q.audioSpec ? JSON.parse(q.audioSpec) : null,
   }));
 });

@@ -128,6 +128,11 @@ export default defineEventHandler(async (event) => {
       chatSystemPrompt: config.chatSystemPrompt,
       taskSystemPrompt: config.taskSystemPrompt,
       taskUserPrompt: config.taskUserPrompt,
+      ...(config.quizSystemPrompt ? { quizSystemPrompt: config.quizSystemPrompt } : {}),
+      ...(config.quizUserPrompt ? { quizUserPrompt: config.quizUserPrompt } : {}),
+      ...(config.guidanceSystemPrompt ? { guidanceSystemPrompt: config.guidanceSystemPrompt } : {}),
+      ...(config.guidanceUserPrompt ? { guidanceUserPrompt: config.guidanceUserPrompt } : {}),
+      ...(config.features ? { features: config.features } : {}),
     },
     tree: {
       domains: exportDomains,

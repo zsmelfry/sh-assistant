@@ -141,6 +141,20 @@
       "when": 1772780000000,
       "tag": "0019_checklist_enhancements",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1772870000000,
+      "tag": "0020_music_ear",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1772960000000,
+      "tag": "0021_skill_features",
+      "breakpoints": true
     }
   ]
 }

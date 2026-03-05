@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
     skillId, name, description, icon,
     teachingSystemPrompt, teachingUserPrompt,
     chatSystemPrompt, taskSystemPrompt, taskUserPrompt,
+    quizSystemPrompt, quizUserPrompt,
+    guidanceSystemPrompt, guidanceUserPrompt,
     sortOrder,
   } = body || {};
 
@@ -46,6 +48,11 @@ export default defineEventHandler(async (event) => {
     chatSystemPrompt,
     taskSystemPrompt,
     taskUserPrompt,
+    ...(quizSystemPrompt ? { quizSystemPrompt } : {}),
+    ...(quizUserPrompt ? { quizUserPrompt } : {}),
+    ...(guidanceSystemPrompt ? { guidanceSystemPrompt } : {}),
+    ...(guidanceUserPrompt ? { guidanceUserPrompt } : {}),
+    ...(body.features ? { features: body.features } : {}),
     sortOrder: sortOrder ?? 100,
     createdAt: now,
     updatedAt: now,
