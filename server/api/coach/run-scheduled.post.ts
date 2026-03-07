@@ -4,6 +4,7 @@ import {
   skills, skillCurrentState, skillSnapshots, abilityCategories,
   focusPlans, activityLogs, coachNotifications,
 } from '~/server/database/schema';
+import { ensureSelfManagementSkills } from '~/server/lib/ability/self-management';
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -19,6 +20,10 @@ export default defineEventHandler(async (event) => {
   const results: string[] = [];
 
   if (type === 'daily') {
+    // Ensure self-management skills exist
+    await ensureSelfManagementSkills();
+    results.push('ensured self-management skills');
+
     // Auto-update platform-trackable states
     results.push('checked platform states');
 

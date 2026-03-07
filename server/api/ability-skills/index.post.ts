@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const source = body.source || 'custom';
-  if (!['template', 'ai', 'custom'].includes(source)) {
+  if (!['template', 'ai', 'custom', 'system'].includes(source)) {
     throw createError({ statusCode: 400, message: '无效的来源类型' });
   }
 

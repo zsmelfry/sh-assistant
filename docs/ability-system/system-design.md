@@ -1135,8 +1135,8 @@ const SELF_MANAGEMENT_SKILLS = [
 - [x] 停滞检测逻辑
 - [x] 松懈预警逻辑
 - [ ] `POST /api/ability-skills/:skillId/milestones/:id/verify` — 平台验证（词汇抽查等）
-- [ ] "自我管理"自动技能创建 + 自动判定
-- [ ] Cron 配置
+- [x] "自我管理"自动技能创建 + 自动判定
+- [x] Cron 配置
 
 **前端**
 - [ ] CoachBanner（今日焦点横幅）

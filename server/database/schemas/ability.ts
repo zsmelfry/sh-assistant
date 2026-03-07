@@ -18,7 +18,7 @@ export const skills = sqliteTable('skills', {
   name: text('name').notNull(),
   description: text('description'),
   icon: text('icon'),
-  source: text('source', { enum: ['template', 'ai', 'custom'] }).notNull(),
+  source: text('source', { enum: ['template', 'ai', 'custom', 'system'] }).notNull(),
   templateId: text('template_id'),
   currentTier: integer('current_tier').notNull().default(0),
   status: text('status', { enum: ['active', 'paused'] }).notNull().default('active'),
@@ -122,7 +122,7 @@ export const TIER_NAMES: Record<number, string> = {
   5: '卓越',
 };
 
-export const VALID_SOURCES = ['template', 'ai', 'custom'] as const;
+export const VALID_SOURCES = ['template', 'ai', 'custom', 'system'] as const;
 export const VALID_SKILL_STATUSES = ['active', 'paused'] as const;
 export const VALID_MILESTONE_TYPES = ['quantity', 'consistency', 'achievement', 'quality'] as const;
 export const VALID_VERIFY_METHODS = ['platform_auto', 'platform_test', 'evidence', 'self_declare'] as const;
