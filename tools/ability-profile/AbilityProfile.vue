@@ -18,6 +18,21 @@
         <!-- Radar chart -->
         <RadarChart :points="store.radarData" />
 
+        <!-- Focus plans -->
+        <div v-if="store.focusPlans.length > 0" class="focus-section">
+          <h3 class="section-title">焦点计划</h3>
+          <div class="focus-list">
+            <FocusPlanCard
+              v-for="plan in store.focusPlans"
+              :key="plan.id"
+              :plan="plan"
+              @view-skill="store.switchView({ type: 'skill-detail', skillId: $event })"
+              @generate-strategy="handleGenerateStrategy"
+              @abandon="handleAbandonPlan"
+            />
+          </div>
+        </div>
+
         <!-- Skills list -->
         <div class="skills-section">
           <div class="skills-header">
@@ -31,6 +46,25 @@
               @select="store.switchView({ type: 'skill-detail', skillId: $event })"
             />
           </div>
+        </div>
+
+        <!-- Recent badges -->
+        <div v-if="recentBadges.length > 0" class="badges-section">
+          <div class="badges-header">
+            <h3 class="section-title">最近获得的徽章</h3>
+            <BaseButton variant="ghost" @click="store.switchView({ type: 'badges' })">查看全部</BaseButton>
+          </div>
+          <div class="badges-mini">
+            <span v-for="badge in recentBadges" :key="badge.id" class="badge-mini" :title="badge.description">
+              🏅 {{ badge.name }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="quick-actions">
+          <BaseButton variant="ghost" @click="store.switchView({ type: 'badges' })">荣誉墙</BaseButton>
+          <BaseButton variant="ghost" @click="store.switchView({ type: 'coach' })">AI 教练</BaseButton>
         </div>
       </template>
     </template>
@@ -46,6 +80,19 @@
         @resume="store.updateSkill(store.currentSkill!.id, { status: 'active' }).then(() => store.loadSkillDetail(store.currentSkill!.id))"
         @delete="handleDeleteSkill"
       />
+    </template>
+
+    <!-- Badges view -->
+    <template v-else-if="store.currentView.type === 'badges'">
+      <BadgeWall
+        :badges="store.allBadges"
+        @back="store.switchView({ type: 'dashboard' })"
+      />
+    </template>
+
+    <!-- Coach chat view -->
+    <template v-else-if="store.currentView.type === 'coach'">
+      <CoachChatPanel @back="store.switchView({ type: 'dashboard' })" />
     </template>
 
     <!-- Add skill modal -->
@@ -80,6 +127,9 @@ import SkillCard from './components/SkillCard.vue';
 import SkillDetailPage from './components/SkillDetailPage.vue';
 import AddSkillModal from './components/AddSkillModal.vue';
 import MilestoneVerifyModal from './components/MilestoneVerifyModal.vue';
+import FocusPlanCard from './components/FocusPlanCard.vue';
+import BadgeWall from './components/BadgeWall.vue';
+import CoachChatPanel from './components/CoachChatPanel.vue';
 
 const store = useAbilityStore();
 
@@ -143,6 +193,19 @@ async function handleSaveStates(states: Array<{ stateKey: string; stateValue: st
   await store.updateStates(store.currentSkill.id, states);
 }
 
+const recentBadges = computed(() =>
+  store.allBadges.filter((b) => b.awarded).slice(-3),
+);
+
+async function handleGenerateStrategy(planId: number) {
+  await store.generateStrategy(planId);
+}
+
+async function handleAbandonPlan(planId: number) {
+  if (!confirm('确定放弃此焦点计划？')) return;
+  await store.updateFocusPlan(planId, { status: 'abandoned' });
+}
+
 async function handleDeleteSkill() {
   if (!store.currentSkill) return;
   if (!confirm(`确定删除技能「${store.currentSkill.name}」？所有里程碑记录将被删除。`)) return;
@@ -186,6 +249,49 @@ async function handleDeleteSkill() {
   font-size: 14px;
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
+}
+
+.focus-section {
+  margin-top: var(--spacing-lg);
+}
+
+.focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.badges-section {
+  margin-top: var(--spacing-lg);
+}
+
+.badges-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.badges-mini {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.badge-mini {
+  font-size: 13px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+}
+
+.quick-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
 }
 
 .skills-section {

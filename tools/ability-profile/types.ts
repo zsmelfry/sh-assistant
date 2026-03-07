@@ -122,8 +122,42 @@ export const MILESTONE_TYPE_LABELS: Record<string, string> = {
   quality: '质量',
 };
 
+export interface FocusPlan {
+  id: number;
+  skillId: number;
+  skillName: string;
+  skillCurrentTier: number;
+  currentTier: number;
+  targetTier: number;
+  targetDate: string;
+  strategy: string | null;
+  status: 'active' | 'achieved' | 'abandoned';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Badge {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  icon: string | null;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  awarded: boolean;
+  awardedAt: number | null;
+}
+
+export const RARITY_LABELS: Record<string, string> = {
+  common: '普通',
+  rare: '稀有',
+  epic: '史诗',
+  legendary: '传说',
+};
+
 export type AbilityView =
   | { type: 'dashboard' }
   | { type: 'skills' }
   | { type: 'skill-detail'; skillId: number }
-  | { type: 'add-skill' };
+  | { type: 'add-skill' }
+  | { type: 'badges' }
+  | { type: 'coach' };
