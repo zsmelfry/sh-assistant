@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { skills, milestones, milestoneCompletions, activityLogs, TIER_NAMES } from '~/server/database/schema';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { checkAndAwardBadges } from '~/server/lib/ability/badge-check';
 
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
@@ -58,9 +59,15 @@ export default defineEventHandler(async (event) => {
   // Check tier unlock: are all milestones in the next tier completed?
   const tierUnlocked = await checkTierUnlock(db, skillId, skill);
 
+  // Check badge awards
+  const awardedBadges = await checkAndAwardBadges(
+    db, skillId, tierUnlocked?.newTier,
+  );
+
   return {
     completion,
     tierUnlocked,
+    awardedBadges,
   };
 });
 
