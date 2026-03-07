@@ -1102,19 +1102,19 @@ const SELF_MANAGEMENT_SKILLS = [
 ### Phase 2: AI 教练 + 焦点计划 + 徽章
 
 **数据库**
-- [ ] `server/database/schemas/coach.ts` — coachProfile, coachConversations, coachMemories, coachNotifications, coachProfileChanges
-- [ ] focusPlans, badges, badgeAwards 表
-- [ ] 生成 migration
+- [x] `server/database/schemas/coach.ts` — coachProfile, coachConversations, coachMemories, coachNotifications, coachProfileChanges
+- [x] focusPlans, badges, badgeAwards 表
+- [x] 生成 migration
 
 **API**
 - [ ] `POST /api/ability-skills/onboard` — AI 快速建档
 - [ ] `POST /api/ability-skills/:skillId/milestones/generate` — AI 生成里程碑
-- [ ] `GET/PUT /api/coach/profile`
-- [ ] `POST /api/coach/chat` — 带记忆的教练对话
+- [x] `GET/PUT /api/coach/profile`
+- [x] `POST /api/coach/chat` — 带记忆的教练对话
 - [ ] 对话后处理：摘要生成 + 画像更新（Haiku）
-- [ ] `CRUD /api/focus-plans`
+- [x] `CRUD /api/focus-plans`
 - [ ] `POST /api/focus-plans/:id/generate-strategy`
-- [ ] `GET /api/badges` + `GET /api/badges/awarded`
+- [x] `GET /api/badges` + `GET /api/badges/awarded`
 - [ ] 徽章自动授予逻辑
 
 **前端**
