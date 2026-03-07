@@ -1127,13 +1127,13 @@ const SELF_MANAGEMENT_SKILLS = [
 ### Phase 3: 主动系统 + 成长记录 + 平台验证
 
 **后端**
-- [ ] `GET /api/coach/pending` — 待处理通知（含通知预算）
-- [ ] `POST /api/coach/run-scheduled` — 定时任务
+- [x] `GET /api/coach/pending` — 待处理通知（含通知预算）
+- [x] `POST /api/coach/run-scheduled` — 定时任务
 - [ ] 活动日志自动记录（在各模块 API 中 hook）
-- [ ] 月度快照自动生成
-- [ ] 当前状态自动更新 + 过期检测
-- [ ] 停滞检测逻辑
-- [ ] 松懈预警逻辑
+- [x] 月度快照自动生成
+- [x] 当前状态自动更新 + 过期检测
+- [x] 停滞检测逻辑
+- [x] 松懈预警逻辑
 - [ ] `POST /api/ability-skills/:skillId/milestones/:id/verify` — 平台验证（词汇抽查等）
 - [ ] "自我管理"自动技能创建 + 自动判定
 - [ ] Cron 配置
