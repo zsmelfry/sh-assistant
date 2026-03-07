@@ -2,6 +2,8 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { focusPlans, skills } from '~/server/database/schema';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
+import { logActivity } from '~/server/lib/ability/log-activity';
+import { TIER_NAMES } from '~/server/database/schema';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -47,6 +49,13 @@ export default defineEventHandler(async (event) => {
     createdAt: now,
     updatedAt: now,
   }).returning();
+
+  await logActivity({
+    skillId,
+    categoryId: skill.categoryId,
+    source: 'manual',
+    description: `创建焦点计划：${skill.name} → ${TIER_NAMES[targetTier]}`,
+  });
 
   setResponseStatus(event, 201);
   return inserted;

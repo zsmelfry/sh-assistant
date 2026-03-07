@@ -1129,7 +1129,7 @@ const SELF_MANAGEMENT_SKILLS = [
 **后端**
 - [x] `GET /api/coach/pending` — 待处理通知（含通知预算）
 - [x] `POST /api/coach/run-scheduled` — 定时任务
-- [ ] 活动日志自动记录（在各模块 API 中 hook）
+- [x] 活动日志自动记录（在各模块 API 中 hook）
 - [x] 月度快照自动生成
 - [x] 当前状态自动更新 + 过期检测
 - [x] 停滞检测逻辑

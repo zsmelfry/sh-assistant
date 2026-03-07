@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { skillCurrentState, skills } from '~/server/database/schema';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
@@ -50,6 +51,17 @@ export default defineEventHandler(async (event) => {
       }).returning();
       results.push(inserted);
     }
+  }
+
+  // Log activity if states were updated
+  if (results.length > 0) {
+    const [skill] = await db.select().from(skills).where(eq(skills.id, skillId));
+    await logActivity({
+      skillId,
+      categoryId: skill?.categoryId ?? null,
+      source: 'manual',
+      description: `更新状态：${results.map((r) => r.stateLabel).join('、')}`,
+    });
   }
 
   return results;

@@ -3,6 +3,7 @@ import { useDB } from '~/server/database';
 import { skills, milestones, milestoneCompletions, activityLogs, TIER_NAMES } from '~/server/database/schema';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 import { checkAndAwardBadges } from '~/server/lib/ability/badge-check';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
@@ -46,14 +47,13 @@ export default defineEventHandler(async (event) => {
   }).returning();
 
   // Log activity
-  await db.insert(activityLogs).values({
+  await logActivity({
     skillId,
     categoryId: skill.categoryId,
     source: 'milestone',
     sourceRef: String(id),
     description: `完成里程碑：${milestone.title}`,
     date: today,
-    createdAt: now,
   });
 
   // Check tier unlock: are all milestones in the next tier completed?
@@ -99,14 +99,11 @@ async function checkTierUnlock(
     updatedAt: Date.now(),
   }).where(eq(skills.id, skillId));
 
-  const today = new Date().toISOString().slice(0, 10);
-  await db.insert(activityLogs).values({
+  await logActivity({
     skillId,
     categoryId: skill.categoryId,
     source: 'milestone',
     description: `段位解锁：${TIER_NAMES[nextTier]}`,
-    date: today,
-    createdAt: Date.now(),
   });
 
   return { unlocked: true, newTier: nextTier };

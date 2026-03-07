@@ -3,6 +3,7 @@ import { useDB } from '~/server/database';
 import { skills, milestones, skillCurrentState, abilityCategories } from '~/server/database/schema';
 import { SKILL_TEMPLATES } from '~/server/database/seeds/skill-templates';
 import { requireNonEmpty } from '~/server/utils/handler-helpers';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -87,6 +88,14 @@ export default defineEventHandler(async (event) => {
       }
     }
   }
+
+  // Log activity
+  await logActivity({
+    skillId: inserted.id,
+    categoryId,
+    source: 'manual',
+    description: `添加技能：${name}`,
+  });
 
   setResponseStatus(event, 201);
   return inserted;

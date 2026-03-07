@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { checkins, habits } from '~/server/database/schema';
 import { isValidDate } from '~/server/utils/date';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const { habitId, date } = await readBody(event);
@@ -51,6 +52,16 @@ export default defineEventHandler(async (event) => {
       createdAt: Date.now(),
     };
     await db.insert(checkins).values(newCheckin);
+
+    // Log activity for ability system (fire-and-forget)
+    const [habit] = await db.select({ name: habits.name }).from(habits).where(eq(habits.id, habitId));
+    logActivity({
+      source: 'habit',
+      sourceRef: habitId,
+      description: `习惯打卡：${habit?.name ?? habitId}`,
+      date,
+    }).catch(() => {});
+
     return { checked: true, checkin: newCheckin };
   }
 });
