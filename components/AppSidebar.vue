@@ -20,7 +20,13 @@
         :class="{ active: currentToolId === tool.id }"
         :title="tool.name"
       >
-        <component :is="tool.icon" class="nav-icon" :size="18" :stroke-width="1.5" />
+        <span class="nav-icon-wrap">
+          <component :is="tool.icon" class="nav-icon" :size="18" :stroke-width="1.5" />
+          <span
+            v-if="tool.id === 'ability-profile' && notificationCount > 0"
+            class="nav-badge"
+          >{{ notificationCount > 9 ? '9+' : notificationCount }}</span>
+        </span>
         <span v-if="!collapsed" class="nav-label">{{ tool.name }}</span>
       </NuxtLink>
     </nav>
@@ -50,6 +56,7 @@
 
 <script setup lang="ts">
 import { Settings, ChevronLeft, ChevronRight, LogOut } from 'lucide-vue-next';
+import { useAbilityStore } from '~/stores/ability';
 
 defineProps<{
   collapsed: boolean;
@@ -62,6 +69,9 @@ defineEmits<{
 const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
 const showLlmSettings = ref(false);
+
+const abilityStore = useAbilityStore();
+const notificationCount = computed(() => abilityStore.pendingNotifications.length);
 </script>
 
 <style scoped>
@@ -141,10 +151,39 @@ const showLlmSettings = ref(false);
   color: var(--color-accent-inverse);
 }
 
+.nav-icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
 .nav-icon {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  color: var(--color-accent-inverse);
+  background-color: var(--color-accent);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+.nav-item.active .nav-badge {
+  background-color: var(--color-accent-inverse);
+  color: var(--color-accent);
 }
 
 .nav-label {

@@ -7,11 +7,22 @@
         <BaseButton @click="openAddSkill">添加技能</BaseButton>
       </div>
 
+      <!-- Coach banner -->
+      <CoachBanner
+        v-if="topNotification"
+        :notification="topNotification"
+        @action="handleNotificationAction"
+        @dismiss="store.dismissNotification($event)"
+      />
+
       <!-- Empty state -->
       <div v-if="!store.loading && store.skills.length === 0" class="empty-state">
         <p class="empty-title">开始追踪你的技能成长</p>
         <p class="empty-desc">添加你想提升的技能，设定里程碑，追踪真实进步</p>
-        <BaseButton @click="openAddSkill">添加第一个技能</BaseButton>
+        <div class="empty-actions">
+          <BaseButton @click="openAddSkill">添加第一个技能</BaseButton>
+          <BaseButton variant="ghost" @click="store.switchView({ type: 'onboarding' })">AI 快速建档</BaseButton>
+        </div>
       </div>
 
       <template v-else-if="!store.loading">
@@ -65,7 +76,16 @@
         <div class="quick-actions">
           <BaseButton variant="ghost" @click="store.switchView({ type: 'badges' })">荣誉墙</BaseButton>
           <BaseButton variant="ghost" @click="store.switchView({ type: 'coach' })">AI 教练</BaseButton>
+          <BaseButton variant="ghost" @click="store.switchView({ type: 'growth' })">成长记录</BaseButton>
         </div>
+
+        <!-- Remaining notifications -->
+        <NotificationList
+          v-if="remainingNotifications.length > 0"
+          :notifications="remainingNotifications"
+          @action="handleNotificationAction"
+          @dismiss="store.dismissNotification($event)"
+        />
       </template>
     </template>
 
@@ -76,6 +96,7 @@
         @back="store.switchView({ type: 'dashboard' })"
         @complete-milestone="openVerifyModal($event)"
         @save-states="handleSaveStates"
+        @generate-milestones="handleGenerateMilestones"
         @pause="store.updateSkill(store.currentSkill!.id, { status: 'paused' }).then(() => store.loadSkillDetail(store.currentSkill!.id))"
         @resume="store.updateSkill(store.currentSkill!.id, { status: 'active' }).then(() => store.loadSkillDetail(store.currentSkill!.id))"
         @delete="handleDeleteSkill"
@@ -93,6 +114,24 @@
     <!-- Coach chat view -->
     <template v-else-if="store.currentView.type === 'coach'">
       <CoachChatPanel @back="store.switchView({ type: 'dashboard' })" />
+    </template>
+
+    <!-- Growth view -->
+    <template v-else-if="store.currentView.type === 'growth'">
+      <div class="view-header">
+        <BaseButton variant="ghost" @click="store.switchView({ type: 'dashboard' })">← 返回</BaseButton>
+        <h2 class="page-title">成长记录</h2>
+      </div>
+      <GrowthCurve :snapshots="snapshots" :categories="store.categories" />
+      <GrowthTimeline />
+    </template>
+
+    <!-- Onboarding view -->
+    <template v-else-if="store.currentView.type === 'onboarding'">
+      <OnboardingChat
+        @back="store.switchView({ type: 'dashboard' })"
+        @done="handleOnboardingDone"
+      />
     </template>
 
     <!-- Add skill modal -->
@@ -130,9 +169,15 @@ import MilestoneVerifyModal from './components/MilestoneVerifyModal.vue';
 import FocusPlanCard from './components/FocusPlanCard.vue';
 import BadgeWall from './components/BadgeWall.vue';
 import CoachChatPanel from './components/CoachChatPanel.vue';
+import OnboardingChat from './components/OnboardingChat.vue';
+import CoachBanner from './components/CoachBanner.vue';
+import NotificationList from './components/NotificationList.vue';
+import GrowthCurve from './components/GrowthCurve.vue';
+import GrowthTimeline from './components/GrowthTimeline.vue';
 
 const store = useAbilityStore();
 
+const snapshots = ref<any[]>([]);
 const showAddSkill = ref(false);
 const verifyingMilestone = ref<Milestone | null>(null);
 const tierUnlockMessage = ref('');
@@ -140,6 +185,13 @@ const tierUnlockMessage = ref('');
 // Load data on mount
 onMounted(() => {
   store.loadDashboard();
+});
+
+// Load snapshots when entering growth view
+watch(() => store.currentView.type, async (type) => {
+  if (type === 'growth') {
+    snapshots.value = await store.loadSnapshots();
+  }
 });
 
 async function openAddSkill() {
@@ -197,6 +249,27 @@ const recentBadges = computed(() =>
   store.allBadges.filter((b) => b.awarded).slice(-3),
 );
 
+const topNotification = computed(() =>
+  store.pendingNotifications.length > 0 ? store.pendingNotifications[0] : null,
+);
+
+const remainingNotifications = computed(() =>
+  store.pendingNotifications.slice(1),
+);
+
+function handleNotificationAction(notification: any) {
+  store.actOnNotification(notification.id);
+  if (notification.actionType === 'chat' || notification.type === 'weekly_review' || notification.type === 'monthly_report') {
+    store.switchView({ type: 'coach' });
+  } else if (notification.actionType === 'view_skill' && notification.skillId) {
+    store.switchView({ type: 'skill-detail', skillId: notification.skillId });
+  } else if (notification.actionType === 'confirm_state' && notification.skillId) {
+    store.switchView({ type: 'skill-detail', skillId: notification.skillId });
+  } else {
+    store.switchView({ type: 'coach' });
+  }
+}
+
 async function handleGenerateStrategy(planId: number) {
   await store.generateStrategy(planId);
 }
@@ -204,6 +277,16 @@ async function handleGenerateStrategy(planId: number) {
 async function handleAbandonPlan(planId: number) {
   if (!confirm('确定放弃此焦点计划？')) return;
   await store.updateFocusPlan(planId, { status: 'abandoned' });
+}
+
+async function handleOnboardingDone() {
+  await store.loadDashboard();
+  store.switchView({ type: 'dashboard' });
+}
+
+async function handleGenerateMilestones() {
+  if (!store.currentSkill) return;
+  await store.generateMilestones(store.currentSkill.id);
 }
 
 async function handleDeleteSkill() {
@@ -249,6 +332,12 @@ async function handleDeleteSkill() {
   font-size: 14px;
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-lg);
+}
+
+.empty-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
 }
 
 .focus-section {
@@ -315,6 +404,13 @@ async function handleDeleteSkill() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-md);
+}
+
+.view-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 .tier-toast {

@@ -1111,18 +1111,18 @@ const SELF_MANAGEMENT_SKILLS = [
 - [x] `POST /api/ability-skills/:skillId/milestones/generate` — AI 生成里程碑
 - [x] `GET/PUT /api/coach/profile`
 - [x] `POST /api/coach/chat` — 带记忆的教练对话
-- [ ] 对话后处理：摘要生成 + 画像更新（Haiku）
+- [x] 对话后处理：摘要生成 + 画像更新（Haiku）
 - [x] `CRUD /api/focus-plans`
 - [x] `POST /api/focus-plans/:id/generate-strategy`
 - [x] `GET /api/badges` + `GET /api/badges/awarded`
 - [x] 徽章自动授予逻辑
 
 **前端**
-- [ ] 初始建档对话（OnboardingChat）
+- [x] 初始建档对话（OnboardingChat）
 - [x] 教练对话页面
 - [x] 焦点计划卡片 + 创建/编辑
 - [x] 徽章墙 + 获得动画
-- [ ] AI 里程碑生成 UI
+- [x] AI 里程碑生成 UI
 
 ### Phase 3: 主动系统 + 成长记录 + 平台验证
 
@@ -1134,15 +1134,15 @@ const SELF_MANAGEMENT_SKILLS = [
 - [x] 当前状态自动更新 + 过期检测
 - [x] 停滞检测逻辑
 - [x] 松懈预警逻辑
-- [ ] `POST /api/ability-skills/:skillId/milestones/:id/verify` — 平台验证（词汇抽查等）
+- [x] `POST /api/ability-skills/:skillId/milestones/:id/verify` — 平台验证（词汇抽查等）
 - [x] "自我管理"自动技能创建 + 自动判定
 - [x] Cron 配置
 
 **前端**
-- [ ] CoachBanner（今日焦点横幅）
-- [ ] 通知列表 + 交互 + 预算展示
-- [ ] 成长曲线图（快照对比）
-- [ ] 成长时间线
-- [ ] 周回顾 / 月报展示页
-- [ ] 侧边栏通知徽标
-- [ ] 平台验证测试 UI（词汇抽查界面等）
+- [x] CoachBanner（今日焦点横幅）
+- [x] 通知列表 + 交互 + 预算展示
+- [x] 成长曲线图（快照对比）
+- [x] 成长时间线
+- [x] 周回顾 / 月报展示页
+- [x] 侧边栏通知徽标
+- [x] 平台验证测试 UI（词汇抽查界面等）

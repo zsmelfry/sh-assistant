@@ -66,6 +66,9 @@ export default defineEventHandler(async (event) => {
       createdAt: now,
     }).returning();
 
+    // Fire-and-forget: generate conversation summary and save as memory
+    generateConversationSummary(db, conversation.id, message, reply).catch(() => {});
+
     return {
       reply,
       conversationId: conversation.id,
@@ -83,6 +86,36 @@ async function loadRelevantMemories(db: ReturnType<typeof useDB>, skillId?: numb
   // If skillId provided, try to find memories related to this skill
   // For now, just get the most important recent memories
   return query;
+}
+
+async function generateConversationSummary(
+  db: ReturnType<typeof useDB>,
+  conversationId: number,
+  userMessage: string,
+  coachReply: string,
+) {
+  const { provider } = await resolveProvider(db);
+
+  const summaryPrompt = `请用1-2句话总结以下对话的要点：
+用户: ${userMessage}
+教练: ${coachReply}
+只输出总结，不要其他内容。`;
+
+  const summary = await provider.chat(
+    [{ role: 'user', content: summaryPrompt }],
+    { temperature: 0.3, maxTokens: 200, timeout: 30000 },
+  );
+
+  const now = Date.now();
+  await db.insert(coachMemories).values({
+    conversationId,
+    summary,
+    memoryType: 'conversation_summary',
+    importance: 5,
+    skillTags: '[]',
+    categoryTags: '[]',
+    createdAt: now,
+  });
 }
 
 function buildCoachSystemPrompt(

@@ -21,6 +21,7 @@ export const useAbilityStore = defineStore('ability', () => {
   const focusPlans = ref<FocusPlan[]>([]);
   const allBadges = ref<Badge[]>([]);
   const loading = ref(false);
+  const pendingNotifications = ref<any[]>([]);
 
   // ===== Computed =====
   const skillsByCategory = computed(() => {
@@ -82,7 +83,7 @@ export const useAbilityStore = defineStore('ability', () => {
   async function loadDashboard() {
     loading.value = true;
     try {
-      await Promise.all([loadCategories(), loadSkills(), loadRadar(), loadFocusPlans(), loadBadges()]);
+      await Promise.all([loadCategories(), loadSkills(), loadRadar(), loadFocusPlans(), loadBadges(), loadPendingNotifications()]);
     } finally {
       loading.value = false;
     }
@@ -164,6 +165,11 @@ export const useAbilityStore = defineStore('ability', () => {
     await loadSkillDetail(skillId);
   }
 
+  async function generateMilestones(skillId: number) {
+    await $fetch(`/api/ability-skills/${skillId}/milestones/generate`, { method: 'POST' });
+    await loadSkillDetail(skillId);
+  }
+
   // ===== Focus Plans =====
   async function createFocusPlan(data: { skillId: number; targetTier: number; targetDate: string }) {
     await $fetch('/api/focus-plans', { method: 'POST', body: data });
@@ -184,6 +190,41 @@ export const useAbilityStore = defineStore('ability', () => {
     const result = await $fetch<{ strategy: string }>(`/api/focus-plans/${planId}/generate-strategy`, { method: 'POST' });
     await loadFocusPlans();
     return result.strategy;
+  }
+
+  // ===== Notifications =====
+  async function loadPendingNotifications() {
+    pendingNotifications.value = await $fetch('/api/coach/pending');
+  }
+
+  async function dismissNotification(id: number) {
+    if (id > 0) {
+      await $fetch(`/api/coach/notifications/${id}`, { method: 'PATCH', body: { status: 'dismissed' } });
+    }
+    pendingNotifications.value = pendingNotifications.value.filter(n => n.id !== id);
+  }
+
+  async function actOnNotification(id: number) {
+    if (id > 0) {
+      await $fetch(`/api/coach/notifications/${id}`, { method: 'PATCH', body: { status: 'acted' } });
+    }
+    pendingNotifications.value = pendingNotifications.value.filter(n => n.id !== id);
+  }
+
+  // ===== Activities & Snapshots =====
+  async function loadActivities(params?: { skillId?: number; from?: string; to?: string }) {
+    const query = new URLSearchParams();
+    if (params?.skillId) query.set('skillId', String(params.skillId));
+    if (params?.from) query.set('from', params.from);
+    if (params?.to) query.set('to', params.to);
+    return $fetch<{ activities: any[]; total: number }>(`/api/ability-stats/activities?${query}`);
+  }
+
+  async function loadSnapshots(from?: string, to?: string) {
+    const query = new URLSearchParams();
+    if (from) query.set('from', from);
+    if (to) query.set('to', to);
+    return $fetch<any[]>(`/api/ability-stats/snapshots?${query}`);
   }
 
   // ===== States =====
@@ -209,6 +250,7 @@ export const useAbilityStore = defineStore('ability', () => {
     focusPlans,
     allBadges,
     loading,
+    pendingNotifications,
     // Computed
     skillsByCategory,
     activeSkillCount,
@@ -231,11 +273,19 @@ export const useAbilityStore = defineStore('ability', () => {
     completeMilestone,
     addMilestone,
     deleteMilestone,
+    generateMilestones,
     // Focus Plans
     createFocusPlan,
     updateFocusPlan,
     deleteFocusPlan,
     generateStrategy,
+    // Notifications
+    loadPendingNotifications,
+    dismissNotification,
+    actOnNotification,
+    // Activities & Snapshots
+    loadActivities,
+    loadSnapshots,
     // States
     updateStates,
   };

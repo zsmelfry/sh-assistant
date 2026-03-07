@@ -22,7 +22,17 @@
 
     <!-- Milestones by tier -->
     <div class="milestones-section">
-      <h3 class="section-title">里程碑</h3>
+      <div class="milestones-header">
+        <h3 class="section-title">里程碑</h3>
+        <BaseButton
+          v-if="props.skill.milestones.length < 5"
+          variant="ghost"
+          :disabled="generatingMilestones"
+          @click="handleGenerateMilestones"
+        >
+          {{ generatingMilestones ? '生成中...' : 'AI 生成里程碑' }}
+        </BaseButton>
+      </div>
       <div v-for="tier in activeTiers" :key="tier" class="tier-group">
         <div class="tier-header">
           <span class="tier-name">{{ TIER_NAMES[tier] }}</span>
@@ -76,14 +86,26 @@ const props = defineProps<{
   skill: SkillDetail;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   back: [];
   'complete-milestone': [milestone: Milestone];
   'save-states': [states: Array<{ stateKey: string; stateValue: string; stateLabel: string }>];
+  'generate-milestones': [];
   pause: [];
   resume: [];
   delete: [];
 }>();
+
+const generatingMilestones = ref(false);
+
+function handleGenerateMilestones() {
+  generatingMilestones.value = true;
+  emit('generate-milestones');
+}
+
+watch(() => props.skill.milestones, () => {
+  generatingMilestones.value = false;
+});
 
 const sourceLabel = computed(() => {
   switch (props.skill.source) {
@@ -166,6 +188,12 @@ function completedInTier(tier: number): number {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.milestones-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .section-title {
