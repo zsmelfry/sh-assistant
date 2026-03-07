@@ -1092,12 +1092,12 @@ const SELF_MANAGEMENT_SKILLS = [
 - [x] `GET/PUT /api/ability-skills/:skillId/states` — 当前状态
 
 **前端**
-- [ ] 工具注册：`tools/ability-profile/`
-- [ ] Store：`stores/ability.ts`
-- [ ] Dashboard：雷达图 + 技能列表
-- [ ] 添加技能流程（从模板/自定义）
-- [ ] 技能详情页：段位进度 + 里程碑列表 + 当前状态
-- [ ] 里程碑完成交互（验证方式弹窗）
+- [x] 工具注册：`tools/ability-profile/`
+- [x] Store：`stores/ability.ts`
+- [x] Dashboard：雷达图 + 技能列表
+- [x] 添加技能流程（从模板/自定义）
+- [x] 技能详情页：段位进度 + 里程碑列表 + 当前状态
+- [x] 里程碑完成交互（验证方式弹窗）
 
 ### Phase 2: AI 教练 + 焦点计划 + 徽章
 
