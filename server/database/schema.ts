@@ -10,3 +10,4 @@ export * from './schemas/startup-map';
 export * from './schemas/skill-configs';
 export * from './schemas/project-tracker';
 export * from './schemas/music-ear';
+export * from './schemas/ability';
