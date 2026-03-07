@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
   if (body.genre !== undefined) updates.genre = body.genre?.trim() || null;
   if (body.lyrics !== undefined) updates.lyrics = body.lyrics?.trim() || null;
   if (body.notes !== undefined) updates.notes = body.notes?.trim() || null;
+  if (body.sheetMusic !== undefined) updates.sheetMusic = body.sheetMusic?.trim() || null;
   if (body.youtubeUrl !== undefined) updates.youtubeUrl = body.youtubeUrl?.trim() || null;
 
   const [updated] = db.update(songs).set(updates).where(eq(songs.id, id)).returning().all();

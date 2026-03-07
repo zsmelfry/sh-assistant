@@ -37,12 +37,10 @@
             <div v-if="store.skillFeatures?.showPiano" class="panelSection">
               <h3 class="sectionLabel">钢琴键盘</h3>
               <PianoKeyboard
-                ref="pianoRef"
                 :start-octave="2"
                 :end-octave="6"
                 :show-labels="true"
                 :show-keyboard="true"
-                :melody="activeMelody"
               />
             </div>
 
@@ -68,7 +66,7 @@
 
             <!-- Linked songs -->
             <div class="panelSection">
-              <LinkedSongs :point-id="store.currentPoint.id" @play-melody="handlePlayMelody" />
+              <LinkedSongs :point-id="store.currentPoint.id" />
             </div>
 
             <!-- Next point suggestion (shown after completion) -->
@@ -114,7 +112,7 @@
 
 <script setup lang="ts">
 import { SKILL_STORE_KEY } from '~/composables/skill-learning';
-import type { PointStatus, MelodyNote } from '~/composables/skill-learning/types';
+import type { PointStatus } from '~/composables/skill-learning/types';
 import StatusSelector from './StatusSelector.vue';
 import TeachingContent from './TeachingContent.vue';
 import ChatPanel from './ChatPanel.vue';
@@ -132,17 +130,6 @@ const props = defineProps<{
 }>();
 
 const store = inject(SKILL_STORE_KEY)!;
-
-// Piano melody playback
-const pianoRef = ref<{ playMelody: () => void } | null>(null);
-const activeMelody = ref<MelodyNote[] | null>(null);
-
-function handlePlayMelody(melody: MelodyNote[]) {
-  activeMelody.value = melody;
-  nextTick(() => {
-    pianoRef.value?.playMelody();
-  });
-}
 
 // Completion state
 const isCompleted = computed(() =>

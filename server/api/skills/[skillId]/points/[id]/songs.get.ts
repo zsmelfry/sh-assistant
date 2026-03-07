@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
       year: songs.year,
       youtubeUrl: songs.youtubeUrl,
       notes: songs.notes,
+      sheetMusic: songs.sheetMusic,
       linkedAt: smPointSongs.createdAt,
     })
     .from(smPointSongs)
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event) => {
     year: r.year,
     youtubeUrl: r.youtubeUrl,
     melody: r.notes ? JSON.parse(r.notes) : null,
+    sheetMusic: r.sheetMusic || null,
     linkedAt: r.linkedAt,
   }));
 });

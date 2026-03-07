@@ -10,26 +10,6 @@
       </span>
     </div>
 
-    <!-- Melody playback controls -->
-    <div v-if="melody && melody.length > 0 && !audioSpec" class="audioControls">
-      <button class="playBtn" :disabled="isPlayingMelody" @click="playMelody">
-        {{ isPlayingMelody ? '演奏中...' : '演奏旋律' }}
-      </button>
-      <button v-if="isPlayingMelody" class="stopBtn" @click="stopMelody">停止</button>
-    </div>
-
-    <!-- Melody score display -->
-    <div v-if="melody && melody.length > 0 && showKeyboard" ref="scoreRef" class="melodyScore">
-      <div
-        v-for="(n, i) in melody"
-        :key="i"
-        class="scoreNote"
-        :class="{ current: currentNoteIndex === i, played: i < currentNoteIndex }"
-      >
-        <span class="scoreNoteName">{{ formatNoteName(n.note) }}</span>
-      </div>
-    </div>
-
     <!-- Keyboard -->
     <div v-if="showKeyboard" class="keyboard">
       <div
@@ -52,18 +32,16 @@
 </template>
 
 <script setup lang="ts">
-import type { AudioSpec, MelodyNote } from '~/composables/skill-learning/types';
+import type { AudioSpec } from '~/composables/skill-learning/types';
 
 const props = withDefaults(defineProps<{
   audioSpec?: AudioSpec | null;
-  melody?: MelodyNote[] | null;
   showLabels?: boolean;
   showKeyboard?: boolean;
   startOctave?: number;
   endOctave?: number;
 }>(), {
   audioSpec: null,
-  melody: null,
   showLabels: true,
   showKeyboard: true,
   startOctave: 4,
@@ -73,19 +51,6 @@ const props = withDefaults(defineProps<{
 const activeNotes = ref<Set<string>>(new Set());
 const highlightedNotes = ref<Set<string>>(new Set());
 const isPlaying = ref(false);
-const isPlayingMelody = ref(false);
-const currentNoteIndex = ref(-1);
-const scoreRef = ref<HTMLElement | null>(null);
-let melodyAbort = false;
-
-function formatNoteName(note: string): string {
-  const match = note.match(/^([A-G]#?)(\d)$/);
-  if (!match) return note;
-  const [, name, octave] = match;
-  const baseName = name.replace('#', '');
-  const solfege = SOLFEGE[baseName] || name;
-  return name.includes('#') ? `${solfege}#${octave}` : `${solfege}${octave}`;
-}
 
 // AudioContext singleton
 let audioCtx: AudioContext | null = null;
@@ -107,7 +72,6 @@ const SOLFEGE: Record<string, string> = {
   C: 'do', D: 're', E: 'mi', F: 'fa', G: 'sol', A: 'la', B: 'si',
 };
 
-// Generate frequencies for octaves 1-7 (covers any possible range)
 for (let octave = 1; octave <= 7; octave++) {
   for (let i = 0; i < 12; i++) {
     const noteName = NOTE_NAMES[i];
@@ -123,7 +87,6 @@ interface KeyDef {
   isBlack: boolean;
 }
 
-// Generate keyboard based on octave range
 const keys = computed<KeyDef[]>(() => {
   const result: KeyDef[] = [];
   for (let octave = props.startOctave; octave <= props.endOctave; octave++) {
@@ -165,7 +128,6 @@ function playNote(note: string, duration = 0.5) {
   osc.start();
   osc.stop(ctx.currentTime + duration);
 
-  // Visual feedback
   activeNotes.value = new Set([...activeNotes.value, note]);
   setTimeout(() => {
     const next = new Set(activeNotes.value);
@@ -197,59 +159,7 @@ async function playAudioSpec() {
   }
 }
 
-async function playMelody() {
-  if (!props.melody || props.melody.length === 0 || isPlayingMelody.value) return;
-
-  isPlayingMelody.value = true;
-  melodyAbort = false;
-  currentNoteIndex.value = -1;
-
-  const melody = props.melody;
-  const startTime = Date.now();
-
-  try {
-    for (let i = 0; i < melody.length; i++) {
-      if (melodyAbort) break;
-
-      const note = melody[i];
-      // Wait until the note's scheduled time
-      const elapsed = (Date.now() - startTime) / 1000;
-      const waitTime = note.time - elapsed;
-      if (waitTime > 0) {
-        await new Promise(r => setTimeout(r, waitTime * 1000));
-      }
-
-      if (melodyAbort) break;
-      currentNoteIndex.value = i;
-
-      // Auto-scroll the score to keep current note visible
-      nextTick(() => {
-        const el = scoreRef.value?.children[i] as HTMLElement | undefined;
-        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      });
-
-      playNote(note.note, note.duration);
-    }
-
-    // Wait for last note to finish
-    if (!melodyAbort && melody.length > 0) {
-      const lastNote = melody[melody.length - 1];
-      await new Promise(r => setTimeout(r, lastNote.duration * 1000));
-    }
-  } finally {
-    isPlayingMelody.value = false;
-    currentNoteIndex.value = -1;
-  }
-}
-
-function stopMelody() {
-  melodyAbort = true;
-}
-
-defineExpose({ playMelody, isPlayingMelody });
-
 onUnmounted(() => {
-  melodyAbort = true;
   if (audioCtx) {
     audioCtx.close();
     audioCtx = null;
@@ -292,62 +202,9 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.stopBtn {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-primary);
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.stopBtn:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
 .audioHint {
   font-size: 12px;
   color: var(--color-text-secondary);
-}
-
-/* Melody score */
-.melodyScore {
-  display: flex;
-  gap: 4px;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-secondary, var(--color-bg-primary));
-}
-
-.scoreNote {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-primary);
-  font-size: 12px;
-  font-family: monospace;
-  color: var(--color-text-secondary);
-  transition: all 0.15s;
-}
-
-.scoreNote.played {
-  color: var(--color-text-disabled);
-  border-color: transparent;
-}
-
-.scoreNote.current {
-  background: var(--color-accent);
-  color: var(--color-accent-inverse);
-  border-color: var(--color-accent);
-  font-weight: 600;
-  transform: scale(1.1);
 }
 
 /* Keyboard layout */

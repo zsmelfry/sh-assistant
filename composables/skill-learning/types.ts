@@ -252,6 +252,7 @@ export interface LinkedSong {
   year: number | null;
   youtubeUrl: string | null;
   melody: MelodyNote[] | null;
+  sheetMusic: string | null;
   linkedAt: number;
 }
 

@@ -11,6 +11,7 @@ export const songs = sqliteTable('songs', {
   genre: text('genre'),
   lyrics: text('lyrics'),
   notes: text('notes'),
+  sheetMusic: text('sheet_music'),
   youtubeUrl: text('youtube_url'),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
