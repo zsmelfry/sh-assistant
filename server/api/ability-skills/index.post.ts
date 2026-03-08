@@ -49,44 +49,73 @@ export default defineEventHandler(async (event) => {
     updatedAt: now,
   }).returning();
 
-  // If creating from template, auto-generate milestones and default states
+  // Insert milestones: use custom milestones from body if provided, otherwise auto-generate from template
+  const customMilestones = body.milestones as Array<{
+    tier: number; title: string; description?: string;
+    type: string; verify: string; config?: Record<string, unknown>;
+  }> | undefined;
+
+  if (customMilestones && customMilestones.length > 0) {
+    // User-provided milestones (from preview/edit flow)
+    const validTypes = ['quantity', 'consistency', 'achievement', 'quality'];
+    const validMethods = ['platform_auto', 'platform_test', 'evidence', 'self_declare'];
+
+    const toInsert = customMilestones
+      .filter((m) => m.tier >= 1 && m.tier <= 5 && m.title && validTypes.includes(m.type) && validMethods.includes(m.verify))
+      .map((m, idx) => ({
+        skillId: inserted.id,
+        tier: m.tier,
+        title: m.title,
+        description: m.description || null,
+        milestoneType: m.type,
+        verifyMethod: m.verify,
+        verifyConfig: m.config ? JSON.stringify(m.config) : null,
+        sortOrder: idx,
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+    if (toInsert.length > 0) {
+      await db.insert(milestones).values(toInsert);
+    }
+  } else if (source === 'template' && body.templateId) {
+    // Auto-generate from template (legacy flow)
+    const template = SKILL_TEMPLATES.find((t) => t.id === body.templateId);
+    if (template && template.milestones.length > 0) {
+      await db.insert(milestones).values(
+        template.milestones.map((m, idx) => ({
+          skillId: inserted.id,
+          tier: m.tier,
+          title: m.title,
+          description: m.description || null,
+          milestoneType: m.type,
+          verifyMethod: m.verify,
+          verifyConfig: JSON.stringify(m.config),
+          sortOrder: idx,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+    }
+  }
+
+  // Insert default states from template if applicable
   if (source === 'template' && body.templateId) {
     const template = SKILL_TEMPLATES.find((t) => t.id === body.templateId);
-    if (template) {
-      // Insert milestones
-      if (template.milestones.length > 0) {
-        await db.insert(milestones).values(
-          template.milestones.map((m, idx) => ({
-            skillId: inserted.id,
-            tier: m.tier,
-            title: m.title,
-            description: m.description || null,
-            milestoneType: m.type,
-            verifyMethod: m.verify,
-            verifyConfig: JSON.stringify(m.config),
-            sortOrder: idx,
-            createdAt: now,
-            updatedAt: now,
-          })),
-        );
-      }
-
-      // Insert default states
-      if (template.defaultStates.length > 0) {
-        await db.insert(skillCurrentState).values(
-          template.defaultStates.map((s) => ({
-            skillId: inserted.id,
-            stateKey: s.key,
-            stateValue: '',
-            stateLabel: s.label,
-            source: s.source,
-            confirmedAt: now,
-            expiresAfterDays: s.expiresAfterDays,
-            createdAt: now,
-            updatedAt: now,
-          })),
-        );
-      }
+    if (template && template.defaultStates.length > 0) {
+      await db.insert(skillCurrentState).values(
+        template.defaultStates.map((s) => ({
+          skillId: inserted.id,
+          stateKey: s.key,
+          stateValue: '',
+          stateLabel: s.label,
+          source: s.source,
+          confirmedAt: now,
+          expiresAfterDays: s.expiresAfterDays,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
     }
   }
 

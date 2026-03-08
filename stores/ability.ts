@@ -89,6 +89,10 @@ export const useAbilityStore = defineStore('ability', () => {
     description?: string;
     source: 'template' | 'ai' | 'custom';
     templateId?: string;
+    milestones?: Array<{
+      tier: number; title: string; description?: string;
+      type: string; verify: string; config?: Record<string, unknown>;
+    }>;
   }) {
     const created = await $fetch<Skill>('/api/ability-skills', {
       method: 'POST',
@@ -138,6 +142,43 @@ export const useAbilityStore = defineStore('ability', () => {
     ]);
 
     return result;
+  }
+
+  async function uncompleteMilestone(skillId: number, milestoneId: number) {
+    const result = await $fetch<{
+      success: boolean;
+      newTier: number;
+      previousTier: number;
+    }>(`/api/ability-skills/${skillId}/milestones/${milestoneId}/uncomplete`, {
+      method: 'POST',
+    });
+
+    await Promise.all([
+      loadSkillDetail(skillId),
+      loadSkills(),
+      loadRadar(),
+    ]);
+
+    return result;
+  }
+
+  async function generateMilestonesPreview(data: {
+    name: string;
+    description?: string;
+    categoryName?: string;
+    currentMilestones?: any[];
+    refinementPrompt?: string;
+  }) {
+    return $fetch<{
+      milestones: Array<{
+        tier: number; title: string; description: string | null;
+        type: string; verify: string; config: Record<string, unknown>;
+        sortOrder: number;
+      }>;
+    }>('/api/ability-skills/generate-milestones-preview', {
+      method: 'POST',
+      body: data,
+    });
   }
 
   async function addMilestone(
@@ -220,9 +261,11 @@ export const useAbilityStore = defineStore('ability', () => {
     deleteSkill,
     // Milestones
     completeMilestone,
+    uncompleteMilestone,
     addMilestone,
     deleteMilestone,
     generateMilestones,
+    generateMilestonesPreview,
     // Activities & Snapshots
     loadActivities,
     loadSnapshots,

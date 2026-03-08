@@ -22,9 +22,19 @@
       >
         完成
       </BaseButton>
-      <span v-else class="milestone-done">
-        ✓ {{ formatDate(milestone.completion.verifiedAt) }}
-      </span>
+      <template v-else>
+        <span class="milestone-done">
+          ✓ {{ formatDate(milestone.completion.verifiedAt) }}
+        </span>
+        <button
+          v-if="!hasHigherTierCompleted"
+          class="rollback-btn"
+          title="回滚此里程碑"
+          @click.stop="$emit('uncomplete', milestone.id)"
+        >
+          ↩
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -36,10 +46,12 @@ import { VERIFY_METHOD_LABELS, MILESTONE_TYPE_LABELS } from '../types';
 const props = defineProps<{
   milestone: Milestone;
   locked?: boolean;
+  hasHigherTierCompleted?: boolean;
 }>();
 
 defineEmits<{
   complete: [milestoneId: number];
+  uncomplete: [milestoneId: number];
 }>();
 
 const verifyIcon = computed(() => {
@@ -142,5 +154,26 @@ function formatDate(ts: number) {
   font-size: 11px;
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+.rollback-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: all var(--transition-fast);
+}
+
+.milestone:hover .rollback-btn {
+  opacity: 1;
+}
+
+.rollback-btn:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
 }
 </style>

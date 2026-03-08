@@ -49,7 +49,9 @@
             :key="m.id"
             :milestone="m"
             :locked="isTierLocked(tier)"
+            :has-higher-tier-completed="hasHigherTierCompleted(tier)"
             @complete="$emit('complete-milestone', m)"
+            @uncomplete="$emit('uncomplete-milestone', m)"
           />
         </div>
       </div>
@@ -90,6 +92,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: [];
   'complete-milestone': [milestone: Milestone];
+  'uncomplete-milestone': [milestone: Milestone];
   'save-states': [states: Array<{ stateKey: string; stateValue: string; stateLabel: string }>];
   'generate-milestones': [];
   pause: [];
@@ -138,6 +141,12 @@ function isTierLocked(tier: number): boolean {
   const prevMilestones = milestonesInTier(prevTier);
   if (prevMilestones.length === 0) return false;
   return prevMilestones.some((m) => m.completion === null);
+}
+
+function hasHigherTierCompleted(tier: number): boolean {
+  return props.skill.milestones.some(
+    (m) => m.tier > tier && m.completion !== null,
+  );
 }
 </script>
 

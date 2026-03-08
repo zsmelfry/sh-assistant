@@ -63,6 +63,7 @@
         :skill="store.currentSkill"
         @back="store.switchView({ type: 'dashboard' })"
         @complete-milestone="openVerifyModal($event)"
+        @uncomplete-milestone="handleUncompleteMilestone($event)"
         @save-states="handleSaveStates"
         @generate-milestones="handleGenerateMilestones"
         @pause="store.updateSkill(store.currentSkill!.id, { status: 'paused' }).then(() => store.loadSkillDetail(store.currentSkill!.id))"
@@ -164,6 +165,10 @@ async function handleCreateSkill(data: {
   description?: string;
   source: 'template' | 'custom';
   templateId?: string;
+  milestones?: Array<{
+    tier: number; title: string; description?: string;
+    type: string; verify: string; config?: Record<string, unknown>;
+  }>;
 }) {
   await store.createSkill(data);
   showAddSkill.value = false;
@@ -216,6 +221,20 @@ async function handleOnboardingDone() {
 async function handleGenerateMilestones() {
   if (!store.currentSkill) return;
   await store.generateMilestones(store.currentSkill.id);
+}
+
+async function handleUncompleteMilestone(milestone: Milestone) {
+  if (!store.currentSkill) return;
+  if (!confirm(`确定要回滚里程碑「${milestone.title}」？`)) return;
+  try {
+    const result = await store.uncompleteMilestone(store.currentSkill.id, milestone.id);
+    if (result.previousTier !== result.newTier) {
+      tierUnlockMessage.value = `段位回退：${TIER_NAMES[result.newTier]}`;
+      setTimeout(() => { tierUnlockMessage.value = ''; }, 3000);
+    }
+  } catch (err: any) {
+    alert(err?.data?.message || '回滚失败');
+  }
 }
 
 async function handleDeleteSkill() {
