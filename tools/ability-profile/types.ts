@@ -160,6 +160,5 @@ export type AbilityView =
   | { type: 'skill-detail'; skillId: number }
   | { type: 'add-skill' }
   | { type: 'badges' }
-  | { type: 'coach' }
   | { type: 'growth' }
   | { type: 'onboarding' };

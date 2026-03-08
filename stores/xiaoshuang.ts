@@ -15,11 +15,10 @@ export const useXiaoshuangStore = defineStore('xiaoshuang', () => {
     isLoading.value = true;
 
     try {
-      const result = await $fetch<{ reply: string }>('/api/coach/chat', {
+      const result = await $fetch<{ reply: string }>('/api/xiaoshuang/chat', {
         method: 'POST',
         body: {
           message: text,
-          context: 'chat',
           history: messages.value.slice(0, -1),
         },
       });
@@ -32,12 +31,7 @@ export const useXiaoshuangStore = defineStore('xiaoshuang', () => {
   }
 
   async function loadPendingCount() {
-    try {
-      const data = await $fetch<Array<any>>('/api/coach/pending');
-      unreadCount.value = data.length;
-    } catch {
-      unreadCount.value = 0;
-    }
+    unreadCount.value = 0;
   }
 
   function clearMessages() {

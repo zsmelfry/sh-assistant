@@ -7,14 +7,6 @@
         <BaseButton @click="openAddSkill">添加技能</BaseButton>
       </div>
 
-      <!-- Coach banner -->
-      <CoachBanner
-        v-if="topNotification"
-        :notification="topNotification"
-        @action="handleNotificationAction"
-        @dismiss="store.dismissNotification($event)"
-      />
-
       <!-- Empty state -->
       <div v-if="!store.loading && store.skills.length === 0" class="empty-state">
         <p class="empty-title">开始追踪你的技能成长</p>
@@ -75,17 +67,8 @@
         <!-- Quick actions -->
         <div class="quick-actions">
           <BaseButton variant="ghost" @click="store.switchView({ type: 'badges' })">荣誉墙</BaseButton>
-          <BaseButton variant="ghost" @click="store.switchView({ type: 'coach' })">AI 教练</BaseButton>
           <BaseButton variant="ghost" @click="store.switchView({ type: 'growth' })">成长记录</BaseButton>
         </div>
-
-        <!-- Remaining notifications -->
-        <NotificationList
-          v-if="remainingNotifications.length > 0"
-          :notifications="remainingNotifications"
-          @action="handleNotificationAction"
-          @dismiss="store.dismissNotification($event)"
-        />
       </template>
     </template>
 
@@ -109,11 +92,6 @@
         :badges="store.allBadges"
         @back="store.switchView({ type: 'dashboard' })"
       />
-    </template>
-
-    <!-- Coach chat view -->
-    <template v-else-if="store.currentView.type === 'coach'">
-      <CoachChatPanel @back="store.switchView({ type: 'dashboard' })" />
     </template>
 
     <!-- Growth view -->
@@ -168,10 +146,7 @@ import AddSkillModal from './components/AddSkillModal.vue';
 import MilestoneVerifyModal from './components/MilestoneVerifyModal.vue';
 import FocusPlanCard from './components/FocusPlanCard.vue';
 import BadgeWall from './components/BadgeWall.vue';
-import CoachChatPanel from './components/CoachChatPanel.vue';
 import OnboardingChat from './components/OnboardingChat.vue';
-import CoachBanner from './components/CoachBanner.vue';
-import NotificationList from './components/NotificationList.vue';
 import GrowthCurve from './components/GrowthCurve.vue';
 import GrowthTimeline from './components/GrowthTimeline.vue';
 
@@ -248,27 +223,6 @@ async function handleSaveStates(states: Array<{ stateKey: string; stateValue: st
 const recentBadges = computed(() =>
   store.allBadges.filter((b) => b.awarded).slice(-3),
 );
-
-const topNotification = computed(() =>
-  store.pendingNotifications.length > 0 ? store.pendingNotifications[0] : null,
-);
-
-const remainingNotifications = computed(() =>
-  store.pendingNotifications.slice(1),
-);
-
-function handleNotificationAction(notification: any) {
-  store.actOnNotification(notification.id);
-  if (notification.actionType === 'chat' || notification.type === 'weekly_review' || notification.type === 'monthly_report') {
-    store.switchView({ type: 'coach' });
-  } else if (notification.actionType === 'view_skill' && notification.skillId) {
-    store.switchView({ type: 'skill-detail', skillId: notification.skillId });
-  } else if (notification.actionType === 'confirm_state' && notification.skillId) {
-    store.switchView({ type: 'skill-detail', skillId: notification.skillId });
-  } else {
-    store.switchView({ type: 'coach' });
-  }
-}
 
 async function handleGenerateStrategy(planId: number) {
   await store.generateStrategy(planId);

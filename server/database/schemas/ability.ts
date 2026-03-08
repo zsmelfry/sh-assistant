@@ -126,3 +126,52 @@ export const VALID_SOURCES = ['template', 'ai', 'custom', 'system'] as const;
 export const VALID_SKILL_STATUSES = ['active', 'paused'] as const;
 export const VALID_MILESTONE_TYPES = ['quantity', 'consistency', 'achievement', 'quality'] as const;
 export const VALID_VERIFY_METHODS = ['platform_auto', 'platform_test', 'evidence', 'self_declare'] as const;
+
+// Focus plans (max 3 active)
+export const focusPlans = sqliteTable('focus_plans', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  skillId: integer('skill_id').notNull()
+    .references(() => skills.id, { onDelete: 'cascade' }),
+  currentTier: integer('current_tier').notNull(),
+  targetTier: integer('target_tier').notNull(),
+  targetDate: text('target_date').notNull(),
+  strategy: text('strategy'),
+  linkedHabitIds: text('linked_habit_ids'),
+  linkedPlannerGoalIds: text('linked_planner_goal_ids'),
+  linkedSkillLearningIds: text('linked_skill_learning_ids'),
+  status: text('status').notNull().default('active'),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
+}, (table) => [
+  index('idx_focus_plans_status').on(table.status),
+  index('idx_focus_plans_skill').on(table.skillId),
+]);
+
+// Badge definitions
+export const badges = sqliteTable('badges', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  key: text('key').notNull(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  icon: text('icon'),
+  rarity: text('rarity').notNull().default('common'),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_badges_key').on(table.key),
+]);
+
+// User's awarded badges
+export const badgeAwards = sqliteTable('badge_awards', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  badgeId: integer('badge_id').notNull()
+    .references(() => badges.id, { onDelete: 'cascade' }),
+  skillId: integer('skill_id')
+    .references(() => skills.id, { onDelete: 'set null' }),
+  milestoneId: integer('milestone_id'),
+  historical: integer('historical', { mode: 'boolean' }).notNull().default(false),
+  awardedAt: integer('awarded_at', { mode: 'number' }).notNull(),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_badge_awards_badge').on(table.badgeId),
+  index('idx_badge_awards_skill').on(table.skillId),
+]);

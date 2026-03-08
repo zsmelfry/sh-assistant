@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { focusPlans, skills, milestones, milestoneCompletions, coachProfile, TIER_NAMES } from '~/server/database/schema';
+import { focusPlans, skills, milestones, milestoneCompletions, TIER_NAMES } from '~/server/database/schema';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 import type { ChatMessage } from '~/server/lib/llm';
 import { resolveProvider } from '~/server/utils/llm-provider';
@@ -37,9 +37,6 @@ export default defineEventHandler(async (event) => {
     .filter((m) => !m.completionId && m.tier > skill.currentTier && m.tier <= plan.targetTier)
     .map((m) => `- [${TIER_NAMES[m.tier]}] ${m.title}`);
 
-  // Load coach profile for context
-  const [profile] = await db.select().from(coachProfile);
-
   const { provider } = await resolveProvider(db);
 
   const messages: ChatMessage[] = [
@@ -64,8 +61,7 @@ export default defineEventHandler(async (event) => {
 截止日期：${plan.targetDate}
 当前未完成里程碑：
 ${pendingMilestones.join('\n') || '无'}
-
-${profile?.content ? `用户画像摘要：\n${profile.content}` : ''}`,
+`,
     },
   ];
 

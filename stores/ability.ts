@@ -21,7 +21,6 @@ export const useAbilityStore = defineStore('ability', () => {
   const focusPlans = ref<FocusPlan[]>([]);
   const allBadges = ref<Badge[]>([]);
   const loading = ref(false);
-  const pendingNotifications = ref<any[]>([]);
 
   // ===== Computed =====
   const skillsByCategory = computed(() => {
@@ -83,7 +82,7 @@ export const useAbilityStore = defineStore('ability', () => {
   async function loadDashboard() {
     loading.value = true;
     try {
-      await Promise.all([loadCategories(), loadSkills(), loadRadar(), loadFocusPlans(), loadBadges(), loadPendingNotifications()]);
+      await Promise.all([loadCategories(), loadSkills(), loadRadar(), loadFocusPlans(), loadBadges()]);
     } finally {
       loading.value = false;
     }
@@ -192,25 +191,6 @@ export const useAbilityStore = defineStore('ability', () => {
     return result.strategy;
   }
 
-  // ===== Notifications =====
-  async function loadPendingNotifications() {
-    pendingNotifications.value = await $fetch('/api/coach/pending');
-  }
-
-  async function dismissNotification(id: number) {
-    if (id > 0) {
-      await $fetch(`/api/coach/notifications/${id}`, { method: 'PATCH', body: { status: 'dismissed' } });
-    }
-    pendingNotifications.value = pendingNotifications.value.filter(n => n.id !== id);
-  }
-
-  async function actOnNotification(id: number) {
-    if (id > 0) {
-      await $fetch(`/api/coach/notifications/${id}`, { method: 'PATCH', body: { status: 'acted' } });
-    }
-    pendingNotifications.value = pendingNotifications.value.filter(n => n.id !== id);
-  }
-
   // ===== Activities & Snapshots =====
   async function loadActivities(params?: { skillId?: number; from?: string; to?: string }) {
     const query = new URLSearchParams();
@@ -250,7 +230,6 @@ export const useAbilityStore = defineStore('ability', () => {
     focusPlans,
     allBadges,
     loading,
-    pendingNotifications,
     // Computed
     skillsByCategory,
     activeSkillCount,
@@ -279,10 +258,6 @@ export const useAbilityStore = defineStore('ability', () => {
     updateFocusPlan,
     deleteFocusPlan,
     generateStrategy,
-    // Notifications
-    loadPendingNotifications,
-    dismissNotification,
-    actOnNotification,
     // Activities & Snapshots
     loadActivities,
     loadSnapshots,
