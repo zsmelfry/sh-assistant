@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { plannerCheckitems } from '~/server/database/schema';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const { id } = await readBody(event);
@@ -24,6 +25,15 @@ export default defineEventHandler(async (event) => {
     completedAt: newCompleted ? now : null,
     updatedAt: now,
   }).where(eq(plannerCheckitems.id, id));
+
+  // Log activity when completing a checkitem
+  if (newCompleted) {
+    logActivity({
+      source: 'planner',
+      sourceRef: `checkitem:${id}`,
+      description: `完成检查项：${existing.content}`,
+    }).catch(() => {});
+  }
 
   return {
     id,
