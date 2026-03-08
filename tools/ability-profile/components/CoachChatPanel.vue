@@ -66,6 +66,7 @@ async function sendMessage() {
       body: {
         message: text,
         context: 'chat',
+        history: messages.value.slice(0, -1), // all prior messages (exclude the one we just pushed)
       },
     });
 

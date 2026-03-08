@@ -7,7 +7,7 @@ import { throwLlmError } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { message, context = 'chat', skillId } = body;
+  const { message, context = 'chat', skillId, history = [] } = body;
 
   if (!message || typeof message !== 'string') {
     throw createError({ statusCode: 400, message: 'message 是必填字段' });
@@ -39,9 +39,17 @@ export default defineEventHandler(async (event) => {
   // Build system prompt
   const systemPrompt = buildCoachSystemPrompt(profile, memories, plans, context);
 
-  // Build conversation messages
+  // Build conversation messages (include session history for multi-turn context)
+  const priorMessages: ChatMessage[] = Array.isArray(history)
+    ? history.filter((m: any) => m.role && m.content).map((m: any) => ({
+      role: m.role as 'user' | 'assistant',
+      content: String(m.content),
+    }))
+    : [];
+
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
+    ...priorMessages,
     { role: 'user', content: message },
   ];
 
@@ -60,6 +68,7 @@ export default defineEventHandler(async (event) => {
       context,
       skillId: skillId || null,
       messages: JSON.stringify([
+        ...priorMessages,
         { role: 'user', content: message },
         { role: 'assistant', content: reply },
       ]),
