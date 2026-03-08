@@ -13,8 +13,9 @@ import {
 // ── Summary types ──
 
 export interface HabitSummary {
-  activeHabits: Array<{ id: string; name: string; frequency: string; todayDone: boolean; streak: number }>;
+  activeHabits: Array<{ id: string; name: string; frequency: string; todayDone: boolean; dueToday: boolean; streak: number }>;
   totalActive: number;
+  totalDueToday: number;
   todayCompleted: number;
   longestStreak: number;
 }
@@ -146,7 +147,7 @@ export function formatContextForPrompt(ctx: Partial<GlobalContext>): string {
   if (ctx.habits) {
     const h = ctx.habits;
     parts.push(`### 习惯打卡`);
-    parts.push(`活跃习惯 ${h.totalActive} 个，今日已完成 ${h.todayCompleted}/${h.totalActive}`);
+    parts.push(`活跃习惯 ${h.totalActive} 个，今日待完成 ${h.totalDueToday} 个，已完成 ${h.todayCompleted}/${h.totalDueToday}`);
     if (h.longestStreak > 0) parts.push(`最长连续: ${h.longestStreak} 天`);
     for (const hab of h.activeHabits) {
       parts.push(`- ${hab.name}(${hab.frequency}): ${hab.todayDone ? '✓已完成' : '✗未完成'}, 连续${hab.streak}天`);
@@ -163,7 +164,7 @@ export function formatContextForPrompt(ctx: Partial<GlobalContext>): string {
   if (ctx.vocab) {
     const v = ctx.vocab;
     parts.push(`### 法语词汇`);
-    parts.push(`总词汇 ${v.totalWords}, 已掌握 ${v.mastered}, 学习中 ${v.learning}, 未学 ${v.unread}`);
+    parts.push(`词库收录 ${v.totalWords} 词, 词汇量(已掌握+学习中) ${v.mastered + v.learning}, 其中已掌握 ${v.mastered}, 学习中 ${v.learning}, 未学 ${v.unread}`);
     if (v.pendingReviews > 0) parts.push(`待复习: ${v.pendingReviews} 个`);
   }
 
@@ -220,7 +221,7 @@ async function collectHabitContext(db: BetterSQLite3Database<any>): Promise<Habi
   }).from(habits).where(eq(habits.archived, false));
 
   if (activeHabits.length === 0) {
-    return { activeHabits: [], totalActive: 0, todayCompleted: 0, longestStreak: 0 };
+    return { activeHabits: [], totalActive: 0, totalDueToday: 0, todayCompleted: 0, longestStreak: 0 };
   }
 
   // Get today's checkins
@@ -229,9 +230,28 @@ async function collectHabitContext(db: BetterSQLite3Database<any>): Promise<Habi
     .where(eq(checkins.date, today));
   const todaySet = new Set(todayCheckins.map(c => c.habitId));
 
+  // Calculate week/month boundaries for frequency-based "due today" check
+  const todayDate = new Date(today);
+  const dayOfWeek = todayDate.getDay(); // 0=Sun
+  const weekStart = new Date(todayDate);
+  weekStart.setDate(todayDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); // Monday
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
+  const monthStartStr = today.slice(0, 7) + '-01';
+
+  // Get this week's and this month's checkins for non-daily habits
+  const periodCheckins = await db.select({ habitId: checkins.habitId, date: checkins.date })
+    .from(checkins)
+    .where(gte(checkins.date, monthStartStr));
+  const weekCheckinSet = new Set(
+    periodCheckins.filter(c => c.date >= weekStartStr).map(c => c.habitId)
+  );
+  const monthCheckinSet = new Set(periodCheckins.map(c => c.habitId));
+
   // Compute streaks: for each habit get all dates ordered desc, count consecutive from today
   const result: HabitSummary['activeHabits'] = [];
   let longestStreak = 0;
+  let totalDueToday = 0;
+  let dueCompleted = 0;
 
   for (const habit of activeHabits) {
     const dates = await db.select({ date: checkins.date })
@@ -253,11 +273,28 @@ async function collectHabitContext(db: BetterSQLite3Database<any>): Promise<Habi
 
     if (streak > longestStreak) longestStreak = streak;
 
+    // Determine if this habit is "due today" based on frequency
+    let dueToday: boolean;
+    if (habit.frequency === 'weekly') {
+      dueToday = !weekCheckinSet.has(habit.id);
+    } else if (habit.frequency === 'monthly') {
+      dueToday = !monthCheckinSet.has(habit.id);
+    } else {
+      // daily
+      dueToday = !todaySet.has(habit.id);
+    }
+
+    if (dueToday || todaySet.has(habit.id)) {
+      totalDueToday++;
+      if (todaySet.has(habit.id)) dueCompleted++;
+    }
+
     result.push({
       id: habit.id,
       name: habit.name,
       frequency: habit.frequency,
       todayDone: todaySet.has(habit.id),
+      dueToday,
       streak,
     });
   }
@@ -265,7 +302,8 @@ async function collectHabitContext(db: BetterSQLite3Database<any>): Promise<Habi
   return {
     activeHabits: result,
     totalActive: activeHabits.length,
-    todayCompleted: todaySet.size,
+    totalDueToday,
+    todayCompleted: dueCompleted,
     longestStreak,
   };
 }

@@ -29,12 +29,12 @@ const stats = computed<StatItem[]>(() => {
 
   if (props.summary.habits) {
     const h = props.summary.habits;
-    result.push({ label: '习惯完成', value: `${h.todayCompleted}/${h.totalActive}` });
+    result.push({ label: '习惯完成', value: `${h.todayCompleted}/${h.totalDueToday}` });
     if (h.longestStreak > 0) result.push({ label: '最长连续', value: `${h.longestStreak}天` });
   }
 
   if (props.summary.vocab) {
-    result.push({ label: '词汇量', value: `${props.summary.vocab.totalWords}` });
+    result.push({ label: '词汇量', value: `${props.summary.vocab.mastered + props.summary.vocab.learning}` });
     if (props.summary.vocab.pendingReviews > 0) {
       result.push({ label: '待复习', value: `${props.summary.vocab.pendingReviews}` });
     }

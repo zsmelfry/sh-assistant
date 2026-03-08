@@ -42,16 +42,16 @@ const items = computed<AgendaItem[]>(() => {
   // Habits not done today
   if (props.summary.habits) {
     const h = props.summary.habits;
-    const pending = h.activeHabits.filter(hab => !hab.todayDone);
+    const pending = h.activeHabits.filter(hab => hab.dueToday);
     if (pending.length > 0) {
       result.push({
         key: 'habits',
         label: `习惯打卡`,
         done: false,
         link: '/habit-tracker',
-        count: `${h.todayCompleted}/${h.totalActive}`,
+        count: `${h.todayCompleted}/${h.totalDueToday}`,
       });
-    } else if (h.totalActive > 0) {
+    } else if (h.totalDueToday > 0 || h.totalActive > 0) {
       result.push({
         key: 'habits',
         label: '习惯打卡 — 全部完成',
