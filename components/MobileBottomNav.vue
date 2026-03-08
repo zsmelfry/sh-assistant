@@ -11,6 +11,16 @@
       <span class="tab-label">{{ tool.name }}</span>
     </NuxtLink>
 
+    <button class="nav-tab" :class="{ active: xiaoshuangStore.isOpen }" @click="xiaoshuangStore.toggle()">
+      <span class="tab-icon-wrap">
+        <MessageCircle :size="20" :stroke-width="1.5" />
+        <span v-if="xiaoshuangStore.unreadCount > 0" class="tab-badge">
+          {{ xiaoshuangStore.unreadCount > 9 ? '9+' : xiaoshuangStore.unreadCount }}
+        </span>
+      </span>
+      <span class="tab-label">小爽</span>
+    </button>
+
     <button class="nav-tab" @click="showMenu = !showMenu">
       <EllipsisVertical :size="20" :stroke-width="1.5" />
       <span class="tab-label">更多</span>
@@ -34,11 +44,13 @@
 </template>
 
 <script setup lang="ts">
-import { EllipsisVertical, Settings, LogOut } from 'lucide-vue-next';
+import { EllipsisVertical, Settings, LogOut, MessageCircle } from 'lucide-vue-next';
+import { useXiaoshuangStore } from '~/stores/xiaoshuang';
 
 const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
 
+const xiaoshuangStore = useXiaoshuangStore();
 const showMenu = ref(false);
 const showLlmSettings = ref(false);
 
@@ -99,6 +111,28 @@ function handleLogout() {
 
   .tab-label {
     line-height: 1;
+  }
+
+  .tab-icon-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tab-badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+    color: var(--color-accent-inverse);
+    background-color: var(--color-accent);
+    border-radius: 7px;
+    pointer-events: none;
   }
 
   .menu-overlay {

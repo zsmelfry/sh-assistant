@@ -2,19 +2,24 @@
   <div class="coach-chat">
     <div class="chat-header">
       <button class="back-btn" @click="$emit('back')">← 返回</button>
-      <h2 class="page-title">AI 教练</h2>
+      <h2 class="page-title">小爽助手</h2>
+      <p class="chat-hint">也可以通过侧边栏底部的按钮随时呼出</p>
     </div>
 
     <div class="chat-messages" ref="messagesContainer">
+      <div v-if="store.messages.length === 0" class="empty-hint">
+        <p>你好！我是小爽，你的成长助手。</p>
+        <p>我能看到你所有模块的数据，随时可以聊。</p>
+      </div>
       <div
-        v-for="(msg, i) in messages"
+        v-for="(msg, i) in store.messages"
         :key="i"
         class="message"
         :class="`message--${msg.role}`"
       >
         <div class="message-content">{{ msg.content }}</div>
       </div>
-      <div v-if="sending" class="message message--assistant">
+      <div v-if="store.isLoading" class="message message--assistant">
         <div class="message-content message-loading">思考中...</div>
       </div>
     </div>
@@ -23,11 +28,11 @@
       <textarea
         v-model="inputText"
         class="input-field"
-        placeholder="向教练提问..."
+        placeholder="问小爽任何关于你成长的问题..."
         rows="2"
         @keydown.enter.ctrl="sendMessage"
       />
-      <BaseButton :disabled="!inputText.trim() || sending" @click="sendMessage">
+      <BaseButton :disabled="!inputText.trim() || store.isLoading" @click="sendMessage">
         发送
       </BaseButton>
     </div>
@@ -35,48 +40,22 @@
 </template>
 
 <script setup lang="ts">
+import { useXiaoshuangStore } from '~/stores/xiaoshuang';
 
 defineEmits<{
   back: [];
 }>();
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-const messages = ref<ChatMessage[]>([]);
+const store = useXiaoshuangStore();
 const inputText = ref('');
-const sending = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 
 async function sendMessage() {
   const text = inputText.value.trim();
-  if (!text || sending.value) return;
-
-  messages.value.push({ role: 'user', content: text });
+  if (!text || store.isLoading) return;
   inputText.value = '';
-  sending.value = true;
-
+  store.send(text);
   scrollToBottom();
-
-  try {
-    const result = await $fetch<{ reply: string }>('/api/coach/chat', {
-      method: 'POST',
-      body: {
-        message: text,
-        context: 'chat',
-        history: messages.value.slice(0, -1), // all prior messages (exclude the one we just pushed)
-      },
-    });
-
-    messages.value.push({ role: 'assistant', content: result.reply });
-  } catch (error) {
-    messages.value.push({ role: 'assistant', content: '抱歉，教练暂时无法回复。请检查 LLM 配置。' });
-  } finally {
-    sending.value = false;
-    scrollToBottom();
-  }
 }
 
 function scrollToBottom() {
@@ -86,6 +65,8 @@ function scrollToBottom() {
     }
   });
 }
+
+watch(() => store.messages.length, () => scrollToBottom());
 </script>
 
 <style scoped>
@@ -122,6 +103,11 @@ function scrollToBottom() {
   color: var(--color-text-primary);
 }
 
+.chat-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -129,6 +115,16 @@ function scrollToBottom() {
   flex-direction: column;
   gap: var(--spacing-md);
   padding: var(--spacing-md) 0;
+}
+
+.empty-hint {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.empty-hint p {
+  margin: 0 0 var(--spacing-xs) 0;
 }
 
 .message {

@@ -8,11 +8,20 @@
       <slot />
     </main>
     <MobileBottomNav />
+    <XiaoshuangChat v-if="xiaoshuangStore.isOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useXiaoshuangStore } from '~/stores/xiaoshuang';
+
 const sidebarCollapsed = ref(false);
+const xiaoshuangStore = useXiaoshuangStore();
+
+// Load notification count on mount
+onMounted(() => {
+  xiaoshuangStore.loadPendingCount();
+});
 </script>
 
 <style scoped>

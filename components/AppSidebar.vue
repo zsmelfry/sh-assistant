@@ -22,16 +22,26 @@
       >
         <span class="nav-icon-wrap">
           <component :is="tool.icon" class="nav-icon" :size="18" :stroke-width="1.5" />
-          <span
-            v-if="tool.id === 'ability-profile' && notificationCount > 0"
-            class="nav-badge"
-          >{{ notificationCount > 9 ? '9+' : notificationCount }}</span>
         </span>
         <span v-if="!collapsed" class="nav-label">{{ tool.name }}</span>
       </NuxtLink>
     </nav>
 
     <div class="sidebar-footer">
+      <button
+        class="settings-btn xiaoshuang-btn"
+        title="小爽助手"
+        @click="xiaoshuangStore.toggle()"
+      >
+        <span class="nav-icon-wrap">
+          <MessageCircle :size="18" :stroke-width="1.5" />
+          <span
+            v-if="xiaoshuangStore.unreadCount > 0"
+            class="nav-badge"
+          >{{ xiaoshuangStore.unreadCount > 9 ? '9+' : xiaoshuangStore.unreadCount }}</span>
+        </span>
+        <span v-if="!collapsed" class="nav-label">小爽助手</span>
+      </button>
       <button
         class="settings-btn"
         title="LLM 模型设置"
@@ -55,8 +65,8 @@
 </template>
 
 <script setup lang="ts">
-import { Settings, ChevronLeft, ChevronRight, LogOut } from 'lucide-vue-next';
-import { useAbilityStore } from '~/stores/ability';
+import { Settings, ChevronLeft, ChevronRight, LogOut, MessageCircle } from 'lucide-vue-next';
+import { useXiaoshuangStore } from '~/stores/xiaoshuang';
 
 defineProps<{
   collapsed: boolean;
@@ -70,8 +80,7 @@ const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
 const showLlmSettings = ref(false);
 
-const abilityStore = useAbilityStore();
-const notificationCount = computed(() => abilityStore.pendingNotifications.length);
+const xiaoshuangStore = useXiaoshuangStore();
 </script>
 
 <style scoped>
@@ -214,6 +223,10 @@ const notificationCount = computed(() => abilityStore.pendingNotifications.lengt
 
 .settings-btn:hover {
   background-color: var(--color-bg-hover);
+}
+
+.xiaoshuang-btn {
+  margin-bottom: var(--spacing-xs);
 }
 
 .logout-btn {
