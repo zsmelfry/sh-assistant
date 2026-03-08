@@ -20,10 +20,11 @@
 
       <!-- Completion summary -->
       <div v-if="completed && createdSkills.length > 0" class="summary">
-        <h3 class="summary-title">已创建的技能</h3>
+        <h3 class="summary-title">已创建 {{ createdSkills.length }} 个技能</h3>
         <ul class="summary-list">
           <li v-for="skill in createdSkills" :key="skill.id" class="summary-item">
-            {{ skill.name }}
+            <span class="skill-name">{{ skill.name }}</span>
+            <span class="skill-tier">{{ tierStars(skill.tier) }} {{ TIER_NAMES[skill.tier] }}</span>
           </li>
         </ul>
         <BaseButton @click="$emit('done')">开始使用</BaseButton>
@@ -60,6 +61,15 @@ interface ChatMessage {
 interface CreatedSkill {
   id: number;
   name: string;
+  tier: number;
+}
+
+const TIER_NAMES: Record<number, string> = {
+  0: '未开始', 1: '入门', 2: '基础', 3: '胜任', 4: '精通', 5: '卓越',
+};
+
+function tierStars(tier: number): string {
+  return '★'.repeat(tier) || '-';
 }
 
 const messages = ref<ChatMessage[]>([]);
@@ -101,8 +111,10 @@ async function sendMessage() {
       },
     });
 
-    messages.value.push({ role: 'assistant', content: result.reply });
-    history.value.push({ role: 'assistant', content: result.reply });
+    // Strip JSON code block from displayed message (it's for backend parsing)
+    const displayReply = result.reply.replace(/```json[\s\S]*?```/g, '').trim();
+    messages.value.push({ role: 'assistant', content: displayReply });
+    history.value.push({ role: 'assistant', content: result.reply }); // keep full reply in history
 
     if (result.createdSkills && result.createdSkills.length > 0) {
       createdSkills.value.push(...result.createdSkills);
@@ -237,6 +249,18 @@ function scrollToBottom() {
   padding: var(--spacing-xs) var(--spacing-sm);
   background-color: var(--color-bg-hover);
   border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skill-name {
+  font-weight: 500;
+}
+
+.skill-tier {
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 
 .chat-input {
