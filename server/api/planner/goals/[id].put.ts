@@ -29,6 +29,10 @@ export default defineEventHandler(async (event) => {
     updates.priority = body.priority;
   }
 
+  if (body.linkedAbilitySkillId !== undefined) {
+    updates.linkedAbilitySkillId = body.linkedAbilitySkillId;
+  }
+
   // Validate tagIds if provided
   if (body.tagIds !== undefined) {
     const tagIds: number[] = body.tagIds ?? [];

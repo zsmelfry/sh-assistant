@@ -54,13 +54,27 @@ export default defineEventHandler(async (event) => {
     await db.insert(checkins).values(newCheckin);
 
     // Log activity for ability system (fire-and-forget)
-    const [habit] = await db.select({ name: habits.name }).from(habits).where(eq(habits.id, habitId));
-    logActivity({
+    const [habit] = await db.select({ name: habits.name, linkedAbilitySkillId: habits.linkedAbilitySkillId })
+      .from(habits).where(eq(habits.id, habitId));
+
+    const activityParams: Parameters<typeof logActivity>[0] = {
       source: 'habit',
       sourceRef: habitId,
       description: `习惯打卡：${habit?.name ?? habitId}`,
       date,
-    }).catch(() => {});
+    };
+
+    if (habit?.linkedAbilitySkillId) {
+      const { skills: skillsTable } = await import('~/server/database/schema');
+      const [skill] = await db.select({ id: skillsTable.id, categoryId: skillsTable.categoryId })
+        .from(skillsTable).where(eq(skillsTable.id, habit.linkedAbilitySkillId)).limit(1);
+      if (skill) {
+        activityParams.skillId = skill.id;
+        activityParams.categoryId = skill.categoryId;
+      }
+    }
+
+    logActivity(activityParams).catch(() => {});
 
     return { checked: true, checkin: newCheckin };
   }

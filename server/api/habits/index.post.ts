@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
     id: crypto.randomUUID(),
     name,
     frequency: frequency as 'daily' | 'weekly' | 'monthly',
+    linkedAbilitySkillId: body.linkedAbilitySkillId ?? null,
     archived: false,
     createdAt: now,
     updatedAt: now,

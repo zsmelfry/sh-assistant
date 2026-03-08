@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
     title,
     description: body.description?.trim() ?? '',
     priority: priority as 'high' | 'medium' | 'low',
+    linkedAbilitySkillId: body.linkedAbilitySkillId ?? null,
     sortOrder: maxRow.max + 1,
     createdAt: now,
     updatedAt: now,

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { plannerCheckitems } from '~/server/database/schema';
+import { plannerCheckitems, plannerGoals, skills } from '~/server/database/schema';
 import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
@@ -28,11 +28,26 @@ export default defineEventHandler(async (event) => {
 
   // Log activity when completing a checkitem
   if (newCompleted) {
-    logActivity({
+    const activityParams: Parameters<typeof logActivity>[0] = {
       source: 'planner',
       sourceRef: `checkitem:${id}`,
       description: `完成检查项：${existing.content}`,
-    }).catch(() => {});
+    };
+
+    // Look up linked ability skill via goal
+    const [goal] = await db.select({ linkedAbilitySkillId: plannerGoals.linkedAbilitySkillId })
+      .from(plannerGoals).where(eq(plannerGoals.id, existing.goalId)).limit(1);
+
+    if (goal?.linkedAbilitySkillId) {
+      const [skill] = await db.select({ id: skills.id, categoryId: skills.categoryId })
+        .from(skills).where(eq(skills.id, goal.linkedAbilitySkillId)).limit(1);
+      if (skill) {
+        activityParams.skillId = skill.id;
+        activityParams.categoryId = skill.categoryId;
+      }
+    }
+
+    logActivity(activityParams).catch(() => {});
   }
 
   return {

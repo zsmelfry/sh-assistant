@@ -127,11 +127,11 @@ function closeForm() {
   editingHabit.value = null;
 }
 
-async function handleFormSubmit(data: { name: string; frequency: HabitFrequency }) {
+async function handleFormSubmit(data: { name: string; frequency: HabitFrequency; linkedAbilitySkillId: number | null }) {
   if (editingHabit.value) {
     await store.updateHabit(editingHabit.value.id, data);
   } else {
-    await store.createHabit(data.name, data.frequency);
+    await store.createHabit(data.name, data.frequency, data.linkedAbilitySkillId);
   }
   closeForm();
 }

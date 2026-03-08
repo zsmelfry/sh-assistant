@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+import { skills } from './ability';
 
 export const plannerDomains = sqliteTable('planner_domains', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -21,6 +22,8 @@ export const plannerGoals = sqliteTable('planner_goals', {
   priority: text('priority', { enum: ['high', 'medium', 'low'] })
     .notNull()
     .default('medium'),
+  linkedAbilitySkillId: integer('linked_ability_skill_id')
+    .references(() => skills.id, { onDelete: 'set null' }),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'number' }).notNull(),

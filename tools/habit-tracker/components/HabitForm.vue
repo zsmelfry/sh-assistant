@@ -26,6 +26,20 @@
           {{ freq.label }}
         </button>
       </div>
+
+      <div v-if="abilitySkills.length > 0" class="fieldGroup">
+        <label class="fieldLabel">关联能力技能</label>
+        <select v-model="linkedAbilitySkillId" class="selectInput">
+          <option :value="null">不关联</option>
+          <option
+            v-for="s in abilitySkills"
+            :key="s.id"
+            :value="s.id"
+          >
+            {{ s.categoryName }} / {{ s.name }}
+          </option>
+        </select>
+      </div>
     </div>
 
     <template #footer>
@@ -54,15 +68,17 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  submit: [data: { name: string; frequency: HabitFrequency }];
+  submit: [data: { name: string; frequency: HabitFrequency; linkedAbilitySkillId: number | null }];
 }>();
 
 const isEditing = computed(() => !!props.editHabit);
 
 const name = ref('');
 const frequency = ref<HabitFrequency>('daily');
+const linkedAbilitySkillId = ref<number | null>(null);
 const inputRef = ref<HTMLInputElement | null>(null);
 const submitting = ref(false);
+const abilitySkills = ref<Array<{ id: number; name: string; categoryName: string }>>([]);
 
 const frequencies = [
   { value: 'daily' as const, label: '每天' },
@@ -70,15 +86,27 @@ const frequencies = [
   { value: 'monthly' as const, label: '每月' },
 ];
 
+// Load ability skills for linking
+onMounted(async () => {
+  try {
+    const rows = await $fetch<Array<{ id: number; name: string; categoryName: string }>>('/api/ability-skills?status=active');
+    abilitySkills.value = rows;
+  } catch {
+    // Ability module may not have data yet
+  }
+});
+
 // 打开时初始化表单
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
     if (props.editHabit) {
       name.value = props.editHabit.name;
       frequency.value = props.editHabit.frequency;
+      linkedAbilitySkillId.value = props.editHabit.linkedAbilitySkillId ?? null;
     } else {
       name.value = '';
       frequency.value = 'daily';
+      linkedAbilitySkillId.value = null;
     }
     nextTick(() => inputRef.value?.focus());
   }
@@ -88,7 +116,7 @@ async function handleSubmit() {
   if (!name.value.trim() || submitting.value) return;
   submitting.value = true;
   try {
-    emit('submit', { name: name.value.trim(), frequency: frequency.value });
+    emit('submit', { name: name.value.trim(), frequency: frequency.value, linkedAbilitySkillId: linkedAbilitySkillId.value });
   } finally {
     submitting.value = false;
   }
@@ -140,6 +168,32 @@ async function handleSubmit() {
 .frequencyBtn.active {
   background-color: var(--color-accent);
   color: var(--color-accent-inverse);
+  border-color: var(--color-accent);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.fieldLabel {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.selectInput {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.selectInput:focus {
   border-color: var(--color-accent);
 }
 </style>

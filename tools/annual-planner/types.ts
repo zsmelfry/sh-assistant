@@ -28,6 +28,7 @@ export interface PlannerGoal {
   title: string;
   description: string;
   priority: Priority;
+  linkedAbilitySkillId: number | null;
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
@@ -91,6 +92,7 @@ export interface CreateGoalData {
   description?: string;
   priority?: Priority;
   tagIds?: number[];
+  linkedAbilitySkillId?: number | null;
 }
 
 export interface UpdateGoalData {
@@ -98,6 +100,7 @@ export interface UpdateGoalData {
   description?: string;
   priority?: Priority;
   tagIds?: number[];
+  linkedAbilitySkillId?: number | null;
 }
 
 export const DEFAULT_DOMAINS = ['事业', '财务', '健康', '兴趣'];

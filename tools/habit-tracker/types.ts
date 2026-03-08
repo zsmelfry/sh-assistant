@@ -8,6 +8,7 @@ export interface Habit {
   id: string;
   name: string;
   frequency: HabitFrequency;
+  linkedAbilitySkillId: number | null;
   archived: boolean;
   createdAt: number;
   updatedAt: number;

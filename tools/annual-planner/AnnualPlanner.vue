@@ -277,7 +277,7 @@ function closeGoalForm() {
   editingGoal.value = null;
 }
 
-async function handleGoalSubmit(data: { title: string; description: string; priority: Priority; tagIds: number[] }) {
+async function handleGoalSubmit(data: { title: string; description: string; priority: Priority; tagIds: number[]; linkedAbilitySkillId: number | null }) {
   if (editingGoal.value) {
     await store.updateGoal(editingGoal.value.id, data);
   } else if (store.currentView.type === 'domain') {

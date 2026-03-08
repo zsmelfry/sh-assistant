@@ -69,16 +69,16 @@ export const useHabitStore = defineStore('habit', () => {
     await loadCheckIns();
   }
 
-  async function createHabit(name: string, frequency: HabitFrequency = 'daily') {
+  async function createHabit(name: string, frequency: HabitFrequency = 'daily', linkedAbilitySkillId?: number | null) {
     const habit = await $fetch<Habit>('/api/habits', {
       method: 'POST',
-      body: { name, frequency },
+      body: { name, frequency, linkedAbilitySkillId: linkedAbilitySkillId ?? null },
     });
     await loadHabits();
     await selectHabit(habit.id);
   }
 
-  async function updateHabit(id: string, data: { name?: string; frequency?: HabitFrequency }) {
+  async function updateHabit(id: string, data: { name?: string; frequency?: HabitFrequency; linkedAbilitySkillId?: number | null }) {
     await $fetch<Habit>(`/api/habits/${id}`, {
       method: 'PUT',
       body: data,

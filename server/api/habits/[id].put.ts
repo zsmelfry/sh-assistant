@@ -26,6 +26,10 @@ export default defineEventHandler(async (event) => {
     updates.frequency = body.frequency;
   }
 
+  if (body.linkedAbilitySkillId !== undefined) {
+    updates.linkedAbilitySkillId = body.linkedAbilitySkillId;
+  }
+
   await db.update(habits)
     .set(updates)
     .where(eq(habits.id, id));

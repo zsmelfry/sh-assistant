@@ -42,6 +42,20 @@
         </div>
       </div>
 
+      <div v-if="abilitySkills.length > 0" class="field">
+        <label class="label">关联能力技能</label>
+        <select v-model="linkedAbilitySkillId" class="selectInput">
+          <option :value="null">不关联</option>
+          <option
+            v-for="s in abilitySkills"
+            :key="s.id"
+            :value="s.id"
+          >
+            {{ s.categoryName }} / {{ s.name }}
+          </option>
+        </select>
+      </div>
+
       <div class="field">
         <label class="label">标签</label>
         <div class="tagSelector">
@@ -89,15 +103,26 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  submit: [data: { title: string; description: string; priority: Priority; tagIds: number[] }];
+  submit: [data: { title: string; description: string; priority: Priority; tagIds: number[]; linkedAbilitySkillId: number | null }];
 }>();
 
 const title = ref('');
 const description = ref('');
 const priority = ref<Priority>('medium');
+const linkedAbilitySkillId = ref<number | null>(null);
 const selectedTagIds = ref<Set<number>>(new Set());
 const titleRef = ref<HTMLInputElement | null>(null);
 const submitting = ref(false);
+const abilitySkills = ref<Array<{ id: number; name: string; categoryName: string }>>([]);
+
+onMounted(async () => {
+  try {
+    const rows = await $fetch<Array<{ id: number; name: string; categoryName: string }>>('/api/ability-skills?status=active');
+    abilitySkills.value = rows;
+  } catch {
+    // Ability module may not have data yet
+  }
+});
 
 const priorities = [
   { value: 'high' as const, label: PRIORITY_LABELS.high },
@@ -111,11 +136,13 @@ watch(() => props.open, (isOpen) => {
       title.value = props.editGoal.title;
       description.value = props.editGoal.description;
       priority.value = props.editGoal.priority;
+      linkedAbilitySkillId.value = props.editGoal.linkedAbilitySkillId ?? null;
       selectedTagIds.value = new Set(props.editGoal.tags.map(t => t.id));
     } else {
       title.value = '';
       description.value = '';
       priority.value = 'medium';
+      linkedAbilitySkillId.value = null;
       selectedTagIds.value = new Set();
     }
     nextTick(() => titleRef.value?.focus());
@@ -141,6 +168,7 @@ async function handleSubmit() {
       description: description.value.trim(),
       priority: priority.value,
       tagIds: Array.from(selectedTagIds.value),
+      linkedAbilitySkillId: linkedAbilitySkillId.value,
     });
   } finally {
     submitting.value = false;
@@ -254,5 +282,20 @@ async function handleSubmit() {
 .noTags {
   font-size: 13px;
   color: var(--color-text-disabled);
+}
+
+.selectInput {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.selectInput:focus {
+  border-color: var(--color-accent);
 }
 </style>
