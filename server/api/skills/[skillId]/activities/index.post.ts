@@ -1,7 +1,8 @@
 import { eq, and, gte } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { smActivities } from '~/server/database/schema';
+import { smActivities, skillConfigs, skills } from '~/server/database/schema';
 import { resolveSkill } from '~/server/lib/skill-learning';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 const VALID_TYPES = ['view', 'chat', 'note', 'task', 'status_change'] as const;
 
@@ -54,6 +55,28 @@ export default defineEventHandler(async (event) => {
       createdAt: now,
     })
     .returning();
+
+  // Write to ability activity logs if skill config has a linked ability skill
+  const [config] = await db.select({ linkedAbilitySkillId: skillConfigs.linkedAbilitySkillId, name: skillConfigs.name })
+    .from(skillConfigs)
+    .where(eq(skillConfigs.skillId, skillId))
+    .limit(1);
+
+  if (config?.linkedAbilitySkillId) {
+    const [abilitySkill] = await db.select({ id: skills.id, categoryId: skills.categoryId })
+      .from(skills)
+      .where(eq(skills.id, config.linkedAbilitySkillId))
+      .limit(1);
+
+    if (abilitySkill) {
+      await logActivity({
+        skillId: abilitySkill.id,
+        categoryId: abilitySkill.categoryId,
+        source: 'skill_learning',
+        description: `技能学习：${config.name}`,
+      });
+    }
+  }
 
   return inserted;
 });

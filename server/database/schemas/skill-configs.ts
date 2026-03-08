@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { skills } from './ability';
 
 // ===== 技能配置（DB驱动的技能定义） =====
 export const skillConfigs = sqliteTable('skill_configs', {
@@ -16,6 +17,8 @@ export const skillConfigs = sqliteTable('skill_configs', {
   quizUserPrompt: text('quiz_user_prompt').notNull().default(''),
   guidanceSystemPrompt: text('guidance_system_prompt').notNull().default(''),
   guidanceUserPrompt: text('guidance_user_prompt').notNull().default(''),
+  linkedAbilitySkillId: integer('linked_ability_skill_id')
+    .references(() => skills.id, { onDelete: 'set null' }),
   features: text('features'),
   sortOrder: integer('sort_order').notNull().default(100),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),

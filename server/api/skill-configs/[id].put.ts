@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Optional fields
-  const optionalFields = ['description', 'icon', 'sortOrder', 'isActive'] as const;
+  const optionalFields = ['description', 'icon', 'sortOrder', 'isActive', 'linkedAbilitySkillId'] as const;
   for (const field of optionalFields) {
     if (body[field] !== undefined) {
       updates[field] = body[field];

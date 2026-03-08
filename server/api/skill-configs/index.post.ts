@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
     quizSystemPrompt, quizUserPrompt,
     guidanceSystemPrompt, guidanceUserPrompt,
     sortOrder,
+    linkedAbilitySkillId,
   } = body || {};
 
   if (!skillId || typeof skillId !== 'string') {
@@ -53,6 +54,7 @@ export default defineEventHandler(async (event) => {
     ...(guidanceSystemPrompt ? { guidanceSystemPrompt } : {}),
     ...(guidanceUserPrompt ? { guidanceUserPrompt } : {}),
     ...(body.features ? { features: body.features } : {}),
+    ...(linkedAbilitySkillId ? { linkedAbilitySkillId } : {}),
     sortOrder: sortOrder ?? 100,
     createdAt: now,
     updatedAt: now,

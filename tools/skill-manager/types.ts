@@ -9,6 +9,7 @@ export interface SkillConfig {
   chatSystemPrompt: string;
   taskSystemPrompt: string;
   taskUserPrompt: string;
+  linkedAbilitySkillId: number | null;
   sortOrder: number;
   isActive: boolean;
   createdAt: number;

@@ -62,6 +62,24 @@
               <span class="fieldHint">URL 路径标识，创建后不可修改</span>
             </div>
             <IconPicker v-model="form.icon" />
+            <div class="field">
+              <label class="fieldLabel" for="linkedAbilitySkill">关联能力技能</label>
+              <select
+                id="linkedAbilitySkill"
+                v-model="form.linkedAbilitySkillId"
+                class="fieldInput"
+              >
+                <option :value="null">不关联</option>
+                <option
+                  v-for="s in abilitySkills"
+                  :key="s.id"
+                  :value="s.id"
+                >
+                  {{ s.categoryName }} / {{ s.name }} (T{{ s.currentTier }})
+                </option>
+              </select>
+              <span class="fieldHint">关联后，学习活动将自动记录到能力画像</span>
+            </div>
           </div>
 
           <!-- Step 1: Knowledge tree -->
@@ -174,6 +192,7 @@ const generating = ref(false);
 const genError = ref('');
 
 let importedFeatures = '';
+const abilitySkills = ref<Array<{ id: number; name: string; categoryName: string; currentTier: number }>>([]);
 const fileInputRef = ref<HTMLInputElement>();
 const treeDomains = ref<GeneratedDomain[]>([]);
 const treeStages = ref<GeneratedStage[]>([]);
@@ -255,6 +274,7 @@ const form = reactive({
   quizUserPrompt: '',
   guidanceSystemPrompt: '',
   guidanceUserPrompt: '',
+  linkedAbilitySkillId: null as number | null,
 });
 
 // Initialize form for editing
@@ -268,7 +288,20 @@ if (props.editing) {
   form.chatSystemPrompt = props.editing.chatSystemPrompt;
   form.taskSystemPrompt = props.editing.taskSystemPrompt;
   form.taskUserPrompt = props.editing.taskUserPrompt;
+  form.linkedAbilitySkillId = props.editing.linkedAbilitySkillId ?? null;
 }
+
+// Load ability skills for linking
+onMounted(async () => {
+  try {
+    const rows = await $fetch<Array<{ id: number; name: string; categoryName: string; currentTier: number }>>(
+      '/api/ability-skills?status=active',
+    );
+    abilitySkills.value = rows;
+  } catch {
+    // Ability module may not have data yet
+  }
+});
 
 const canNext = computed(() => {
   if (step.value === 0) {
@@ -379,6 +412,7 @@ async function handleSave() {
           chatSystemPrompt: form.chatSystemPrompt,
           taskSystemPrompt: form.taskSystemPrompt,
           taskUserPrompt: form.taskUserPrompt,
+          linkedAbilitySkillId: form.linkedAbilitySkillId,
         },
       });
     } else {
@@ -400,6 +434,7 @@ async function handleSave() {
           ...(form.guidanceSystemPrompt ? { guidanceSystemPrompt: form.guidanceSystemPrompt } : {}),
           ...(form.guidanceUserPrompt ? { guidanceUserPrompt: form.guidanceUserPrompt } : {}),
           ...(importedFeatures ? { features: importedFeatures } : {}),
+          ...(form.linkedAbilitySkillId ? { linkedAbilitySkillId: form.linkedAbilitySkillId } : {}),
         },
       });
 
