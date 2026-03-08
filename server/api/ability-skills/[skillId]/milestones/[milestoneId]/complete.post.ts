@@ -31,6 +31,40 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '里程碑已完成' });
   }
 
+  // Tier prerequisite check: must complete all milestones in previous tier first
+  if (milestone.tier > 1) {
+    const prevTier = milestone.tier - 1;
+    const prevTierMilestones = await db.select({ id: milestones.id })
+      .from(milestones)
+      .where(and(eq(milestones.skillId, skillId), eq(milestones.tier, prevTier)));
+
+    if (prevTierMilestones.length > 0) {
+      const prevTierCompletions = await db.select({ id: milestoneCompletions.id })
+        .from(milestoneCompletions)
+        .where(
+          eq(milestoneCompletions.milestoneId, prevTierMilestones[0].id),
+        );
+
+      // Check all previous tier milestones are completed
+      const prevIds = prevTierMilestones.map(m => m.id);
+      const completedIds = new Set<number>();
+      for (const pm of prevTierMilestones) {
+        const [comp] = await db.select({ id: milestoneCompletions.id })
+          .from(milestoneCompletions)
+          .where(eq(milestoneCompletions.milestoneId, pm.id))
+          .limit(1);
+        if (comp) completedIds.add(pm.id);
+      }
+
+      if (completedIds.size < prevTierMilestones.length) {
+        throw createError({
+          statusCode: 400,
+          message: `需先完成${TIER_NAMES[prevTier]}段位的所有里程碑`,
+        });
+      }
+    }
+  }
+
   // Determine verify method — use the one from body or fallback to milestone's default
   const verifyMethod = body.verifyMethod || milestone.verifyMethod;
   const now = Date.now();

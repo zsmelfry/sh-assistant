@@ -1,5 +1,5 @@
 <template>
-  <div class="milestone" :class="{ 'milestone--completed': !!milestone.completion }">
+  <div class="milestone" :class="{ 'milestone--completed': !!milestone.completion, 'milestone--locked': locked }">
     <div class="milestone-left">
       <span class="milestone-icon" :title="VERIFY_METHOD_LABELS[milestone.verifyMethod]">
         {{ verifyIcon }}
@@ -14,8 +14,9 @@
 
     <div class="milestone-right">
       <span class="milestone-type-badge">{{ MILESTONE_TYPE_LABELS[milestone.milestoneType] }}</span>
+      <span v-if="locked" class="milestone-locked-hint">需先完成上一段位</span>
       <BaseButton
-        v-if="!milestone.completion"
+        v-else-if="!milestone.completion"
         variant="ghost"
         @click.stop="$emit('complete', milestone.id)"
       >
@@ -34,6 +35,7 @@ import { VERIFY_METHOD_LABELS, MILESTONE_TYPE_LABELS } from '../types';
 
 const props = defineProps<{
   milestone: Milestone;
+  locked?: boolean;
 }>();
 
 defineEmits<{
@@ -130,5 +132,15 @@ function formatDate(ts: number) {
 .milestone-done {
   font-size: 12px;
   color: var(--color-success);
+}
+
+.milestone--locked {
+  opacity: 0.5;
+}
+
+.milestone-locked-hint {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-style: italic;
 }
 </style>

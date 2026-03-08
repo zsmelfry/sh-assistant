@@ -48,6 +48,7 @@
             v-for="m in milestonesInTier(tier)"
             :key="m.id"
             :milestone="m"
+            :locked="isTierLocked(tier)"
             @complete="$emit('complete-milestone', m)"
           />
         </div>
@@ -129,6 +130,14 @@ function milestonesInTier(tier: number): Milestone[] {
 
 function completedInTier(tier: number): number {
   return milestonesInTier(tier).filter((m) => m.completion !== null).length;
+}
+
+function isTierLocked(tier: number): boolean {
+  if (tier <= 1) return false;
+  const prevTier = tier - 1;
+  const prevMilestones = milestonesInTier(prevTier);
+  if (prevMilestones.length === 0) return false;
+  return prevMilestones.some((m) => m.completion === null);
 }
 </script>
 
