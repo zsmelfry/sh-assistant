@@ -90,8 +90,8 @@ const emit = defineEmits<{
   clear: [];
 }>();
 
+const { textareaRef: inputRef, autoResize, resetHeight } = useAutoResize();
 const messagesRef = ref<HTMLElement | null>(null);
-const inputRef = ref<HTMLTextAreaElement | null>(null);
 const inputText = ref('');
 const copiedId = ref<number | null>(null);
 
@@ -120,17 +120,8 @@ function handleSend(): void {
   if (!inputText.value.trim() || props.loading) return;
   const message = inputText.value;
   inputText.value = '';
-  if (inputRef.value) {
-    inputRef.value.style.height = 'auto';
-  }
+  resetHeight();
   emit('send', message);
-}
-
-function autoResize(): void {
-  const el = inputRef.value;
-  if (!el) return;
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 </script>
 

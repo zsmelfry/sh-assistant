@@ -40,10 +40,11 @@
             ref="askTextareaRef"
             v-model="askPrompt"
             class="askInput"
-            rows="3"
+            rows="1"
             placeholder="输入你的问题..."
             @keydown.enter.meta.prevent="handleSendAsk"
             @keydown.enter.ctrl.prevent="handleSendAsk"
+            @input="autoResizeAsk"
           />
           <div class="askActions">
             <button class="askBtn askBtnCancel" @click="closeAskPanel">取消</button>
@@ -131,6 +132,13 @@ const askPrompt = ref('');
 const askPanelRef = ref<HTMLElement | null>(null);
 const askTextareaRef = ref<HTMLTextAreaElement | null>(null);
 const askPanelPos = ref({ x: 0, y: 0 });
+
+function autoResizeAsk() {
+  const el = askTextareaRef.value;
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+}
 
 const askPanelStyle = computed(() => ({
   position: 'fixed' as const,

@@ -37,12 +37,15 @@
 
         <!-- Input -->
         <div class="inputBar">
-          <input
+          <textarea
+            ref="textareaRef"
             v-model="inputText"
             class="chatInput"
             placeholder="输入问题..."
+            rows="1"
             :disabled="isSending"
-            @keydown.enter.prevent="handleSend"
+            @keydown.enter.exact.prevent="handleSend"
+            @input="autoResize"
           />
           <button
             class="sendBtn"
@@ -74,6 +77,7 @@ const messages = ref<Array<{ role: 'user' | 'assistant'; content: string }>>([])
 const inputText = ref('');
 const isSending = ref(false);
 const messagesEl = ref<HTMLElement>();
+const { textareaRef, autoResize, resetHeight } = useAutoResize();
 
 watch(() => props.word, () => {
   messages.value = [];
@@ -93,6 +97,7 @@ async function handleSend() {
 
   messages.value.push({ role: 'user', content: text });
   inputText.value = '';
+  resetHeight();
   isSending.value = true;
   await scrollToBottom();
 
@@ -246,8 +251,11 @@ async function handleSend() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 14px;
+  font-family: inherit;
   color: var(--color-text-primary);
   background: var(--color-bg-primary);
+  resize: none;
+  overflow-y: auto;
 }
 
 .chatInput:focus {

@@ -28,12 +28,14 @@
 
       <div class="xs-input-area">
         <textarea
+          ref="textareaRef"
           v-model="inputText"
           class="xs-input"
           placeholder="问小爽任何关于你成长的问题..."
-          rows="2"
+          rows="1"
           @keydown.enter.ctrl="handleSend"
           @keydown.enter.meta="handleSend"
+          @input="autoResize"
         />
         <button
           class="xs-send-btn"
@@ -54,11 +56,13 @@ import { useXiaoshuangStore } from '~/stores/xiaoshuang';
 const store = useXiaoshuangStore();
 const inputText = ref('');
 const messagesEl = ref<HTMLElement | null>(null);
+const { textareaRef, autoResize, resetHeight } = useAutoResize();
 
 function handleSend() {
   const text = inputText.value.trim();
   if (!text || store.isLoading) return;
   inputText.value = '';
+  resetHeight();
   store.send(text);
   scrollToBottom();
 }

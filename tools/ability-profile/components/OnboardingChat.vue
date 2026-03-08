@@ -33,11 +33,13 @@
 
     <div v-if="!completed" class="chat-input">
       <textarea
+        ref="textareaRef"
         v-model="inputText"
         class="input-field"
         placeholder="描述你的工作、学习或兴趣..."
-        rows="2"
+        rows="1"
         @keydown.enter.ctrl="sendMessage"
+        @input="autoResize"
       />
       <BaseButton :disabled="!inputText.trim() || sending" @click="sendMessage">
         发送
@@ -76,6 +78,7 @@ const messages = ref<ChatMessage[]>([]);
 const history = ref<{ role: string; content: string }[]>([]);
 const inputText = ref('');
 const sending = ref(false);
+const { textareaRef, autoResize, resetHeight } = useAutoResize();
 const completed = ref(false);
 const createdSkills = ref<CreatedSkill[]>([]);
 const messagesContainer = ref<HTMLElement | null>(null);
@@ -94,6 +97,7 @@ async function sendMessage() {
   messages.value.push({ role: 'user', content: text });
   history.value.push({ role: 'user', content: text });
   inputText.value = '';
+  resetHeight();
   sending.value = true;
 
   scrollToBottom();

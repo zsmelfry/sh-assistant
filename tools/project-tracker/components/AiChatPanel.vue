@@ -26,12 +26,15 @@
     </div>
 
     <div class="inputArea">
-      <input
+      <textarea
+        ref="textareaRef"
         v-model="inputText"
-        type="text"
+        class="chatTextarea"
         placeholder="输入消息..."
+        rows="1"
         :disabled="sending"
-        @keydown.enter="handleSend"
+        @keydown.enter.exact.prevent="handleSend"
+        @input="autoResize"
       />
       <BaseButton size="sm" :disabled="!inputText.trim() || sending" @click="handleSend">
         发送
@@ -57,6 +60,7 @@ const messages = ref<ChatMessage[]>([]);
 const inputText = ref('');
 const sending = ref(false);
 const messagesEl = ref<HTMLElement | null>(null);
+const { textareaRef, autoResize, resetHeight } = useAutoResize();
 
 async function loadMessages() {
   messages.value = await $fetch<ChatMessage[]>(
@@ -86,6 +90,7 @@ async function handleSend() {
   if (!content || sending.value) return;
 
   inputText.value = '';
+  resetHeight();
   sending.value = true;
 
   // Optimistic: add user message locally
@@ -239,14 +244,22 @@ async function handleClear() {
   border-top: 1px solid var(--color-border);
 }
 
-.inputArea input {
+.chatTextarea {
   flex: 1;
   padding: var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 14px;
+  font-family: inherit;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
+  resize: none;
+  overflow-y: auto;
+  outline: none;
+}
+
+.chatTextarea:focus {
+  border-color: var(--color-accent);
 }
 
 @media (max-width: 768px) {

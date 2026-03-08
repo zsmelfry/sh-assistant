@@ -26,11 +26,13 @@
 
     <div class="chat-input">
       <textarea
+        ref="textareaRef"
         v-model="inputText"
         class="input-field"
         placeholder="问小爽任何关于你成长的问题..."
-        rows="2"
+        rows="1"
         @keydown.enter.ctrl="sendMessage"
+        @input="autoResize"
       />
       <BaseButton :disabled="!inputText.trim() || store.isLoading" @click="sendMessage">
         发送
@@ -49,11 +51,13 @@ defineEmits<{
 const store = useXiaoshuangStore();
 const inputText = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
+const { textareaRef, autoResize, resetHeight } = useAutoResize();
 
 async function sendMessage() {
   const text = inputText.value.trim();
   if (!text || store.isLoading) return;
   inputText.value = '';
+  resetHeight();
   store.send(text);
   scrollToBottom();
 }
