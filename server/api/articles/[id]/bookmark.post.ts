@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { articles, articleBookmarks } from '~/server/database/schema';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '文章');
@@ -35,6 +36,14 @@ export default defineEventHandler(async (event) => {
     notes: body.notes || null,
     bookmarkedAt: Date.now(),
   }).returning();
+
+  // Get article title for activity log
+  const [articleRow] = await db.select({ title: articles.title }).from(articles).where(eq(articles.id, id)).limit(1);
+  logActivity({
+    source: 'article',
+    sourceRef: `article:${id}`,
+    description: `收藏文章：${articleRow?.title ?? '未知'}`,
+  }).catch(() => {});
 
   setResponseStatus(event, 201);
   return result[0];

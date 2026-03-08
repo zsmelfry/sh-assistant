@@ -6,6 +6,7 @@ import { vocabStatusHistory } from '../../../database/schemas/vocab';
 import { calculateNextReview, AUTO_MASTERY_INTERVAL_DAYS } from '../../../utils/srs-algorithm';
 import type { StudyQuality } from '../../../utils/srs-algorithm';
 import { formatDate } from '../../../utils/date';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -151,6 +152,12 @@ export default defineEventHandler(async (event) => {
       });
     }
   }
+
+  // Log activity for ability system (daily dedup via logActivity)
+  logActivity({
+    source: 'vocab',
+    description: '法语词汇复习',
+  }).catch(() => {});
 
   return {
     card: {

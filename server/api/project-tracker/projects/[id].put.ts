@@ -2,13 +2,17 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { ptProjects, ptCategories, PT_STATUSES, PT_PRIORITIES } from '~/server/database/schema';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
+import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '事项');
   const body = await readBody(event);
   const db = useDB();
 
-  await requireEntity(db, ptProjects, id, '事项');
+  const [existing] = await db.select().from(ptProjects).where(eq(ptProjects.id, id)).limit(1);
+  if (!existing) {
+    throw createError({ statusCode: 404, message: '事项不存在' });
+  }
 
   const updates: Record<string, any> = { updatedAt: Date.now() };
 
@@ -58,6 +62,15 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.update(ptProjects).set(updates).where(eq(ptProjects.id, id));
+
+  // Log activity when project status changes to done
+  if (body.status === 'done' && existing.status !== 'done') {
+    logActivity({
+      source: 'project',
+      sourceRef: `project:${id}`,
+      description: `完成项目：${existing.title}`,
+    }).catch(() => {});
+  }
 
   const [updated] = await db.select().from(ptProjects).where(eq(ptProjects.id, id)).limit(1);
   return updated;
