@@ -6,7 +6,6 @@ import type {
   RadarPoint,
   SkillTemplate,
   AbilityView,
-  FocusPlan,
   Badge,
 } from '~/tools/ability-profile/types';
 
@@ -18,7 +17,6 @@ export const useAbilityStore = defineStore('ability', () => {
   const templates = ref<SkillTemplate[]>([]);
   const currentSkill = ref<SkillDetail | null>(null);
   const currentView = ref<AbilityView>({ type: 'dashboard' });
-  const focusPlans = ref<FocusPlan[]>([]);
   const allBadges = ref<Badge[]>([]);
   const loading = ref(false);
 
@@ -71,10 +69,6 @@ export const useAbilityStore = defineStore('ability', () => {
     }
   }
 
-  async function loadFocusPlans() {
-    focusPlans.value = await $fetch<FocusPlan[]>('/api/focus-plans');
-  }
-
   async function loadBadges() {
     allBadges.value = await $fetch<Badge[]>('/api/badges');
   }
@@ -82,7 +76,7 @@ export const useAbilityStore = defineStore('ability', () => {
   async function loadDashboard() {
     loading.value = true;
     try {
-      await Promise.all([loadCategories(), loadSkills(), loadRadar(), loadFocusPlans(), loadBadges()]);
+      await Promise.all([loadCategories(), loadSkills(), loadRadar(), loadBadges()]);
     } finally {
       loading.value = false;
     }
@@ -169,28 +163,6 @@ export const useAbilityStore = defineStore('ability', () => {
     await loadSkillDetail(skillId);
   }
 
-  // ===== Focus Plans =====
-  async function createFocusPlan(data: { skillId: number; targetTier: number; targetDate: string }) {
-    await $fetch('/api/focus-plans', { method: 'POST', body: data });
-    await loadFocusPlans();
-  }
-
-  async function updateFocusPlan(id: number, data: Partial<{ status: string; targetDate: string }>) {
-    await $fetch(`/api/focus-plans/${id}`, { method: 'PATCH', body: data });
-    await loadFocusPlans();
-  }
-
-  async function deleteFocusPlan(id: number) {
-    await $fetch(`/api/focus-plans/${id}`, { method: 'DELETE' });
-    await loadFocusPlans();
-  }
-
-  async function generateStrategy(planId: number) {
-    const result = await $fetch<{ strategy: string }>(`/api/focus-plans/${planId}/generate-strategy`, { method: 'POST' });
-    await loadFocusPlans();
-    return result.strategy;
-  }
-
   // ===== Activities & Snapshots =====
   async function loadActivities(params?: { skillId?: number; from?: string; to?: string }) {
     const query = new URLSearchParams();
@@ -227,7 +199,6 @@ export const useAbilityStore = defineStore('ability', () => {
     templates,
     currentSkill,
     currentView,
-    focusPlans,
     allBadges,
     loading,
     // Computed
@@ -242,7 +213,6 @@ export const useAbilityStore = defineStore('ability', () => {
     loadTemplates,
     loadSkillDetail,
     loadDashboard,
-    loadFocusPlans,
     loadBadges,
     // Skills
     createSkill,
@@ -253,11 +223,6 @@ export const useAbilityStore = defineStore('ability', () => {
     addMilestone,
     deleteMilestone,
     generateMilestones,
-    // Focus Plans
-    createFocusPlan,
-    updateFocusPlan,
-    deleteFocusPlan,
-    generateStrategy,
     // Activities & Snapshots
     loadActivities,
     loadSnapshots,

@@ -84,19 +84,6 @@ const items = computed<AgendaItem[]>(() => {
     });
   }
 
-  // Ability focus plans
-  if (props.summary.ability && props.summary.ability.focusPlans.length > 0) {
-    for (const fp of props.summary.ability.focusPlans) {
-      result.push({
-        key: `focus-${fp.skillName}`,
-        label: `焦点: ${fp.skillName}`,
-        done: false,
-        link: '/ability-profile',
-        count: `目标${fp.targetDate}`,
-      });
-    }
-  }
-
   return result;
 });
 </script>

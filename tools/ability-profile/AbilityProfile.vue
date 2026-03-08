@@ -21,21 +21,6 @@
         <!-- Radar chart -->
         <RadarChart :points="store.radarData" />
 
-        <!-- Focus plans -->
-        <div v-if="store.focusPlans.length > 0" class="focus-section">
-          <h3 class="section-title">焦点计划</h3>
-          <div class="focus-list">
-            <FocusPlanCard
-              v-for="plan in store.focusPlans"
-              :key="plan.id"
-              :plan="plan"
-              @view-skill="store.switchView({ type: 'skill-detail', skillId: $event })"
-              @generate-strategy="handleGenerateStrategy"
-              @abandon="handleAbandonPlan"
-            />
-          </div>
-        </div>
-
         <!-- Skills list -->
         <div class="skills-section">
           <div class="skills-header">
@@ -144,7 +129,6 @@ import SkillCard from './components/SkillCard.vue';
 import SkillDetailPage from './components/SkillDetailPage.vue';
 import AddSkillModal from './components/AddSkillModal.vue';
 import MilestoneVerifyModal from './components/MilestoneVerifyModal.vue';
-import FocusPlanCard from './components/FocusPlanCard.vue';
 import BadgeWall from './components/BadgeWall.vue';
 import OnboardingChat from './components/OnboardingChat.vue';
 import GrowthCurve from './components/GrowthCurve.vue';
@@ -224,15 +208,6 @@ const recentBadges = computed(() =>
   store.allBadges.filter((b) => b.awarded).slice(-3),
 );
 
-async function handleGenerateStrategy(planId: number) {
-  await store.generateStrategy(planId);
-}
-
-async function handleAbandonPlan(planId: number) {
-  if (!confirm('确定放弃此焦点计划？')) return;
-  await store.updateFocusPlan(planId, { status: 'abandoned' });
-}
-
 async function handleOnboardingDone() {
   await store.loadDashboard();
   store.switchView({ type: 'dashboard' });
@@ -292,17 +267,6 @@ async function handleDeleteSkill() {
   display: flex;
   gap: var(--spacing-sm);
   justify-content: center;
-}
-
-.focus-section {
-  margin-top: var(--spacing-lg);
-}
-
-.focus-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
 }
 
 .badges-section {

@@ -5,7 +5,7 @@ import {
   plannerDomains, plannerGoals, plannerCheckitems,
   vocabWords, vocabProgress, LEARNING_STATUS,
   srsCards,
-  skills, milestones, milestoneCompletions, abilityCategories, skillCurrentState, activityLogs, focusPlans,
+  skills, milestones, milestoneCompletions, abilityCategories, skillCurrentState, activityLogs,
   articles, articleBookmarks,
   ptProjects, ptChecklistItems,
 } from '~/server/database/schema';
@@ -44,7 +44,6 @@ export interface SkillLearningSummary {
 
 export interface AbilitySummary {
   skills: Array<{ name: string; tier: number; tierName: string; categoryName: string }>;
-  focusPlans: Array<{ skillName: string; targetTier: number; targetDate: string }>;
   radarScores: Array<{ categoryName: string; score: number }>;
   totalMilestones: number;
   completedMilestones: number;
@@ -188,12 +187,6 @@ export function formatContextForPrompt(ctx: Partial<GlobalContext>): string {
       }
     }
     parts.push(`里程碑进度: ${a.completedMilestones}/${a.totalMilestones}`);
-    if (a.focusPlans.length > 0) {
-      parts.push(`焦点计划:`);
-      for (const fp of a.focusPlans) {
-        parts.push(`- ${fp.skillName}: 目标${TIER_NAMES[fp.targetTier] || fp.targetTier}, 截止${fp.targetDate}`);
-      }
-    }
     if (a.radarScores.length > 0) {
       parts.push(`雷达图: ${a.radarScores.map(r => `${r.categoryName}=${r.score}`).join(', ')}`);
     }
@@ -407,15 +400,6 @@ async function collectAbilityContext(db: BetterSQLite3Database<any>): Promise<Ab
     .leftJoin(abilityCategories, eq(abilityCategories.id, skills.categoryId))
     .where(eq(skills.status, 'active'));
 
-  // Focus plans
-  const plans = await db.select({
-    skillName: skills.name,
-    targetTier: focusPlans.targetTier,
-    targetDate: focusPlans.targetDate,
-  }).from(focusPlans)
-    .leftJoin(skills, eq(skills.id, focusPlans.skillId))
-    .where(eq(focusPlans.status, 'active'));
-
   // Radar scores
   const categories = await db.select().from(abilityCategories).orderBy(abilityCategories.sortOrder);
   const grouped = new Map<string, number[]>();
@@ -444,11 +428,6 @@ async function collectAbilityContext(db: BetterSQLite3Database<any>): Promise<Ab
       tier: s.tier,
       tierName: TIER_NAMES[s.tier] || '未知',
       categoryName: s.categoryName || '未知',
-    })),
-    focusPlans: plans.map(p => ({
-      skillName: p.skillName || '未知技能',
-      targetTier: p.targetTier,
-      targetDate: p.targetDate,
     })),
     radarScores,
     totalMilestones: milestoneStats?.total || 0,

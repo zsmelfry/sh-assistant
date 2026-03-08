@@ -88,7 +88,7 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 - `/api/articles` + `/api/bookmarks` + `/api/article-tags` — Article fetch/translate/chat, bookmarks, tags
 - `/api/ability-skills` + `/api/ability-categories` + `/api/ability-stats` + `/api/skill-templates` — Ability Profile system
 - `/api/project-tracker` — Project/task tracking
-- `/api/dashboard` + `/api/focus-plans` + `/api/badges` — Dashboard, daily focus plans, badges/gamification
+- `/api/dashboard` + `/api/badges` — Dashboard, badges/gamification
 - `/api/xiaoshuang` — Xiaoshuang AI assistant chat
 - `/api/skills/[skillId]` — Skill Learning Core: knowledge tree, AI teaching (SSE), AI chat, learning status/stages, practice tasks, notes, recommendations, stats, article linking, activities (hourly dedup), heatmap/streak, seed data import. Data isolated by `skillId` column.
 - `/api/skill-configs` — Skill configuration management

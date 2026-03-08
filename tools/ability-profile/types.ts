@@ -122,20 +122,6 @@ export const MILESTONE_TYPE_LABELS: Record<string, string> = {
   quality: '质量',
 };
 
-export interface FocusPlan {
-  id: number;
-  skillId: number;
-  skillName: string;
-  skillCurrentTier: number;
-  currentTier: number;
-  targetTier: number;
-  targetDate: string;
-  strategy: string | null;
-  status: 'active' | 'achieved' | 'abandoned';
-  createdAt: number;
-  updatedAt: number;
-}
-
 export interface Badge {
   id: number;
   key: string;
