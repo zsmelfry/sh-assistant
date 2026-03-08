@@ -4,6 +4,7 @@ import { skills, milestones, skillCurrentState, abilityCategories } from '~/serv
 import { SKILL_TEMPLATES } from '~/server/database/seeds/skill-templates';
 import { requireNonEmpty } from '~/server/utils/handler-helpers';
 import { logActivity } from '~/server/lib/ability/log-activity';
+import { checkBadgesOnSkillChange } from '~/server/lib/ability/badge-check';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -96,6 +97,9 @@ export default defineEventHandler(async (event) => {
     source: 'manual',
     description: `添加技能：${name}`,
   });
+
+  // Check if new skill triggers badge awards
+  checkBadgesOnSkillChange(db, 'create').catch(() => {});
 
   setResponseStatus(event, 201);
   return inserted;

@@ -115,6 +115,7 @@ export const badgeAwards = sqliteTable('badge_awards', {
   skillId: integer('skill_id')
     .references(() => skills.id, { onDelete: 'set null' }),
   milestoneId: integer('milestone_id'),
+  historical: integer('historical', { mode: 'boolean' }).notNull().default(false),
   awardedAt: integer('awarded_at', { mode: 'number' }).notNull(),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [

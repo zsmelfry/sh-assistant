@@ -85,6 +85,81 @@ export async function checkAndAwardBadges(
   return results;
 }
 
+/**
+ * Check badges when skills are created or deleted.
+ * On create: may trigger lifelong_learner or polymath.
+ * On delete: mark badges as historical if conditions no longer met.
+ */
+export async function checkBadgesOnSkillChange(
+  db: DB,
+  action: 'create' | 'delete',
+): Promise<void> {
+  const allBadges = await db.select().from(badges);
+  if (allBadges.length === 0) return;
+
+  const now = Date.now();
+
+  if (action === 'create') {
+    const awardedBadges = await db.select().from(badgeAwards);
+    const awardedKeys = new Set(
+      awardedBadges.map((a) => allBadges.find((b) => b.id === a.badgeId)?.key).filter(Boolean),
+    );
+
+    // Check lifelong_learner
+    if (!awardedKeys.has('lifelong_learner')) {
+      const [count] = await db.select({ count: sql<number>`count(*)` })
+        .from(skills).where(eq(skills.status, 'active'));
+      if (count.count >= 3) {
+        await awardBadge(db, allBadges, 'lifelong_learner', 0, now);
+      }
+    }
+
+    // Check polymath
+    if (!awardedKeys.has('polymath')) {
+      const cats = await db.select({ categoryId: skills.categoryId })
+        .from(skills)
+        .where(sql`${skills.currentTier} >= 2 AND ${skills.status} = 'active'`)
+        .groupBy(skills.categoryId);
+      if (cats.length >= 5) {
+        await awardBadge(db, allBadges, 'polymath', 0, now);
+      }
+    }
+  }
+
+  if (action === 'delete') {
+    // Re-validate existing awards
+    const awarded = await db.select({
+      awardId: badgeAwards.id,
+      badgeId: badgeAwards.badgeId,
+      historical: badgeAwards.historical,
+    }).from(badgeAwards);
+
+    for (const award of awarded) {
+      const badge = allBadges.find((b) => b.id === award.badgeId);
+      if (!badge) continue;
+
+      let stillValid = true;
+
+      if (badge.key === 'lifelong_learner') {
+        const [count] = await db.select({ count: sql<number>`count(*)` })
+          .from(skills).where(eq(skills.status, 'active'));
+        stillValid = count.count >= 3;
+      } else if (badge.key === 'polymath') {
+        const cats = await db.select({ categoryId: skills.categoryId })
+          .from(skills)
+          .where(sql`${skills.currentTier} >= 2 AND ${skills.status} = 'active'`)
+          .groupBy(skills.categoryId);
+        stillValid = cats.length >= 5;
+      }
+
+      if (!stillValid && !award.historical) {
+        await db.update(badgeAwards).set({ historical: true })
+          .where(eq(badgeAwards.id, award.awardId));
+      }
+    }
+  }
+}
+
 async function awardBadge(
   db: DB,
   allBadges: Array<{ id: number; key: string; name: string }>,

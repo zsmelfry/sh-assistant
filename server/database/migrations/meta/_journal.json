@@ -176,6 +176,13 @@
       "when": 1773230000000,
       "tag": "0024_dashboard_insights",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1773320000000,
+      "tag": "0025_badge_awards_historical",
+      "breakpoints": true
     }
   ]
 }
