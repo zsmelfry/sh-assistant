@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLite. Uses a monochrome black/white design system with JWT authentication for LAN access.
 
-**Tool modules:** Habit Tracker (日历打卡), Vocab Tracker (法语词汇), Annual Planner (年度计划), Article Reader (文章阅读), Startup Map (创业地图)
+**Tool modules** (ordered by sidebar `order`): Dashboard (今日), Ability Profile (能力画像), Annual Planner (年度计划), Habit Tracker (日历打卡), Project Tracker (事项追踪), Article Reader (文章阅读), Vocab Tracker (法语词汇), Skill Manager (技能管理). Skill-based tools (e.g. Startup Map) are dynamically registered via the Skill Learning Core.
+
+**Xiaoshuang (小爽):** A global AI assistant overlay accessible from any tool, with its own store (`stores/xiaoshuang.ts`) and API at `/api/xiaoshuang/chat`.
 
 ## Commands
 
@@ -84,8 +86,13 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 - `/api/vocab` — Word import/list, progress tracking, SRS spaced repetition
 - `/api/planner` — Domains, goals, check items, tags, stats (overview/by-domain/by-tag)
 - `/api/articles` + `/api/bookmarks` + `/api/article-tags` — Article fetch/translate/chat, bookmarks, tags
-- `/api/skills/[skillId]` — Skill Learning Core: knowledge tree (domains/topics/points), AI teaching generation (SSE), AI chat, learning status, learning stages, practice tasks (AI-generated), notes (upsert), recommendations, stats (overview/by-domain), article linking (bidirectional), learning activities (with hourly dedup), heatmap/streak, seed data import. Data isolated by `skillId` column on root tables (sm_domains, sm_stages, sm_activities).
-- `/api/startup-map/products` — Startup-map specific: multi-product management (CRUD, activate, profile)
+- `/api/ability-skills` + `/api/ability-categories` + `/api/ability-stats` + `/api/skill-templates` — Ability Profile system
+- `/api/project-tracker` — Project/task tracking
+- `/api/dashboard` + `/api/focus-plans` + `/api/badges` — Dashboard, daily focus plans, badges/gamification
+- `/api/xiaoshuang` — Xiaoshuang AI assistant chat
+- `/api/skills/[skillId]` — Skill Learning Core: knowledge tree, AI teaching (SSE), AI chat, learning status/stages, practice tasks, notes, recommendations, stats, article linking, activities (hourly dedup), heatmap/streak, seed data import. Data isolated by `skillId` column.
+- `/api/skill-configs` — Skill configuration management
+- `/api/songs` — Song-related features
 - `/api/llm` — Provider CRUD, model discovery, chat, translation
 - `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`, blocked in production)
 
@@ -103,6 +110,8 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 - `useLlm` — LLM provider management, chat, translation
 - `useTts` — Web Speech API wrapper (French voice preference)
 - `useIsMobile` — Responsive breakpoint detection (768px)
+
+**Pinia stores** (`stores/`): `habit`, `vocab`, `planner`, `article-reader`, `study`, `ability`, `project-tracker`, `xiaoshuang` (global AI assistant state)
 
 ### LLM Integration
 

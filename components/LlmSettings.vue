@@ -23,7 +23,8 @@
       <div class="formRow">
         <label class="formLabel">类型</label>
         <select v-model="newProvider.provider" class="formInput">
-          <option value="claude">Claude</option>
+          <option value="claude">Claude (CLI)</option>
+          <option value="claude-api">Claude (API)</option>
           <option value="ollama">Ollama</option>
           <option value="openai">OpenAI</option>
         </select>
@@ -36,13 +37,13 @@
         <label class="formLabel">模型</label>
         <input v-model="newProvider.modelName" class="formInput" placeholder="模型标识" />
       </div>
-      <div v-if="newProvider.provider !== 'claude'" class="formRow">
+      <div v-if="newProvider.provider === 'ollama' || newProvider.provider === 'openai'" class="formRow">
         <label class="formLabel">端点</label>
         <input v-model="newProvider.endpoint" class="formInput" placeholder="http://localhost:11434" />
       </div>
-      <div v-if="newProvider.provider === 'openai'" class="formRow">
+      <div v-if="newProvider.provider === 'claude-api' || newProvider.provider === 'openai'" class="formRow">
         <label class="formLabel">API Key</label>
-        <input v-model="newProvider.apiKey" class="formInput" type="password" placeholder="sk-..." />
+        <input v-model="newProvider.apiKey" class="formInput" type="password" placeholder="sk-ant-..." />
       </div>
       <div class="formActions">
         <button class="cancelBtn" @click="showAddForm = false">取消</button>

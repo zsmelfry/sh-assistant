@@ -1,6 +1,6 @@
 /** Provider 类型 */
-export type ProviderType = 'claude' | 'ollama' | 'openai';
-export const VALID_PROVIDERS: readonly string[] = ['claude', 'ollama', 'openai'];
+export type ProviderType = 'claude' | 'claude-api' | 'ollama' | 'openai';
+export const VALID_PROVIDERS: readonly string[] = ['claude', 'claude-api', 'ollama', 'openai'];
 
 /** 聊天消息 */
 export interface ChatMessage {

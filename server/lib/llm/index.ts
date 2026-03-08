@@ -16,6 +16,7 @@ export {
 // Provider 实现
 export { BaseLlmProvider } from './base-provider';
 export { ClaudeProvider, type ClaudeModel } from './claude-provider';
+export { ClaudeApiProvider, type ClaudeApiModel } from './claude-api-provider';
 export { OllamaProvider, type OllamaModelDetails } from './ollama-provider';
 
 // 工厂
