@@ -169,6 +169,13 @@
       "when": 1773140000000,
       "tag": "0023_coach_focus_badges",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1773230000000,
+      "tag": "0024_dashboard_insights",
+      "breakpoints": true
     }
   ]
 }

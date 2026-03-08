@@ -12,3 +12,4 @@ export * from './schemas/project-tracker';
 export * from './schemas/music-ear';
 export * from './schemas/ability';
 export * from './schemas/coach';
+export * from './schemas/dashboard';
