@@ -2,6 +2,8 @@
   <div class="dashboard">
     <GreetingBanner :summary="summary" />
 
+    <ClaimableMilestones />
+
     <DailyInsight />
 
     <div class="dashboard-grid">
@@ -15,6 +17,7 @@
 
 <script setup lang="ts">
 import GreetingBanner from './components/GreetingBanner.vue';
+import ClaimableMilestones from './components/ClaimableMilestones.vue';
 import DailyInsight from './components/DailyInsight.vue';
 import TodayAgenda from './components/TodayAgenda.vue';
 import QuickStats from './components/QuickStats.vue';
