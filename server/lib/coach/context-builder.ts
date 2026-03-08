@@ -87,7 +87,7 @@ const CONTEXT_RULES: Array<{ pattern: RegExp; sources: (keyof GlobalContext)[] }
   { pattern: /能力|技能|等级|段位|雷达|里程碑|成长|tier/, sources: ['ability'] },
   { pattern: /文章|阅读|书签|article/, sources: ['articles'] },
   { pattern: /项目|事项|任务|project/, sources: ['projects'] },
-  { pattern: /整体|全面|总结|回顾|情况|状态|所有/, sources: ['habits', 'planner', 'vocab', 'skillLearning', 'ability'] },
+  { pattern: /整体|全面|总结|回顾|情况|状态|所有/, sources: ['habits', 'planner', 'vocab', 'skillLearning', 'ability', 'articles', 'projects'] },
 ];
 
 const DEFAULT_SOURCES: (keyof GlobalContext)[] = ['habits', 'ability'];
