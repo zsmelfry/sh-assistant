@@ -1,10 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { skills, milestones, abilityCategories } from '~/server/database/schema';
-import { requireNumericParam } from '~/server/utils/handler-helpers';
+import { skills, milestones, abilityCategories, VALID_MILESTONE_TYPES, VALID_VERIFY_METHODS } from '~/server/database/schema';
+import { requireNumericParam, throwLlmError } from '~/server/utils/handler-helpers';
 import type { ChatMessage } from '~/server/lib/llm';
 import { resolveProvider } from '~/server/utils/llm-provider';
-import { throwLlmError } from '~/server/utils/handler-helpers';
 
 const GENERATE_SYSTEM_PROMPT = `你是一个技能学习专家。为以下技能生成里程碑体系。
 
@@ -80,15 +79,12 @@ export default defineEventHandler(async (event) => {
 
     // Insert milestones
     const now = Date.now();
-    const validTypes = ['quantity', 'consistency', 'achievement', 'quality'];
-    const validMethods = ['platform_auto', 'platform_test', 'evidence', 'self_declare'];
-
     const toInsert = parsed.milestones
       .filter((m: any) =>
         m.tier >= 1 && m.tier <= 5 &&
         m.title &&
-        validTypes.includes(m.type) &&
-        validMethods.includes(m.verify),
+        VALID_MILESTONE_TYPES.includes(m.type) &&
+        VALID_VERIFY_METHODS.includes(m.verify),
       )
       .map((m: any, idx: number) => ({
         skillId,

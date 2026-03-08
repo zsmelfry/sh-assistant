@@ -56,11 +56,14 @@ defineEmits<{
 
 const verifyIcon = computed(() => {
   switch (props.milestone.verifyMethod) {
-    case 'platform_auto': return '●';
-    case 'platform_test': return '●';
-    case 'evidence': return '◐';
-    case 'self_declare': return '○';
-    default: return '○';
+    case 'platform_auto':
+    case 'platform_test':
+      return '●';
+    case 'evidence':
+      return '◐';
+    case 'self_declare':
+    default:
+      return '○';
   }
 });
 

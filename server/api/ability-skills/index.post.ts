@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { skills, milestones, skillCurrentState, abilityCategories } from '~/server/database/schema';
+import { skills, milestones, skillCurrentState, abilityCategories, VALID_MILESTONE_TYPES, VALID_VERIFY_METHODS } from '~/server/database/schema';
 import { SKILL_TEMPLATES } from '~/server/database/seeds/skill-templates';
 import { requireNonEmpty } from '~/server/utils/handler-helpers';
 import { logActivity } from '~/server/lib/ability/log-activity';
@@ -57,11 +57,8 @@ export default defineEventHandler(async (event) => {
 
   if (customMilestones && customMilestones.length > 0) {
     // User-provided milestones (from preview/edit flow)
-    const validTypes = ['quantity', 'consistency', 'achievement', 'quality'];
-    const validMethods = ['platform_auto', 'platform_test', 'evidence', 'self_declare'];
-
     const toInsert = customMilestones
-      .filter((m) => m.tier >= 1 && m.tier <= 5 && m.title && validTypes.includes(m.type) && validMethods.includes(m.verify))
+      .filter((m) => m.tier >= 1 && m.tier <= 5 && m.title && (VALID_MILESTONE_TYPES as readonly string[]).includes(m.type) && (VALID_VERIFY_METHODS as readonly string[]).includes(m.verify))
       .map((m, idx) => ({
         skillId: inserted.id,
         tier: m.tier,

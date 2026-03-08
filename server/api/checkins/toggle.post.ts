@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { checkins, habits } from '~/server/database/schema';
+import { checkins, habits, skills } from '~/server/database/schema';
 import { isValidDate } from '~/server/utils/date';
 import { logActivity } from '~/server/lib/ability/log-activity';
 
@@ -65,9 +65,8 @@ export default defineEventHandler(async (event) => {
     };
 
     if (habit?.linkedAbilitySkillId) {
-      const { skills: skillsTable } = await import('~/server/database/schema');
-      const [skill] = await db.select({ id: skillsTable.id, categoryId: skillsTable.categoryId })
-        .from(skillsTable).where(eq(skillsTable.id, habit.linkedAbilitySkillId)).limit(1);
+      const [skill] = await db.select({ id: skills.id, categoryId: skills.categoryId })
+        .from(skills).where(eq(skills.id, habit.linkedAbilitySkillId)).limit(1);
       if (skill) {
         activityParams.skillId = skill.id;
         activityParams.categoryId = skill.categoryId;

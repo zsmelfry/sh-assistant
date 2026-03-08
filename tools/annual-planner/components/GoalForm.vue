@@ -113,16 +113,7 @@ const linkedAbilitySkillId = ref<number | null>(null);
 const selectedTagIds = ref<Set<number>>(new Set());
 const titleRef = ref<HTMLInputElement | null>(null);
 const submitting = ref(false);
-const abilitySkills = ref<Array<{ id: number; name: string; categoryName: string }>>([]);
-
-onMounted(async () => {
-  try {
-    const rows = await $fetch<Array<{ id: number; name: string; categoryName: string }>>('/api/ability-skills?status=active');
-    abilitySkills.value = rows;
-  } catch {
-    // Ability module may not have data yet
-  }
-});
+const { abilitySkills } = useAbilitySkillOptions();
 
 const priorities = [
   { value: 'high' as const, label: PRIORITY_LABELS.high },

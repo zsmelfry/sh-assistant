@@ -1,6 +1,6 @@
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, isNotNull, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { skills, milestones, milestoneCompletions, TIER_NAMES } from '~/server/database/schema';
+import { skills, milestones, milestoneCompletions } from '~/server/database/schema';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 import { logActivity } from '~/server/lib/ability/log-activity';
 import { checkBadgesOnSkillChange } from '~/server/lib/ability/badge-check';
@@ -30,53 +30,41 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '里程碑尚未完成，无法回滚' });
   }
 
-  // Check no higher-tier milestones are completed (can't skip tiers)
-  const higherTierMilestones = await db.select({ id: milestones.id })
+  // Check no higher-tier milestones are completed (single query with join)
+  const completedHigherTier = await db.select({ id: milestones.id })
     .from(milestones)
-    .where(and(eq(milestones.skillId, skillId), gt(milestones.tier, milestone.tier)));
+    .innerJoin(milestoneCompletions, eq(milestoneCompletions.milestoneId, milestones.id))
+    .where(and(eq(milestones.skillId, skillId), gt(milestones.tier, milestone.tier)))
+    .limit(1);
 
-  if (higherTierMilestones.length > 0) {
-    for (const hm of higherTierMilestones) {
-      const [comp] = await db.select({ id: milestoneCompletions.id })
-        .from(milestoneCompletions)
-        .where(eq(milestoneCompletions.milestoneId, hm.id))
-        .limit(1);
-      if (comp) {
-        throw createError({
-          statusCode: 400,
-          message: '存在更高段位的已完成里程碑，请先回滚更高段位的里程碑',
-        });
-      }
-    }
+  if (completedHigherTier.length > 0) {
+    throw createError({
+      statusCode: 400,
+      message: '存在更高段位的已完成里程碑，请先回滚更高段位的里程碑',
+    });
   }
 
   // Delete the completion record
   await db.delete(milestoneCompletions).where(eq(milestoneCompletions.milestoneId, id));
 
-  // Check if we need to downgrade currentTier
-  // currentTier should be the highest tier where ALL milestones are complete
+  // Calculate new tier: highest tier where ALL milestones are complete (single query)
+  // For each tier, compare total milestones vs completed milestones
+  const tierStats = await db
+    .select({
+      tier: milestones.tier,
+      total: sql<number>`count(*)`,
+      completed: sql<number>`count(${milestoneCompletions.id})`,
+    })
+    .from(milestones)
+    .leftJoin(milestoneCompletions, eq(milestoneCompletions.milestoneId, milestones.id))
+    .where(eq(milestones.skillId, skillId))
+    .groupBy(milestones.tier)
+    .orderBy(milestones.tier);
+
   let newTier = 0;
-  for (let tier = 1; tier <= 5; tier++) {
-    const tierMilestones = await db.select({ id: milestones.id })
-      .from(milestones)
-      .where(and(eq(milestones.skillId, skillId), eq(milestones.tier, tier)));
-
-    if (tierMilestones.length === 0) break;
-
-    let allComplete = true;
-    for (const tm of tierMilestones) {
-      const [comp] = await db.select({ id: milestoneCompletions.id })
-        .from(milestoneCompletions)
-        .where(eq(milestoneCompletions.milestoneId, tm.id))
-        .limit(1);
-      if (!comp) {
-        allComplete = false;
-        break;
-      }
-    }
-
-    if (allComplete) {
-      newTier = tier;
+  for (const row of tierStats) {
+    if (row.total > 0 && row.completed === row.total) {
+      newTier = row.tier;
     } else {
       break;
     }

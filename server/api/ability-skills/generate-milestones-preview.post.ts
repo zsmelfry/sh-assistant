@@ -1,4 +1,5 @@
 import { useDB } from '~/server/database';
+import { VALID_MILESTONE_TYPES, VALID_VERIFY_METHODS } from '~/server/database/schema';
 import type { ChatMessage } from '~/server/lib/llm';
 import { resolveProvider } from '~/server/utils/llm-provider';
 import { throwLlmError } from '~/server/utils/handler-helpers';
@@ -91,15 +92,12 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 502, message: 'AI 返回的数据格式无效' });
     }
 
-    const validTypes = ['quantity', 'consistency', 'achievement', 'quality'];
-    const validMethods = ['platform_auto', 'platform_test', 'evidence', 'self_declare'];
-
     const milestones = parsed.milestones
       .filter((m: any) =>
         m.tier >= 1 && m.tier <= 5 &&
         m.title &&
-        validTypes.includes(m.type) &&
-        validMethods.includes(m.verify),
+        VALID_MILESTONE_TYPES.includes(m.type) &&
+        VALID_VERIFY_METHODS.includes(m.verify),
       )
       .map((m: any, idx: number) => ({
         tier: m.tier,

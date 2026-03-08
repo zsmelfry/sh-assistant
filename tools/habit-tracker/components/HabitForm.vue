@@ -78,23 +78,13 @@ const frequency = ref<HabitFrequency>('daily');
 const linkedAbilitySkillId = ref<number | null>(null);
 const inputRef = ref<HTMLInputElement | null>(null);
 const submitting = ref(false);
-const abilitySkills = ref<Array<{ id: number; name: string; categoryName: string }>>([]);
+const { abilitySkills } = useAbilitySkillOptions();
 
 const frequencies = [
   { value: 'daily' as const, label: '每天' },
   { value: 'weekly' as const, label: '每周' },
   { value: 'monthly' as const, label: '每月' },
 ];
-
-// Load ability skills for linking
-onMounted(async () => {
-  try {
-    const rows = await $fetch<Array<{ id: number; name: string; categoryName: string }>>('/api/ability-skills?status=active');
-    abilitySkills.value = rows;
-  } catch {
-    // Ability module may not have data yet
-  }
-});
 
 // 打开时初始化表单
 watch(() => props.open, (isOpen) => {

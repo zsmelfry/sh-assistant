@@ -121,6 +121,10 @@ export const useAbilityStore = defineStore('ability', () => {
   }
 
   // ===== Milestone =====
+  async function reloadSkillAndDashboard(skillId: number) {
+    await Promise.all([loadSkillDetail(skillId), loadSkills(), loadRadar()]);
+  }
+
   async function completeMilestone(
     skillId: number,
     milestoneId: number,
@@ -134,13 +138,7 @@ export const useAbilityStore = defineStore('ability', () => {
       body: data || {},
     });
 
-    // Reload skill detail and radar
-    await Promise.all([
-      loadSkillDetail(skillId),
-      loadSkills(),
-      loadRadar(),
-    ]);
-
+    await reloadSkillAndDashboard(skillId);
     return result;
   }
 
@@ -153,12 +151,7 @@ export const useAbilityStore = defineStore('ability', () => {
       method: 'POST',
     });
 
-    await Promise.all([
-      loadSkillDetail(skillId),
-      loadSkills(),
-      loadRadar(),
-    ]);
-
+    await reloadSkillAndDashboard(skillId);
     return result;
   }
 

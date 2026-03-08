@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { useDB } from '~/server/database';
-import { milestones, skills } from '~/server/database/schema';
+import { milestones, skills, VALID_MILESTONE_TYPES, VALID_VERIFY_METHODS } from '~/server/database/schema';
 import { requireNumericParam, requireNonEmpty, requireEntity } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
@@ -16,13 +16,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '段位必须在 1-5 之间' });
   }
 
-  const validTypes = ['quantity', 'consistency', 'achievement', 'quality'];
-  if (!validTypes.includes(body.milestoneType)) {
+  if (!VALID_MILESTONE_TYPES.includes(body.milestoneType)) {
     throw createError({ statusCode: 400, message: '无效的里程碑类型' });
   }
 
-  const validMethods = ['platform_auto', 'platform_test', 'evidence', 'self_declare'];
-  if (!validMethods.includes(body.verifyMethod)) {
+  if (!VALID_VERIFY_METHODS.includes(body.verifyMethod)) {
     throw createError({ statusCode: 400, message: '无效的验证方式' });
   }
 

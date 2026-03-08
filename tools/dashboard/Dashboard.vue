@@ -25,15 +25,12 @@ import RecentActivity from './components/RecentActivity.vue';
 import type { DashboardSummary } from './types';
 
 const summary = ref<DashboardSummary | null>(null);
-const loading = ref(true);
 
 onMounted(async () => {
   try {
     summary.value = await $fetch<DashboardSummary>('/api/dashboard/summary');
   } catch {
     // silently fail
-  } finally {
-    loading.value = false;
   }
 });
 </script>
