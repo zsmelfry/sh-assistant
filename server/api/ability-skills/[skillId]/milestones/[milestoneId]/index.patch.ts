@@ -5,7 +5,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
-  const id = requireNumericParam(event, 'id', '里程碑');
+  const id = requireNumericParam(event, 'milestoneId', '里程碑');
   const body = await readBody(event);
   const db = useDB();
 
