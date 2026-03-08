@@ -4,7 +4,6 @@ import {
   plannerGoals, plannerCheckitems, plannerGoalTags, plannerTags,
 } from '~/server/database/schema';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
-import { STAGNANT_THRESHOLD_MS } from '~/server/utils/planner-stats';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '目标');
@@ -30,21 +29,11 @@ export default defineEventHandler(async (event) => {
   const totalCheckitems = checkitems.length;
   const completedCheckitems = checkitems.filter((c) => c.isCompleted).length;
 
-  let isStagnant = false;
-  if (totalCheckitems > 0 && completedCheckitems < totalCheckitems) {
-    const fourteenDaysAgo = Date.now() - STAGNANT_THRESHOLD_MS;
-    const latestActivity = Math.max(
-      ...checkitems.map((c) => c.completedAt ?? c.createdAt),
-    );
-    isStagnant = latestActivity < fourteenDaysAgo;
-  }
-
   return {
     ...goal,
     tags: goalTags,
     checkitems,
     totalCheckitems,
     completedCheckitems,
-    isStagnant,
   };
 });

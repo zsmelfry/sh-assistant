@@ -13,10 +13,6 @@
         <span class="statValue">{{ completionRate }}%</span>
         <span class="statLabel">完成率</span>
       </div>
-      <div v-if="stagnantGoalCount > 0" class="statItem stagnant">
-        <span class="statValue">{{ stagnantGoalCount }}</span>
-        <span class="statLabel">停滞目标</span>
-      </div>
     </div>
     <div class="progressBar">
       <div class="progressFill" :style="{ width: completionRate + '%' }" />
@@ -30,7 +26,6 @@ defineProps<{
   totalCheckitems: number;
   completedCheckitems: number;
   completionRate: number;
-  stagnantGoalCount: number;
 }>();
 </script>
 
@@ -64,10 +59,6 @@ defineProps<{
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-top: 2px;
-}
-
-.stagnant .statValue {
-  color: var(--color-warning);
 }
 
 .progressBar {

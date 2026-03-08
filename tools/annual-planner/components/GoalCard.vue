@@ -3,7 +3,6 @@
     class="goalCard"
     :class="{
       completed: isFullyCompleted,
-      stagnant: goal.isStagnant && !isFullyCompleted,
     }"
     :draggable="!isMobile"
     @dragstart="$emit('dragstart', $event)"
@@ -16,7 +15,6 @@
           {{ goal.title }}
         </h4>
         <PriorityBadge :priority="goal.priority" />
-        <StagnantBadge v-if="goal.isStagnant && !isFullyCompleted" />
         <span v-if="isFullyCompleted" class="completedMark">已完成</span>
       </div>
       <div class="actions">
@@ -63,7 +61,6 @@ import type { GoalWithDetails } from '../types';
 
 const isMobile = useIsMobile();
 import PriorityBadge from './PriorityBadge.vue';
-import StagnantBadge from './StagnantBadge.vue';
 import TagBadge from './TagBadge.vue';
 import CheckitemList from './CheckitemList.vue';
 
@@ -112,10 +109,6 @@ const progressPercent = computed(() => {
 
 .goalCard.completed {
   opacity: 0.7;
-}
-
-.goalCard.stagnant {
-  border-left: 3px solid var(--color-warning);
 }
 
 .cardHeader {

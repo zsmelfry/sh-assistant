@@ -3,7 +3,6 @@ import { useDB } from '~/server/database';
 import {
   plannerGoals, plannerCheckitems, plannerGoalTags, plannerTags,
 } from '~/server/database/schema';
-import { STAGNANT_THRESHOLD_MS } from '~/server/utils/planner-stats';
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -43,8 +42,6 @@ export default defineEventHandler(async (event) => {
     .innerJoin(plannerTags, eq(plannerGoalTags.tagId, plannerTags.id))
     .where(sql`${plannerGoalTags.goalId} in (${sql.join(goalIds.map((id) => sql`${id}`), sql`, `)})`);
 
-  const fourteenDaysAgo = Date.now() - STAGNANT_THRESHOLD_MS;
-
   return goals.map((goal) => {
     const checkitems = allCheckitems.filter((c) => c.goalId === goal.id);
     const tags = allGoalTags
@@ -54,22 +51,12 @@ export default defineEventHandler(async (event) => {
     const totalCheckitems = checkitems.length;
     const completedCheckitems = checkitems.filter((c) => c.isCompleted).length;
 
-    // Stagnant: has checkitems, not all completed, and no recent activity
-    let isStagnant = false;
-    if (totalCheckitems > 0 && completedCheckitems < totalCheckitems) {
-      const latestActivity = Math.max(
-        ...checkitems.map((c) => c.completedAt ?? c.createdAt),
-      );
-      isStagnant = latestActivity < fourteenDaysAgo;
-    }
-
     return {
       ...goal,
       tags,
       checkitems,
       totalCheckitems,
       completedCheckitems,
-      isStagnant,
     };
   });
 });

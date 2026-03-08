@@ -6,7 +6,6 @@
       :total-checkitems="stats.totalCheckitems"
       :completed-checkitems="stats.completedCheckitems"
       :completion-rate="stats.globalCompletionRate"
-      :stagnant-goal-count="stats.stagnantGoalCount"
     />
 
     <div class="domainHeader">

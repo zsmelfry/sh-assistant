@@ -38,7 +38,6 @@ export interface GoalWithDetails extends PlannerGoal {
   checkitems: PlannerCheckitem[];
   totalCheckitems: number;
   completedCheckitems: number;
-  isStagnant: boolean;
 }
 
 export interface PlannerCheckitem {
@@ -63,7 +62,6 @@ export interface OverviewStats {
   totalCheckitems: number;
   completedCheckitems: number;
   globalCompletionRate: number;
-  stagnantGoalCount: number;
   domains: DomainWithStats[];
 }
 

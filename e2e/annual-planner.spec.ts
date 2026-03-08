@@ -698,47 +698,6 @@ test.describe('年度计划 - 级联删除', () => {
   });
 });
 
-// ─── 停滞检测 ───
-
-test.describe('年度计划 - 停滞检测', () => {
-  test('新创建的目标不显示停滞标记', async ({ page }) => {
-    const domainId = await apiCreateDomain(page, '事业');
-    const goalId = await apiCreateGoal(page, domainId, '新目标');
-    await apiCreateCheckitem(page, goalId, '步骤1');
-    await goToPlanner(page);
-    await navigateToDomain(page, '事业');
-
-    const goalCard = page.locator('.goalCard').filter({ hasText: '新目标' });
-    await expect(goalCard).toBeVisible();
-    // StagnantBadge should not be rendered
-    await expect(goalCard.locator('.stagnantBadge')).not.toBeVisible();
-  });
-
-  test('100% 完成的目标不显示停滞标记', async ({ page }) => {
-    const domainId = await apiCreateDomain(page, '事业');
-    const goalId = await apiCreateGoal(page, domainId, '完成目标');
-    const itemId = await apiCreateCheckitem(page, goalId, '唯一步骤');
-    await apiToggleCheckitem(page, itemId);
-    await goToPlanner(page);
-    await navigateToDomain(page, '事业');
-
-    const goalCard = page.locator('.goalCard').filter({ hasText: '完成目标' });
-    await expect(goalCard.locator('.stagnantBadge')).not.toBeVisible();
-    await expect(goalCard.locator('.completedMark')).toBeVisible();
-  });
-
-  test('无检查项的目标不显示停滞标记', async ({ page }) => {
-    const domainId = await apiCreateDomain(page, '事业');
-    await apiCreateGoal(page, domainId, '空目标');
-    await goToPlanner(page);
-    await navigateToDomain(page, '事业');
-
-    const goalCard = page.locator('.goalCard').filter({ hasText: '空目标' });
-    await expect(goalCard).toBeVisible();
-    await expect(goalCard.locator('.stagnantBadge')).not.toBeVisible();
-  });
-});
-
 // ─── 多目标交互 ───
 
 test.describe('年度计划 - 多目标交互', () => {
