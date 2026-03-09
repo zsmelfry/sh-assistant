@@ -82,17 +82,21 @@ export default defineEventHandler(async (event) => {
       timeout: 60000,
     });
 
+    // Try ```json block first, then raw JSON
     const jsonMatch = reply.match(/```json\s*([\s\S]*?)```/);
-    if (!jsonMatch) {
+    const jsonStr = jsonMatch ? jsonMatch[1] : reply.match(/\{[\s\S]*\}|\[[\s\S]*\]/)?.[0];
+    if (!jsonStr) {
       throw createError({ statusCode: 502, message: 'AI 未返回有效的里程碑数据' });
     }
 
-    const parsed = JSON.parse(jsonMatch[1]);
-    if (!parsed.milestones || !Array.isArray(parsed.milestones)) {
+    const parsed = JSON.parse(jsonStr);
+    // Support both { milestones: [...] } and bare array [...]
+    const rawMilestones = Array.isArray(parsed) ? parsed : parsed?.milestones;
+    if (!Array.isArray(rawMilestones)) {
       throw createError({ statusCode: 502, message: 'AI 返回的数据格式无效' });
     }
 
-    const milestones = parsed.milestones
+    const milestones = rawMilestones
       .filter((m: any) =>
         m.tier >= 1 && m.tier <= 5 &&
         m.title &&
