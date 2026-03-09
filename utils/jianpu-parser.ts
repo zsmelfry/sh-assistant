@@ -138,8 +138,13 @@ export function parseJianpu(text: string): { tokens: JianpuToken[]; melody: Melo
     return true;
   });
 
-  // Pre-process: replace 'i' with "1'" (common OCR error: 1 with dot above looks like 'i')
-  const notation = notationLines.join(' ').replace(/i/g, "1'");
+  // Pre-process text
+  let notation = notationLines.join(' ');
+  // Replace 'i' with "1'" (common OCR error: 1 with dot above looks like 'i')
+  notation = notation.replace(/i/g, "1'");
+  // Insert space before ( when preceded by note characters (fixes "7#(567)" → "7# (567)")
+  notation = notation.replace(/([^\s(|])\(/g, '$1 (');
+
   const rawTokens = notation.split(/\s+/).filter(Boolean);
 
   for (const raw of rawTokens) {
@@ -160,13 +165,16 @@ export function parseJianpu(text: string): { tokens: JianpuToken[]; melody: Melo
       continue;
     }
 
-    // Parenthesized group
-    const groupMatch = raw.match(/^\((.+)\)$/);
+    // Parenthesized group, optionally followed by a dot: (43) or (43).
+    const groupMatch = raw.match(/^\((.+)\)(\.)?$/);
     if (groupMatch) {
       const subItems = parseGroup(groupMatch[1], resolveNoteName);
       assignGroupFractions(subItems);
       for (const item of subItems) {
         tokens.push(item);
+      }
+      if (groupMatch[2]) {
+        tokens.push({ type: 'dot', raw: '.', beatFraction: 0 });
       }
       continue;
     }
@@ -178,6 +186,29 @@ export function parseJianpu(text: string): { tokens: JianpuToken[]; melody: Melo
         for (const t of parsed) tokens.push(t);
       } else {
         tokens.push({ ...parsed, beatFraction: 1 });
+      }
+      continue;
+    }
+
+    // Fallback: bare multi-note sequence without parentheses (e.g., "43.", "7'1'7", "2'1.")
+    // Strip trailing dot if it follows a note character (digit or octave mark)
+    let bareRaw = raw;
+    let bareTrailingDot = false;
+    if (bareRaw.length > 2 && bareRaw.endsWith('.')) {
+      const beforeDot = bareRaw[bareRaw.length - 2];
+      if (/[1-7',]/.test(beforeDot)) {
+        bareTrailingDot = true;
+        bareRaw = bareRaw.slice(0, -1);
+      }
+    }
+    const bareNotes = parseGroup(bareRaw, resolveNoteName);
+    if (bareNotes.length >= 2) {
+      assignGroupFractions(bareNotes);
+      for (const item of bareNotes) {
+        tokens.push(item);
+      }
+      if (bareTrailingDot) {
+        tokens.push({ type: 'dot', raw: '.', beatFraction: 0 });
       }
     }
   }
@@ -227,25 +258,43 @@ function parseSingle(raw: string, resolve: NoteResolver): JianpuToken | JianpuTo
 }
 
 function parseGroup(inner: string, resolve: NoteResolver): JianpuToken[] {
+  // Dots inside groups are treated as rhythm dots (dotted subdivision), NOT octave marks.
+  // The prompt instructs AI to use ' for octave marks, never '.'.
+  // e.g. (3.2) = dotted-eighth 3 + sixteenth 2; (1'.2) = dotted-eighth high-1 + sixteenth 2
+
   const results: JianpuToken[] = [];
-  const regex = /(0)|([1-7])('+|,+)?(#|b)?/g;
+  const hasDotAfter: boolean[] = [];
+  // Regex captures optional '.' after a note for dotted subdivision within groups
+  const regex = /(0)|([1-7])('+|,+)?(#|b)?(\.)?/g;
   let m;
   while ((m = regex.exec(inner)) !== null) {
     if (m[1] === '0') {
       results.push({ type: 'rest', raw: '0', note: 'rest', beatFraction: 1 });
+      hasDotAfter.push(false);
     } else {
       const degree = m[2];
       const octaveMark = m[3] || '';
       const accidental = m[4] || '';
       const { note, octave } = resolve(degree, octaveMark, accidental);
       results.push({ type: 'note', raw: m[0], note, octave, degree, accidental: accidental || undefined, beatFraction: 1 });
+      hasDotAfter.push(!!m[5]);
     }
   }
+
+  // Handle dotted rhythm inside 2-note groups: dotted-eighth + sixteenth (3/4 + 1/4)
+  // e.g. (1'.2) = high-1 dotted (0.75 beat) + 2 (0.25 beat)
+  const dottedIdx = hasDotAfter.indexOf(true);
+  if (results.length === 2 && dottedIdx >= 0) {
+    results[dottedIdx].beatFraction = 0.75;
+    results[1 - dottedIdx].beatFraction = 0.25;
+  }
+
   return results;
 }
 
 /**
  * Assign beat fractions to a group of notes sharing 1 beat.
+ * Skips groups where fractions were already set (e.g. dotted rhythm in parseGroup).
  * - 2 notes: equal (1/2 each) — two eighth notes
  * - 3 notes: 1/4 + 1/4 + 1/2 — two sixteenths + one eighth (most common in Chinese pop)
  * - 4 notes: equal (1/4 each) — four sixteenth notes
@@ -254,6 +303,10 @@ function parseGroup(inner: string, resolve: NoteResolver): JianpuToken[] {
  * - Other: equal subdivision
  */
 function assignGroupFractions(items: JianpuToken[]): { tokens: JianpuToken[]; totalBeats: number } {
+  // Skip if fractions were already set by parseGroup (dotted rhythm detection)
+  const alreadySet = items.some(item => item.beatFraction !== 1);
+  if (alreadySet) return { tokens: items, totalBeats: items.reduce((sum, i) => sum + i.beatFraction, 0) };
+
   const n = items.length;
   if (n === 3) {
     // 16th + 16th + 8th = 1 beat
