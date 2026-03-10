@@ -5,7 +5,7 @@ import { isValidDate } from '~/server/utils/date';
 import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
-  const { habitId, date } = await readBody(event);
+  const { habitId, date, note } = await readBody(event);
 
   if (!habitId || !date) {
     throw createError({ statusCode: 400, message: '缺少 habitId 或 date' });
@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
       id: crypto.randomUUID(),
       habitId,
       date,
+      note: note || null,
       createdAt: Date.now(),
     };
     await db.insert(checkins).values(newCheckin);

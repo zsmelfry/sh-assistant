@@ -133,6 +133,27 @@ export const useHabitStore = defineStore('habit', () => {
     }
   }
 
+  async function updateNote(date: string, note: string) {
+    if (!selectedHabitId.value) return;
+
+    // 乐观更新
+    const checkin = checkIns.value.find(c => c.date === date);
+    if (checkin) {
+      checkin.note = note || null;
+      // 触发响应式更新
+      checkIns.value = [...checkIns.value];
+    }
+
+    try {
+      await $fetch('/api/checkins/note', {
+        method: 'PUT',
+        body: { habitId: selectedHabitId.value, date, note },
+      });
+    } catch {
+      await loadCheckIns();
+    }
+  }
+
   async function loadAllDates() {
     if (!selectedHabitId.value) return;
     const stats = await $fetch<{ allDates: string[] }>('/api/checkins/stats', {
@@ -149,7 +170,7 @@ export const useHabitStore = defineStore('habit', () => {
     selectedHabit, selectedFrequency, streak, monthlyRate,
     // 动作
     loadHabits, selectHabit, setMonth,
-    createHabit, updateHabit, deleteHabit, toggleCheckIn,
+    createHabit, updateHabit, deleteHabit, toggleCheckIn, updateNote,
   };
 });
 

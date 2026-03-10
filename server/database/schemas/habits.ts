@@ -23,6 +23,7 @@ export const checkins = sqliteTable('checkins', {
   habitId: text('habit_id').notNull()
     .references(() => habits.id, { onDelete: 'cascade' }),
   date: text('date').notNull(),
+  note: text('note'),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [
   uniqueIndex('idx_checkins_habit_date').on(table.habitId, table.date),

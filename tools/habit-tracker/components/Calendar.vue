@@ -19,6 +19,7 @@
         :key="day.date"
         :day="day"
         @toggle="$emit('toggle', $event)"
+        @open-note="$emit('open-note', $event)"
       />
     </div>
   </div>
@@ -49,6 +50,7 @@ const props = defineProps<{
 
 defineEmits<{
   toggle: [date: string];
+  'open-note': [date: string];
 }>();
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
@@ -56,6 +58,14 @@ const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
 const checkedDates = computed(() =>
   new Set(props.checkIns.map(c => c.date)),
 );
+
+const notesByDate = computed(() => {
+  const map = new Map<string, string>();
+  for (const c of props.checkIns) {
+    if (c.note) map.set(c.date, c.note);
+  }
+  return map;
+});
 
 const isMonthCompleted = computed(() => {
   if (props.frequency !== 'monthly') return false;
@@ -105,6 +115,7 @@ const calendarDays = computed((): CalendarDayData[] => {
       isFuture: dateIsFuture(date) && !dateIsToday(date),
       isCheckedIn,
       isPeriodCompleted,
+      note: notesByDate.value.get(dateStr) || null,
     };
   });
 });

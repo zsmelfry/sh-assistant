@@ -36,6 +36,7 @@
               :check-ins="store.checkIns"
               :all-check-in-dates="store.allCheckInDates"
               @toggle="store.toggleCheckIn($event)"
+              @open-note="openNote($event)"
             />
           </div>
 
@@ -55,6 +56,15 @@
       :edit-habit="editingHabit"
       @close="closeForm"
       @submit="handleFormSubmit"
+    />
+
+    <!-- 备注弹窗 -->
+    <NotePopover
+      :open="notePopoverOpen"
+      :date="notePopoverDate"
+      :note="notePopoverNote"
+      @close="notePopoverOpen = false"
+      @save="handleNoteSave"
     />
 
     <!-- 删除确认 -->
@@ -82,6 +92,7 @@ import StatsBar from './components/StatsBar.vue';
 import CalendarNav from './components/CalendarNav.vue';
 import Calendar from './components/Calendar.vue';
 import HistoryPanel from './components/HistoryPanel.vue';
+import NotePopover from './components/NotePopover.vue';
 
 const store = useHabitStore();
 
@@ -89,6 +100,11 @@ const store = useHabitStore();
 const showForm = ref(false);
 const editingHabit = ref<Habit | null>(null);
 const deletingHabit = ref<Habit | null>(null);
+
+// 备注弹窗状态
+const notePopoverOpen = ref(false);
+const notePopoverDate = ref('');
+const notePopoverNote = ref('');
 
 // 初始化
 onMounted(async () => {
@@ -134,6 +150,21 @@ async function handleFormSubmit(data: { name: string; frequency: HabitFrequency;
     await store.createHabit(data.name, data.frequency, data.linkedAbilitySkillId);
   }
   closeForm();
+}
+
+// 备注操作
+function openNote(date: string) {
+  const checkin = store.checkIns.find(c => c.date === date);
+  if (!checkin) return;
+  notePopoverDate.value = date;
+  notePopoverNote.value = checkin.note || '';
+  notePopoverOpen.value = true;
+}
+
+function handleNoteSave(note: string) {
+  if (notePopoverDate.value) {
+    store.updateNote(notePopoverDate.value, note);
+  }
 }
 
 // 删除操作

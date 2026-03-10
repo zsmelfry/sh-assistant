@@ -18,6 +18,7 @@ export interface CheckIn {
   id: string;
   habitId: string;
   date: string;
+  note?: string | null;
   createdAt: number;
 }
 
@@ -54,6 +55,7 @@ export interface CalendarDayData {
   isFuture: boolean;
   isCheckedIn: boolean;
   isPeriodCompleted: boolean;
+  note?: string | null;
 }
 
 export interface FormData {
