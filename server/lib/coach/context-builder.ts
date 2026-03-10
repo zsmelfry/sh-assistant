@@ -369,18 +369,28 @@ async function collectVocabContext(db: BetterSQLite3Database<any>): Promise<Voca
     statusMap[row.status] = row.count;
   }
 
-  // Pending SRS reviews
+  // Pending SRS reviews (match daily-plan logic: repetitions > 0, exclude mastered)
   const now = Date.now();
-  const [pendingResult] = await db.select({ count: count() })
+  const masteredWordIds = (await db.select({ wordId: vocabProgress.wordId })
+    .from(vocabProgress)
+    .where(eq(vocabProgress.learningStatus, LEARNING_STATUS.MASTERED)))
+    .map(r => r.wordId);
+  const masteredSet = new Set(masteredWordIds);
+
+  const allDueCards = await db.select({ wordId: srsCards.wordId })
     .from(srsCards)
-    .where(lte(srsCards.nextReviewAt, now));
+    .where(and(
+      lte(srsCards.nextReviewAt, now),
+      sql`${srsCards.repetitions} > 0`,
+    ));
+  const pendingCount = allDueCards.filter(c => !masteredSet.has(c.wordId)).length;
 
   return {
     totalWords: total,
     mastered: statusMap[LEARNING_STATUS.MASTERED] || 0,
     learning: (statusMap[LEARNING_STATUS.LEARNING] || 0) + (statusMap[LEARNING_STATUS.TO_LEARN] || 0),
     unread: statusMap[LEARNING_STATUS.UNREAD] || 0,
-    pendingReviews: pendingResult?.count || 0,
+    pendingReviews: pendingCount,
   };
 }
 
