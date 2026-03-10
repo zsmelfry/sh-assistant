@@ -4,14 +4,17 @@ import { coachDailyInsights } from '~/server/database/schema';
 import { collectFullSummary, formatContextForPrompt } from '~/server/lib/coach/context-builder';
 import { resolveProvider } from '~/server/utils/llm-provider';
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
   const db = useDB();
   const today = new Date().toISOString().slice(0, 10);
+  const { refresh } = getQuery(event);
 
-  // Check cache
-  const [cached] = await db.select().from(coachDailyInsights).where(eq(coachDailyInsights.date, today));
-  if (cached) {
-    return { content: cached.content, date: today };
+  // Check cache (skip if refresh requested)
+  if (!refresh) {
+    const [cached] = await db.select().from(coachDailyInsights).where(eq(coachDailyInsights.date, today));
+    if (cached) {
+      return { content: cached.content, date: today };
+    }
   }
 
   // Generate insight from LLM
@@ -35,7 +38,8 @@ ${dataContext || '（暂无数据）'}`;
       { temperature: 0.7, maxTokens: 200, timeout: 30000 },
     );
 
-    // Cache
+    // Upsert cache
+    await db.delete(coachDailyInsights).where(eq(coachDailyInsights.date, today));
     await db.insert(coachDailyInsights).values({
       date: today,
       content: content.trim(),
