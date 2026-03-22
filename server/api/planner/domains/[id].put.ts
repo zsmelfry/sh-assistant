@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const name = requireNonEmpty(body.name, '领域名称');
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, plannerDomains, id, '领域');
 
   await db.update(plannerDomains)

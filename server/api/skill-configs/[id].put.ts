@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '请提供更新数据' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Check existence
   const [existing] = await db.select().from(skillConfigs)

@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '需要提供 notes 字段' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   const existing = await db.select()
     .from(articleBookmarks)

@@ -22,8 +22,8 @@ const DEFAULT_PROVIDERS = [
   },
 ];
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
 
   // 检查是否为空，自动插入种子数据
   let providers = await db.select().from(llmProviders);

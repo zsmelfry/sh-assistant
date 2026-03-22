@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const year = Number(query.year) || new Date().getFullYear();
 
-  const db = useDB();
+  const db = useDB(event);
 
   const domains = await db.select().from(plannerDomains)
     .where(eq(plannerDomains.year, year))

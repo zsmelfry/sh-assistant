@@ -10,7 +10,7 @@ const STATUS_MAP: Record<string, string> = {
 };
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const query = getQuery(event);
 
   const userId = query.userId ? Number(query.userId) : null;

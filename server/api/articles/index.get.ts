@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const { page, limit, offset } = parsePagination(query);
 
-  const db = useDB();
+  const db = useDB(event);
 
   const [rows, totalResult] = await Promise.all([
     db.select()

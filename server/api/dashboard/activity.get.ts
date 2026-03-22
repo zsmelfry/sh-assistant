@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const limit = Math.min(Math.max(1, Number(query.limit) || 10), 50);
 
-  const db = useDB();
+  const db = useDB(event);
 
   const rows = await db.select({
     id: activityLogs.id,

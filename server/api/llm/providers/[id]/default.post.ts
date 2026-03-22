@@ -6,7 +6,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', 'Provider');
 
-  const db = useDB();
+  const db = useDB(event);
 
   // 检查 provider 存在且已启用
   const existing = await db.select().from(llmProviders).where(eq(llmProviders.id, id)).limit(1);

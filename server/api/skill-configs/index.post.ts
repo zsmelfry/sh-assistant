@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '所有 prompt 字段不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Check uniqueness
   const [existing] = await db.select().from(skillConfigs)

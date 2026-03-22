@@ -3,8 +3,8 @@ import { useDB } from '~/server/database';
 import { milestones, milestoneCompletions, skills, abilityCategories } from '~/server/database/schema';
 import { verifyPlatformAuto } from '~/server/lib/ability/verify';
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
 
   // Get all uncompleted milestones that support auto verification
   const rows = await db

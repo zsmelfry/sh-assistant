@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const name = requireNonEmpty(body.name, '标签名称');
 
-  const db = useDB();
+  const db = useDB(event);
 
   try {
     const [inserted] = await db.insert(plannerTags).values({

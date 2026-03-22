@@ -4,6 +4,6 @@ import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpe
 
 export default defineEventHandler(async (event) => {
   const did = requireNumericParam(event, 'did', '图表');
-  const db = useDB();
+  const db = useDB(event);
   return requireEntity(db, ptDiagrams, did, '图表');
 });

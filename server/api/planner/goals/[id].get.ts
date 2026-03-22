@@ -7,7 +7,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '目标');
-  const db = useDB();
+  const db = useDB(event);
 
   const [goal] = await db.select().from(plannerGoals).where(eq(plannerGoals.id, id)).limit(1);
   if (!goal) {

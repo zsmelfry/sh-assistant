@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '技能名称不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const { provider } = await resolveProvider(db);
 
   const isRefinement = refinementPrompt && currentMilestones;

@@ -4,7 +4,7 @@ import { smDomains, smTopics, smPoints } from '~/server/database/schema';
 import { resolveSkill } from '~/server/lib/skill-learning';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId } = await resolveSkill(db, event);
 
   const rows = await db

@@ -39,7 +39,7 @@ const GENERATE_SYSTEM_PROMPT = `你是一个技能学习专家。为以下技能
 
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
-  const db = useDB();
+  const db = useDB(event);
 
   const [skill] = await db.select().from(skills).where(eq(skills.id, skillId));
   if (!skill) {

@@ -1,15 +1,15 @@
 import { useDB } from '~/server/database';
-import { eq, and, inArray } from 'drizzle-orm';
-import { vocabProgress, vocabUsers, vocabStatusHistory, LEARNING_STATUS } from '../../../database/schemas/vocab';
+import { inArray } from 'drizzle-orm';
+import { vocabProgress, vocabStatusHistory, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import type { LearningStatus } from '../../../database/schemas/vocab';
 import { transitionStatus, deriveFlags, isFirstInteraction, isValidAction } from '../../../utils/vocab-state-machine';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { userId, wordIds, action } = body;
+  const { wordIds, action } = body;
 
-  if (!userId || !Array.isArray(wordIds) || wordIds.length === 0 || !action) {
-    throw createError({ statusCode: 400, message: 'userId, wordIds (array), and action are required' });
+  if (!Array.isArray(wordIds) || wordIds.length === 0 || !action) {
+    throw createError({ statusCode: 400, message: 'wordIds (array) and action are required' });
   }
 
   if (!isValidAction(action)) {
@@ -20,22 +20,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Maximum 500 words per batch' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const now = Date.now();
-  const uid = Number(userId);
   const numWordIds = wordIds.map(Number);
-
-  // 验证用户
-  const user = await db.select().from(vocabUsers).where(eq(vocabUsers.id, uid)).limit(1);
-  if (user.length === 0) throw createError({ statusCode: 404, message: 'User not found' });
 
   // 获取现有 progress
   const existingProgress = await db.select()
     .from(vocabProgress)
-    .where(and(
-      eq(vocabProgress.userId, uid),
+    .where(
       inArray(vocabProgress.wordId, numWordIds),
-    ));
+    );
 
   const progressMap = new Map(existingProgress.map(p => [p.wordId, p]));
 
@@ -56,7 +50,6 @@ export default defineEventHandler(async (event) => {
 
     if (!existing) {
       toInsert.push({
-        userId: uid,
         wordId,
         learningStatus: newStatus,
         isRead: flags.isRead,
@@ -74,7 +67,6 @@ export default defineEventHandler(async (event) => {
     }
 
     historyEntries.push({
-      userId: uid,
       wordId,
       previousStatus: currentStatus,
       newStatus,

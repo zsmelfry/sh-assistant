@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '缺少必填参数: habitId' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   const habitRows = await db.select()
     .from(habits)

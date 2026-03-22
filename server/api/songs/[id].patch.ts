@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-  const db = useDB();
+  const db = useDB(event);
 
   const [existing] = await db.select().from(songs).where(eq(songs.id, id)).limit(1);
   if (!existing) {

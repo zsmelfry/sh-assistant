@@ -5,7 +5,7 @@ import { collectFullSummary, formatContextForPrompt } from '~/server/lib/coach/c
 import { resolveProvider } from '~/server/utils/llm-provider';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const today = new Date().toISOString().slice(0, 10);
   const { refresh } = getQuery(event);
 

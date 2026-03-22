@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '无效的优先级' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, plannerDomains, body.domainId, '领域');
 
   // Validate tagIds if provided

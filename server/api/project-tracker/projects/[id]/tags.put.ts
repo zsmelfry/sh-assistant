@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '事项');
   const body = await readBody(event);
   const tagIds = (body.tagIds ?? []) as number[];
-  const db = useDB();
+  const db = useDB(event);
 
   await requireEntity(db, ptProjects, id, '事项');
 

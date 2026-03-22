@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const includeTeaching = query.includeTeaching === '1';
   const includeNotes = query.includeNotes === '1';
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Fetch skill config
   const [config] = await db.select().from(skillConfigs)

@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
 请直接输出 Mermaid 代码：`;
 
-  const db = useDB();
+  const db = useDB(event);
   const { provider } = await resolveProvider(db, body.providerId);
 
   try {

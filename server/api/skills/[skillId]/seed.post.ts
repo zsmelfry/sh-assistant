@@ -5,7 +5,7 @@ import { resolveSkill } from '~/server/lib/skill-learning';
 import type { SeedDomain, SeedStage } from '~/server/database/seeds/startup-map';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId } = await resolveSkill(db, event);
 
   // Idempotent: skip if data already exists for this skill

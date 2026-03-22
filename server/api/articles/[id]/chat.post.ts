@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const { message, providerId } = body || {};
   requireNonEmpty(message, '消息内容');
 
-  const db = useDB();
+  const db = useDB(event);
   const article = await requireEntity<{ id: number; title: string; content: string }>(db, articles, id, '文章');
 
   // Build system context from article content

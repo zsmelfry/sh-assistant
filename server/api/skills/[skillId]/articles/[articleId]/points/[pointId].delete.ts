@@ -5,7 +5,7 @@ import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning'
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId } = await resolveSkill(db, event);
   const articleId = requireNumericParam(event, 'articleId', '文章');
   const pointId = requireNumericParam(event, 'pointId', '知识点');

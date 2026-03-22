@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'userId 是必填参数（整数）' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const uid = Number(userId);
   const today = formatDate(new Date());
   const now = Date.now();

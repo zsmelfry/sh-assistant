@@ -3,8 +3,8 @@ import { abilityCategories } from '~/server/database/schema';
 import { ABILITY_CATEGORY_SEED } from '~/server/database/seeds/ability-categories';
 import { ensureSelfManagementSkills } from '~/server/lib/ability/self-management';
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
 
   let rows = await db.select().from(abilityCategories).orderBy(abilityCategories.sortOrder);
 

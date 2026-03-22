@@ -6,7 +6,7 @@ import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpe
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'skillId', '技能');
   const body = await readBody(event);
-  const db = useDB();
+  const db = useDB(event);
 
   await requireEntity(db, skills, id, '技能');
 

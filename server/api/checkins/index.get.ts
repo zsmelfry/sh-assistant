@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
   const { startDate, endDate } = getDateRange(month, frequency);
 
-  const db = useDB();
+  const db = useDB(event);
   return db.select()
     .from(checkins)
     .where(

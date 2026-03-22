@@ -2,8 +2,8 @@ import { eq } from 'drizzle-orm';
 import { useDB } from '~/server/database';
 import { abilityCategories, skills, skillCurrentState } from '~/server/database/schema';
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
 
   const categories = await db.select().from(abilityCategories).orderBy(abilityCategories.sortOrder);
   const allSkills = await db.select().from(skills).where(eq(skills.status, 'active'));

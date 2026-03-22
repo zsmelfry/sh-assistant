@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '无效的 id' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const [row] = await db.select().from(skillConfigs)
     .where(eq(skillConfigs.id, id)).limit(1);
 

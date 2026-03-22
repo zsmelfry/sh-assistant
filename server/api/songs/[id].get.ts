@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '无效的歌曲 ID' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const [song] = await db.select().from(songs).where(eq(songs.id, id)).limit(1);
 
   if (!song) {

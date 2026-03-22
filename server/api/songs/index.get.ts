@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const search = (query.search as string)?.trim();
   const year = query.year ? Number(query.year) : undefined;
 
-  const db = useDB();
+  const db = useDB(event);
   let q = db.select().from(songs).$dynamic();
 
   const conditions = [];

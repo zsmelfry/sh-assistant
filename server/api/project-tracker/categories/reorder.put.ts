@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '排序数据不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   db.transaction((tx) => {
     for (const item of items) {
       tx.update(ptCategories)

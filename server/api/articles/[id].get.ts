@@ -6,7 +6,7 @@ import { enrichArticleWithMeta } from '~/server/utils/article-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '文章');
-  const db = useDB();
+  const db = useDB(event);
   const article = await requireEntity(db, articles, id, '文章');
 
   // Update lastReadAt timestamp (fire-and-forget)

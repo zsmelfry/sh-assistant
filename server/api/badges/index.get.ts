@@ -3,8 +3,8 @@ import { useDB } from '~/server/database';
 import { badges, badgeAwards } from '~/server/database/schema';
 import { BADGE_SEED } from '~/server/database/seeds/badges';
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
 
   // Auto-seed badges if empty
   let allBadges = await db.select().from(badges);

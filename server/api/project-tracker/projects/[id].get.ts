@@ -5,7 +5,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '事项');
-  const db = useDB();
+  const db = useDB(event);
 
   const [project] = await db
     .select({

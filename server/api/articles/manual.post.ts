@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'url 必须是字符串' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // If URL provided, check for duplicate
   const articleUrl = url?.trim() || `manual://${Date.now()}`;

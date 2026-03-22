@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '不能为未来日期打卡' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // M2: 校验 habit 存在性，避免 FK 约束报 500
   const habitRows = await db.select({ id: habits.id })

@@ -6,7 +6,7 @@ import { requireNumericParam, requireNonEmpty } from '~/server/utils/handler-hel
 import { handleChatRequest } from '~/server/utils/chat-handler';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId, config } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 

@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '缺少 habitId 或 date' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   const existing = await db.select()
     .from(checkins)

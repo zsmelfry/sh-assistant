@@ -5,7 +5,7 @@ import { requireNonEmpty } from '~/server/utils/handler-helpers';
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const name = requireNonEmpty(body.name, '标签名称');
-  const db = useDB();
+  const db = useDB(event);
 
   const [inserted] = await db.insert(ptTags).values({
     name,

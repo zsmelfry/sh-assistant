@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     updatedAt: now,
   };
 
-  const db = useDB();
+  const db = useDB(event);
   await db.insert(habits).values(newHabit);
 
   setResponseStatus(event, 201);

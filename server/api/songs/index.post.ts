@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '请提供歌曲名称和歌手' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const now = Date.now();
 
   const [song] = db.insert(songs).values({

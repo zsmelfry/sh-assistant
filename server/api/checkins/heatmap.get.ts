@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const startDate = `${year}-01-01`;
   const endDate = `${year}-12-31`;
 
-  const db = useDB();
+  const db = useDB(event);
   const rows = await db.select({ date: checkins.date })
     .from(checkins)
     .where(

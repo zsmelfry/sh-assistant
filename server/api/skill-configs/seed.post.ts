@@ -3,8 +3,8 @@ import { useDB } from '~/server/database';
 import { skillConfigs } from '~/server/database/schema';
 import { STARTUP_MAP_CONFIG_SEED } from '~/server/database/seeds/startup-map-config';
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
   const created: string[] = [];
 
   const seeds = [STARTUP_MAP_CONFIG_SEED];

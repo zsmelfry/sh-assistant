@@ -8,7 +8,7 @@ import { parseLlmJsonObject } from '~/server/utils/parse-llm-json';
 import { LlmError } from '~/server/lib/llm';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId, config } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 

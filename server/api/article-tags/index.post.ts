@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'color 必须是字符串' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   try {
     const result = await db.insert(articleTags).values({

@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '缺少 domainId 参数' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   const goals = await db
     .select()

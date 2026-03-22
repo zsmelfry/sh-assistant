@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const year = Number(query.year) || new Date().getFullYear();
 
-  const db = useDB();
+  const db = useDB(event);
 
   const tags = await db.select().from(plannerTags).orderBy(plannerTags.name);
   if (tags.length === 0) return [];

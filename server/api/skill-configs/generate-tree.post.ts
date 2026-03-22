@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '技能名称不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const { provider } = await resolveProvider(db, providerId);
 
   const prompt = `你是一位教育体系设计专家。请为以下技能设计一个完整的知识树结构。

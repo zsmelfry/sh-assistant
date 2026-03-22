@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '需要不同的源年份和目标年份' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Check target year has no domains
   const existing = await db

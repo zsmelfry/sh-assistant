@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'quality 必须是 0-5 的整数' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const uid = Number(userId);
   const wid = Number(wordId);
   const q = Number(quality) as StudyQuality;

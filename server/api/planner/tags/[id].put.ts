@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '标签名称不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, plannerTags, id, '标签');
 
   try {

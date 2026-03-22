@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'word 是必填字段' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   try {
     return await translateWord(db, word, {

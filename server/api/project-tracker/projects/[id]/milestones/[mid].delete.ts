@@ -5,7 +5,7 @@ import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpe
 
 export default defineEventHandler(async (event) => {
   const mid = requireNumericParam(event, 'mid', '里程碑');
-  const db = useDB();
+  const db = useDB(event);
 
   await requireEntity(db, ptMilestones, mid, '里程碑');
 

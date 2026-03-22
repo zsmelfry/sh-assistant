@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     ? rawTagIds.split(',').map(Number).filter(n => !isNaN(n) && n > 0)
     : [];
 
-  const db = useDB();
+  const db = useDB(event);
 
   // 基础查询：bookmarks JOIN articles
   // 搜索匹配标题、笔记、概括

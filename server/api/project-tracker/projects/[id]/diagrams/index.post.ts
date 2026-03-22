@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const projectId = requireNumericParam(event, 'id', '事项');
   const body = await readBody(event);
   const title = requireNonEmpty(body.title, '图表标题');
-  const db = useDB();
+  const db = useDB(event);
 
   await requireEntity(db, ptProjects, projectId, '事项');
 

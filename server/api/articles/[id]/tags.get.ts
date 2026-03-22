@@ -6,7 +6,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '文章');
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Check article existence
   const article = await db.select({ id: articles.id })

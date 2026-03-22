@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'skillId 不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const [config] = await db.select({
     features: skillConfigs.features,
   }).from(skillConfigs)

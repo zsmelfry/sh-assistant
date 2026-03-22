@@ -8,7 +8,7 @@ import { articles, articleTranslations, articleBookmarks } from '~/server/databa
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  const db = useDB();
+  const db = useDB(event);
   const now = Date.now();
 
   // Insert article

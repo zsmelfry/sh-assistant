@@ -4,7 +4,7 @@ import { skillSnapshots } from '~/server/database/schema';
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  const db = useDB();
+  const db = useDB(event);
 
   const from = query.from as string | undefined;
   const to = query.to as string | undefined;

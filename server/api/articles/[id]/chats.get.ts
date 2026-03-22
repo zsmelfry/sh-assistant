@@ -6,7 +6,7 @@ import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpe
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '文章');
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, articles, id, '文章');
 
   const chats = await db.select()

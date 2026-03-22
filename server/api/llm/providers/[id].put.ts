@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, llmProviders, id, 'Provider');
 
   // 构建更新对象

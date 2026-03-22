@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '检查项内容不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Verify goal exists
   const goal = await db.select().from(plannerGoals).where(eq(plannerGoals.id, body.goalId)).limit(1);

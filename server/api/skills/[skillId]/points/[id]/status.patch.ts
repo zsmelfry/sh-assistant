@@ -6,7 +6,7 @@ import { VALID_POINT_STATUSES } from '~/server/lib/skill-learning/types';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 

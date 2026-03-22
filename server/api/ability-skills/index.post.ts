@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const name = requireNonEmpty(body.name, '技能名称');
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Validate categoryId
   const categoryId = Number(body.categoryId);

@@ -6,7 +6,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
   const id = requireNumericParam(event, 'milestoneId', '里程碑');
-  const db = useDB();
+  const db = useDB(event);
 
   const [milestone] = await db.select().from(milestones)
     .where(and(eq(milestones.id, id), eq(milestones.skillId, skillId)));

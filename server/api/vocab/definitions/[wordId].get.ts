@@ -8,7 +8,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 export default defineEventHandler(async (event) => {
   const wordId = requireNumericParam(event, 'wordId', '单词');
 
-  const db = useDB();
+  const db = useDB(event);
 
   // 验证单词存在
   const wordResult = await db.select().from(vocabWords).where(eq(vocabWords.id, wordId)).limit(1);

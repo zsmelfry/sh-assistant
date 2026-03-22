@@ -5,7 +5,7 @@ import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'skillId', '技能');
-  const db = useDB();
+  const db = useDB(event);
 
   // Fetch skill with category name
   const [skill] = await db

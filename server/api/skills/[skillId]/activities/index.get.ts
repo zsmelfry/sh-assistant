@@ -5,7 +5,7 @@ import { resolveSkill } from '~/server/lib/skill-learning';
 import { parsePagination } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId } = await resolveSkill(db, event);
   const query = getQuery(event);
   const { page, limit: pageSize, offset } = parsePagination(query, { maxLimit: 50, pageSizeKey: 'pageSize' });

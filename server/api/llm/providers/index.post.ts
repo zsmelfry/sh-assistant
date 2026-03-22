@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const now = Date.now();
 
   const result = await db.insert(llmProviders).values({

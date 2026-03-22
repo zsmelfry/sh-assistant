@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const name = requireNonEmpty(body.name, '领域名称');
 
   const year = Number(body.year) || new Date().getFullYear();
-  const db = useDB();
+  const db = useDB(event);
 
   const [maxRow] = await db
     .select({ max: sql<number>`coalesce(max(${plannerDomains.sortOrder}), -1)` })

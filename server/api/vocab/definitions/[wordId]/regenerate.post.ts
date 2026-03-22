@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { providerId } = body;
 
-  const db = useDB();
+  const db = useDB(event);
 
   // 验证单词存在
   const wordResult = await db.select().from(vocabWords).where(eq(vocabWords.id, wordId)).limit(1);

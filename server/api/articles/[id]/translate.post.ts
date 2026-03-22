@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   try {
     if (type === 'both') {

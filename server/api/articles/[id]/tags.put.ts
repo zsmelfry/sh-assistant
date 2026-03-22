@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'tagIds 中的每个元素必须是数字' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Check article existence
   const article = await db.select({ id: articles.id })

@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, habits, id, '习惯');
 
   const updates: Record<string, unknown> = { updatedAt: Date.now() };

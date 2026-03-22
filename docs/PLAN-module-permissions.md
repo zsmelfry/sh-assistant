@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0 + Phase 1 已完成)
+> 更新日期: 2026-03-22 (Phase 0 + Phase 1 + Phase 2 已完成)
 
 ## 需求
 
@@ -207,57 +207,34 @@ data/
 
 ## Phase 2: 后端适配
 
-### Step 6: API handler 适配 useDB(event)
+### Step 6: API handler 适配 useDB(event) ✅ 已完成
 
-**改造**: 所有用户数据 API handler（~180 个文件）
-- `const db = useDB()` → `const db = useDB(event)`
-- **机械替换**，业务逻辑不变，只加一个参数
-- TypeScript 编译器会捕获所有遗漏（新签名要求 H3Event 参数）
+190 个 API handler 文件已替换 `useDB()` → `useDB(event)`。
+17 个原 `async () =>` 签名的 handler 已添加 `event` 参数。
 
-### Step 7: 认证相关 API 改用 useAdminDB
+### Step 7: 认证相关 API 改用 useAdminDB ✅ 已在 Phase 1 中完成
 
-**改造**: 仅需改动认证 API
-- `server/api/auth/login.post.ts` → `useAdminDB()`
-- 其余所有 API（包括 LLM、词库、歌曲、技能配置等）均操作用户自己的 DB
+### Step 8: 清理 vocabUsers 系统 ✅ 已完成
 
-### Step 8: 清理 vocabUsers 系统
+**已删除**: `server/api/vocab/users.get.ts`, `users.post.ts`, `users/[id].delete.ts`, `server/utils/vocab-progress.ts`
+**已修改**: `words-import.post.ts`, `progress/batch.post.ts`, `progress/chart.get.ts`, `progress/status.post.ts` — 移除 userId 接收和过滤
+**保留**: `vocabUsers` schema 定义及 `userId` 列（drizzle 迁移兼容性）
+**待做**: 前端 `stores/vocab.ts` vocabUser 逻辑清理（Phase 4）
 
-**删除**: `vocabUsers` 表及相关逻辑
-- 删除 `server/api/vocab/users.get.ts`, `users.post.ts`, `users/[id].delete.ts`
-- `vocab_progress`, `srs_cards`, `review_logs`, `study_sessions` 中的 `userId` 列可保留但不再有意义（每人独立 DB）
-- 前端 `stores/vocab.ts` 中移除 vocabUser 选择逻辑
-- **安全修复**：不再从 request body 接收 userId
+### Step 9: Auth 中间件增强 ✅ 已完成
 
-### Step 9: Auth 中间件增强
+`server/middleware/02.auth.ts` — JWT 验证后从 admin.db 查询 role + enabledModules（60s 缓存）
+导出 `clearAuthCache(username)` 用于权限变更时清除缓存
 
-**修改**: `server/middleware/02.auth.ts`
-- JWT 验证后，从 `useAdminDB()` 查询用户角色和启用模块
-- 附加到 `event.context.auth`：`{ userId, username, role, enabledModules }`
-- `role` 和 `enabledModules` 均从 admin.db 实时查询（带 60s 内存缓存），不信任 JWT 中的值
-- 缓存失效：模块权限变更时清除对应用户的缓存
+### Step 10: 模块 ID 常量映射 ✅ 已完成
 
-### Step 10: 模块 ID 常量映射
+`server/utils/module-ids.ts` — `ALL_MODULE_IDS`, `ModuleId` 类型, `MODULE_NAMESPACE_MAP`
 
-**新建**: `server/utils/module-ids.ts`
-- 导出 `MODULE_NAMESPACE_MAP`：模块 ID → API 命名空间数组的映射
-- 导出 `ALL_MODULE_IDS` 数组
-- 单一真相源
+### Step 11: 模块守卫中间件 ✅ 已完成
 
-### Step 11: 模块守卫中间件
+`server/middleware/04.module-guard.ts` — API 命名空间 → 模块权限校验，admin 路径要求管理员角色
 
-**新建**: `server/middleware/04.module-guard.ts`
-- 匹配 `/api/{namespace}/...` → 查找所属模块 → 检查 `event.context.auth.enabledModules` 是否包含该模块
-- 未启用 → 403 `'该模块未启用'`
-- 跳过：`/api/admin/*`, `/api/auth/*`, `/api/_test/*`
-- 未映射命名空间默认放行（CLAUDE.md 中记录：新工具必须更新映射）
-- `/api/admin/*` 路径额外要求 `role === 'admin'`
-
-### Step 12: 更新登录 API
-
-**修改**: `server/api/auth/login.post.ts`
-- 使用 `useAdminDB()` 验证用户凭据
-- JWT payload 加入 `role`（仅作为前端初始化用，后端不信任）
-- 响应体加入 `enabledModules[]` 和 `role`
+### Step 12: 更新登录 API ✅ 已在 Phase 1 中完成
 
 ---
 

@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'userId 是必填参数' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const now = Date.now();
 
   // Join srs_cards with vocab_words to get word text and rank

@@ -6,7 +6,7 @@ import { PRIORITY_ORDER } from '~/types/priority';
 
 export default defineEventHandler(async (event) => {
   const projectId = requireNumericParam(event, 'id', '事项');
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, ptProjects, projectId, '事项');
 
   // Get milestones

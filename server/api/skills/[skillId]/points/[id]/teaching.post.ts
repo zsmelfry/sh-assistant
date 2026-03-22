@@ -25,7 +25,7 @@ function parseSections(fullContent: string): Record<string, string> {
 }
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId, config } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 

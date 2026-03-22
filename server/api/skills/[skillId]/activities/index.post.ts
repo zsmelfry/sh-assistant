@@ -7,7 +7,7 @@ import { logActivity } from '~/server/lib/ability/log-activity';
 const VALID_TYPES = ['view', 'chat', 'note', 'task', 'status_change'] as const;
 
 export default defineEventHandler(async (event) => {
-  const db = useDB();
+  const db = useDB(event);
   const { skillId } = await resolveSkill(db, event);
   const body = await readBody(event);
 

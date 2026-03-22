@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Check cache (skip in force mode)
   if (!force) {

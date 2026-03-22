@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const year = Number(query.year) || new Date().getFullYear();
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Domain-level stats
   const domainRows = await db

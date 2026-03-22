@@ -10,7 +10,7 @@ import { logActivity } from '~/server/lib/ability/log-activity';
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
   const id = requireNumericParam(event, 'milestoneId', '里程碑');
-  const db = useDB();
+  const db = useDB(event);
 
   // Validate skill exists
   const [skill] = await db.select().from(skills).where(eq(skills.id, skillId));

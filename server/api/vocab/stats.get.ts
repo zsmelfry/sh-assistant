@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'userId is required' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // 总词数
   const totalResult = await db.select({ count: count() }).from(vocabWords);

@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   const url = body.url.trim();
 
-  const db = useDB();
+  const db = useDB(event);
 
   // 检查是否已存在
   const existing = await db.select()

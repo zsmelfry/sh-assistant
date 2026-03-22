@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const { page, limit, offset } = parsePagination(query);
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Only articles that have been read (lastReadAt is set)
   const readCondition = isNotNull(articles.lastReadAt);

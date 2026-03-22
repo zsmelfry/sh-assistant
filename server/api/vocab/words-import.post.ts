@@ -1,7 +1,6 @@
 import { useDB } from '~/server/database';
 import { sql } from 'drizzle-orm';
-import { vocabWords, vocabProgress, vocabUsers } from '../../database/schemas/vocab';
-import { initProgressForUsersSync } from '../../utils/vocab-progress';
+import { vocabWords, vocabProgress } from '../../database/schemas/vocab';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -43,10 +42,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'No valid words found in CSV' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const batchSize = 500;
 
-  // 事务：清空旧数据 → 插入新词 → 重建所有用户的 progress
+  // 事务：清空旧数据 → 插入新词
   db.transaction((tx: any) => {
     // 清空旧数据
     tx.delete(vocabProgress).run();
@@ -57,10 +56,6 @@ export default defineEventHandler(async (event) => {
     for (let i = 0; i < words.length; i += batchSize) {
       tx.insert(vocabWords).values(words.slice(i, i + batchSize)).run();
     }
-
-    // 为所有已有用户初始化 progress
-    const users = tx.select().from(vocabUsers).all();
-    initProgressForUsersSync(tx, users.map((u: any) => u.id));
   });
 
   return { imported: words.length };

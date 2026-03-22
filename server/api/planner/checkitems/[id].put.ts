@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '检查项内容不能为空' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, plannerCheckitems, id, '检查项');
 
   await db.update(plannerCheckitems)

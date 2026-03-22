@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'message 是必填字段' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   const { provider } = await resolveProvider(db);
 
   const messages: ChatMessage[] = [

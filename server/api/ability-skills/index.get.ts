@@ -4,7 +4,7 @@ import { skills, milestones, milestoneCompletions, abilityCategories } from '~/s
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  const db = useDB();
+  const db = useDB(event);
 
   const conditions = [];
   if (query.status) {

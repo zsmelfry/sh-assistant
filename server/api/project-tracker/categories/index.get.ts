@@ -4,8 +4,8 @@ import { ptCategories } from '~/server/database/schema';
 
 const DEFAULT_CATEGORIES = ['生活', '工作'];
 
-export default defineEventHandler(async () => {
-  const db = useDB();
+export default defineEventHandler(async (event) => {
+  const db = useDB(event);
 
   // Auto-seed default categories on first access
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(ptCategories);

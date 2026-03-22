@@ -6,7 +6,7 @@ import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpe
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '目标');
   const body = await readBody(event);
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, plannerGoals, id, '目标');
 
   const updates: Record<string, unknown> = { updatedAt: Date.now() };

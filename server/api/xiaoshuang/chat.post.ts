@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'message 是必填字段' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
 
   // Load relevant global context based on user message
   const globalContext = await collectRelevantContext(db, message);

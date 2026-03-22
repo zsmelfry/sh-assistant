@@ -6,7 +6,7 @@ import { checkBadgesOnSkillChange } from '~/server/lib/ability/badge-check';
 
 export default defineEventHandler(async (event) => {
   const skillId = requireNumericParam(event, 'skillId', '技能');
-  const db = useDB();
+  const db = useDB(event);
 
   await requireEntity(db, skills, skillId, '技能');
   await db.delete(skills).where(eq(skills.id, skillId));

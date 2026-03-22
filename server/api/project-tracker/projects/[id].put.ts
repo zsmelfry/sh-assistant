@@ -7,7 +7,7 @@ import { logActivity } from '~/server/lib/ability/log-activity';
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', '事项');
   const body = await readBody(event);
-  const db = useDB();
+  const db = useDB(event);
 
   const [existing] = await db.select().from(ptProjects).where(eq(ptProjects.id, id)).limit(1);
   if (!existing) {

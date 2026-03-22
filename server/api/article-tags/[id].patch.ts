@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'color 必须是字符串或 null' });
   }
 
-  const db = useDB();
+  const db = useDB(event);
   await requireEntity(db, articleTags, id, '标签');
 
   const updates: Record<string, any> = {};

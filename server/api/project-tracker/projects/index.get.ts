@@ -4,7 +4,7 @@ import { ptProjects, ptCategories, ptProjectTags, ptTags, ptChecklistItems, ptNo
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  const db = useDB();
+  const db = useDB(event);
 
   // Build WHERE conditions
   const conditions: any[] = [];
