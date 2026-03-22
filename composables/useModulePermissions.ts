@@ -1,43 +1,41 @@
 const PERMISSIONS_KEY = 'module_permissions';
 const ROLE_KEY = 'user_role';
 
-const permState = reactive({
-  enabledModules: new Set<string>(),
-  role: 'user' as string,
-});
+const enabledModules = ref<string[]>([]);
+const role = ref('user');
 
 export function useModulePermissions() {
   function isModuleEnabled(moduleId: string): boolean {
-    return permState.enabledModules.has(moduleId);
+    return enabledModules.value.includes(moduleId);
   }
 
   function isAdmin(): boolean {
-    return permState.role === 'admin';
+    return role.value === 'admin';
   }
 
-  function setPermissions(modules: string[], role: string) {
-    permState.enabledModules = new Set(modules);
-    permState.role = role;
+  function setPermissions(modules: string[], newRole: string) {
+    enabledModules.value = modules;
+    role.value = newRole;
     localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(modules));
-    localStorage.setItem(ROLE_KEY, role);
+    localStorage.setItem(ROLE_KEY, newRole);
   }
 
   function restore() {
     try {
       const stored = localStorage.getItem(PERMISSIONS_KEY);
       if (stored) {
-        permState.enabledModules = new Set(JSON.parse(stored));
+        enabledModules.value = JSON.parse(stored);
       }
-      permState.role = localStorage.getItem(ROLE_KEY) || 'user';
+      role.value = localStorage.getItem(ROLE_KEY) || 'user';
     } catch { /* ignore parse errors */ }
   }
 
   function clear() {
-    permState.enabledModules = new Set();
-    permState.role = 'user';
+    enabledModules.value = [];
+    role.value = 'user';
     localStorage.removeItem(PERMISSIONS_KEY);
     localStorage.removeItem(ROLE_KEY);
   }
 
-  return { isModuleEnabled, isAdmin, setPermissions, restore, clear, enabledModules: permState.enabledModules, role: computed(() => permState.role) };
+  return { isModuleEnabled, isAdmin, setPermissions, restore, clear, enabledModules, role };
 }
