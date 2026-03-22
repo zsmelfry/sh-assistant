@@ -19,7 +19,8 @@ export default defineEventHandler(async (event) => {
 
   // Generate insight from LLM
   try {
-    const summary = await collectFullSummary(db);
+    const enabledModules: string[] | undefined = event.context.auth?.enabledModules;
+    const summary = await collectFullSummary(db, enabledModules);
     const dataContext = formatContextForPrompt(summary);
 
     const { provider } = await resolveProvider(db);

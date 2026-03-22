@@ -93,11 +93,35 @@ const CONTEXT_RULES: Array<{ pattern: RegExp; sources: (keyof GlobalContext)[] }
 
 const DEFAULT_SOURCES: (keyof GlobalContext)[] = ['habits', 'ability'];
 
+// ── Module ID → context key mapping ──
+
+const MODULE_TO_CONTEXT: Record<string, keyof GlobalContext> = {
+  'habit-tracker': 'habits',
+  'annual-planner': 'planner',
+  'vocab-tracker': 'vocab',
+  'skill-manager': 'skillLearning',
+  'ability-profile': 'ability',
+  'article-reader': 'articles',
+  'project-tracker': 'projects',
+};
+
+function filterByEnabledModules(
+  sources: Set<keyof GlobalContext>,
+  enabledModules?: string[],
+): Set<keyof GlobalContext> {
+  if (!enabledModules || enabledModules.length === 0) return sources;
+  const allowedContextKeys = new Set(
+    enabledModules.map(m => MODULE_TO_CONTEXT[m]).filter(Boolean),
+  );
+  return new Set([...sources].filter(s => allowedContextKeys.has(s)));
+}
+
 // ── Public API ──
 
 export async function collectRelevantContext(
   db: BetterSQLite3Database<any>,
   userMessage: string,
+  enabledModules?: string[],
 ): Promise<Partial<GlobalContext>> {
   const needed = new Set<keyof GlobalContext>();
 
@@ -111,30 +135,41 @@ export async function collectRelevantContext(
     for (const s of DEFAULT_SOURCES) needed.add(s);
   }
 
+  // Filter out sources from disabled modules
+  const filtered = filterByEnabledModules(needed, enabledModules);
+
   const result: Partial<GlobalContext> = {};
   const collectors: Array<Promise<void>> = [];
 
-  if (needed.has('habits')) collectors.push(collectHabitContext(db).then(v => { result.habits = v; }));
-  if (needed.has('planner')) collectors.push(collectPlannerContext(db).then(v => { result.planner = v; }));
-  if (needed.has('vocab')) collectors.push(collectVocabContext(db).then(v => { result.vocab = v; }));
-  if (needed.has('skillLearning')) collectors.push(collectSkillLearningContext(db).then(v => { result.skillLearning = v; }));
-  if (needed.has('ability')) collectors.push(collectAbilityContext(db).then(v => { result.ability = v; }));
-  if (needed.has('articles')) collectors.push(collectArticleContext(db).then(v => { result.articles = v; }));
-  if (needed.has('projects')) collectors.push(collectProjectContext(db).then(v => { result.projects = v; }));
+  if (filtered.has('habits')) collectors.push(collectHabitContext(db).then(v => { result.habits = v; }));
+  if (filtered.has('planner')) collectors.push(collectPlannerContext(db).then(v => { result.planner = v; }));
+  if (filtered.has('vocab')) collectors.push(collectVocabContext(db).then(v => { result.vocab = v; }));
+  if (filtered.has('skillLearning')) collectors.push(collectSkillLearningContext(db).then(v => { result.skillLearning = v; }));
+  if (filtered.has('ability')) collectors.push(collectAbilityContext(db).then(v => { result.ability = v; }));
+  if (filtered.has('articles')) collectors.push(collectArticleContext(db).then(v => { result.articles = v; }));
+  if (filtered.has('projects')) collectors.push(collectProjectContext(db).then(v => { result.projects = v; }));
 
   await Promise.all(collectors);
   return result;
 }
 
-export async function collectFullSummary(db: BetterSQLite3Database<any>): Promise<GlobalContext> {
+export async function collectFullSummary(
+  db: BetterSQLite3Database<any>,
+  enabledModules?: string[],
+): Promise<GlobalContext> {
+  const allSources = new Set<keyof GlobalContext>(
+    ['habits', 'planner', 'vocab', 'skillLearning', 'ability', 'articles', 'projects'],
+  );
+  const filtered = filterByEnabledModules(allSources, enabledModules);
+
   const [h, p, v, sl, a, ar, pr] = await Promise.all([
-    collectHabitContext(db),
-    collectPlannerContext(db),
-    collectVocabContext(db),
-    collectSkillLearningContext(db),
-    collectAbilityContext(db),
-    collectArticleContext(db),
-    collectProjectContext(db),
+    filtered.has('habits') ? collectHabitContext(db) : Promise.resolve(null),
+    filtered.has('planner') ? collectPlannerContext(db) : Promise.resolve(null),
+    filtered.has('vocab') ? collectVocabContext(db) : Promise.resolve(null),
+    filtered.has('skillLearning') ? collectSkillLearningContext(db) : Promise.resolve(null),
+    filtered.has('ability') ? collectAbilityContext(db) : Promise.resolve(null),
+    filtered.has('articles') ? collectArticleContext(db) : Promise.resolve(null),
+    filtered.has('projects') ? collectProjectContext(db) : Promise.resolve(null),
   ]);
   return { habits: h, planner: p, vocab: v, skillLearning: sl, ability: a, articles: ar, projects: pr };
 }

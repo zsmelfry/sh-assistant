@@ -1,5 +1,5 @@
 <template>
-  <div class="linkedArticles">
+  <div v-if="articleModuleEnabled" class="linkedArticles">
     <div class="sectionHeader">
       <button class="collapseHeader" @click="collapsed = !collapsed">
         <ChevronRight :size="16" class="chevron" :class="{ expanded: !collapsed }" />
@@ -58,6 +58,9 @@ import ArticlePicker from './ArticlePicker.vue';
 const props = defineProps<{
   pointId: number;
 }>();
+
+const { isModuleEnabled } = useModulePermissions();
+const articleModuleEnabled = computed(() => isModuleEnabled('article-reader'));
 
 const store = inject(SKILL_STORE_KEY)!;
 const collapsed = ref(true);

@@ -3,5 +3,6 @@ import { collectFullSummary } from '~/server/lib/coach/context-builder';
 
 export default defineEventHandler(async (event) => {
   const db = useDB(event);
-  return collectFullSummary(db);
+  const enabledModules: string[] | undefined = event.context.auth?.enabledModules;
+  return collectFullSummary(db, enabledModules);
 });

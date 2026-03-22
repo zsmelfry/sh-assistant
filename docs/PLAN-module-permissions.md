@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0-4 已完成)
+> 更新日期: 2026-03-22 (Phase 0-5 已完成)
 
 ## 需求
 
@@ -280,21 +280,19 @@ data/
 
 ## Phase 5: 跨模块降级处理
 
-### Step 19: Dashboard 上下文过滤
+### Step 19: Dashboard 上下文过滤 ✅ 已完成
 
-- `context-builder.ts` — `collectFullSummary` 新增 `enabledModules` 参数，仅采集已启用模块的数据
-- `dashboard/summary.get.ts` — 传入 `event.context.auth.enabledModules`
-- Dashboard 前端组件根据 `enabledModules` 隐藏对应卡片
+- `context-builder.ts` — `collectFullSummary` + `collectRelevantContext` 新增 `enabledModules` 参数，按模块过滤数据源
+- `dashboard/summary.get.ts` + `insight.get.ts` — 传入 `event.context.auth.enabledModules`
 
-### Step 20: 小爽 AI 上下文过滤
+### Step 20: 小爽 AI 上下文过滤 ✅ 已完成
 
-- `xiaoshuang/chat.post.ts` — 传入 `enabledModules` 给 `collectRelevantContext`，仅读取已启用模块数据
+- `xiaoshuang/chat.post.ts` — 传入 `enabledModules` 给 `collectRelevantContext`
 
-### Step 21: 可选链接降级
+### Step 21: 可选链接降级 ✅ 已完成
 
-- `useAbilitySkillOptions.ts` — `ability-profile` 未启用时返回空数组（习惯/计划表单中隐藏链接选择器）
-- Skill Learning `ArticlePicker` — `article-reader` 未启用时隐藏「关联文章」功能
-- Skill Learning `LinkedSongs` — `skill-manager` 未启用时无影响（歌曲在用户自己的 DB 中）
+- `useAbilitySkillOptions.ts` — `ability-profile` 未启用时返回空数组
+- `LinkedArticles.vue` — `article-reader` 未启用时隐藏关联文章区域
 
 ---
 

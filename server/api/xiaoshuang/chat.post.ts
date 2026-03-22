@@ -14,8 +14,9 @@ export default defineEventHandler(async (event) => {
 
   const db = useDB(event);
 
-  // Load relevant global context based on user message
-  const globalContext = await collectRelevantContext(db, message);
+  // Load relevant global context based on user message (filtered by enabled modules)
+  const enabledModules: string[] | undefined = event.context.auth?.enabledModules;
+  const globalContext = await collectRelevantContext(db, message, enabledModules);
 
   // Build system prompt with global data
   let systemPrompt = `你是小爽助手——用户的个人成长教练和助手。
