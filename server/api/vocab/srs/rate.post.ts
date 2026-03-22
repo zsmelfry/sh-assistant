@@ -142,6 +142,11 @@ export default defineEventHandler(async (event) => {
         })
         .where(eq(vocabProgress.id, progress[0].id));
 
+      // 已掌握，清除下次复习时间
+      await db.update(srsCards)
+        .set({ nextReviewAt: 0 })
+        .where(eq(srsCards.id, card.id));
+
       // 记录状态变更历史
       await db.insert(vocabStatusHistory).values({
         userId: uid,

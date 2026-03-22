@@ -242,6 +242,8 @@ export const useStudyStore = defineStore('study', () => {
     } catch {
       // silent - session might not exist if no cards
     }
+    // Refresh vocab stats & overview so mastered counts update immediately
+    await Promise.all([vocabStore.loadStats(), loadOverview()]);
   }
 
   // Reset session

@@ -13,6 +13,10 @@ export const NEW_WORDS_PER_SESSION = 20;
 export const MAX_REVIEWS_PER_SESSION = 100;
 export const AUTO_MASTERY_INTERVAL_DAYS = 30;
 
+/** 遗忘后间隔衰减系数（基于记忆储蓄效应） */
+export const LAPSE_INTERVAL_MULTIPLIER_AGAIN = 0.2;  // 完全忘记：保留 20% 间隔
+export const LAPSE_INTERVAL_MULTIPLIER_HARD = 0.5;   // 模糊：保留 50% 间隔
+
 /** 简化的用户评分按钮映射 */
 export const QualityRating = {
   AGAIN: 0 as StudyQuality,   // 完全不记得
@@ -41,9 +45,16 @@ export function calculateNextReview(
   const now = Date.now();
 
   if (quality < 3) {
-    // 回答不合格，重置
-    repetitions = 0;
-    interval = 1;
+    // 回答不合格，按比例衰减间隔（储蓄效应：学过的词不应从零开始）
+    if (quality <= 1) {
+      // AGAIN：完全忘记，大幅回退
+      interval = Math.max(1, Math.floor(interval * LAPSE_INTERVAL_MULTIPLIER_AGAIN));
+      repetitions = 0;
+    } else {
+      // HARD：模糊，适度回退
+      interval = Math.max(1, Math.floor(interval * LAPSE_INTERVAL_MULTIPLIER_HARD));
+      repetitions = Math.max(1, repetitions - 2);
+    }
   } else {
     // 回答合格
     if (repetitions === 0) {

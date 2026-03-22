@@ -45,7 +45,7 @@
           </div>
           <p v-if="item.definition" class="wordDef">{{ item.definition }}</p>
         </div>
-        <div class="srsInfo">
+        <div v-if="item.stage !== 'mastered'" class="srsInfo">
           <span class="intervalText">间隔 {{ item.interval }}天</span>
           <span class="nextReview">下次 {{ formatNextReview(item.nextReviewAt) }}</span>
         </div>
