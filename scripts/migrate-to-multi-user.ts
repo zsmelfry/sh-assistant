@@ -87,6 +87,26 @@ function main() {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_user_modules_unique ON user_modules(user_id, module_id);
   `);
+
+  // Record drizzle migration as applied so db:migrate:admin won't re-run it
+  adminSqlite.exec(`
+    CREATE TABLE IF NOT EXISTS __drizzle_migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hash TEXT NOT NULL,
+      created_at INTEGER
+    );
+  `);
+  // Read the admin migration journal to get the tag/hash
+  const journalPath = resolve('./server/database/admin-migrations/meta/_journal.json');
+  if (existsSync(journalPath)) {
+    const journal = JSON.parse(readFileSync(journalPath, 'utf-8'));
+    const insertMigration = adminSqlite.prepare(
+      'INSERT OR IGNORE INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)',
+    );
+    for (const entry of journal.entries) {
+      insertMigration.run(entry.tag, entry.when);
+    }
+  }
   log('Created admin.db schema');
 
   // 3. Copy users from assistant.db to admin.db
