@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0 + Phase 1 + Phase 2 已完成)
+> 更新日期: 2026-03-22 (Phase 0-3 已完成)
 
 ## 需求
 
@@ -240,14 +240,14 @@ data/
 
 ## Phase 3: 超管 API
 
-### Step 13: 用户管理 CRUD
+### Step 13: 用户管理 CRUD ✅ 已完成
 
-**新建**: `server/api/admin/users/`（全部使用 `useAdminDB()`）
+**新建**: `server/api/admin/users/`（全部使用 `useAdminDB()`，受 `04.module-guard.ts` admin 角色保护）
 - `index.get.ts` — 用户列表（含角色、启用模块列表、DB 文件大小）
-- `index.post.ts` — 创建用户：校验用户名格式 + 写入 admin.db + 调用 `initUserDB()` 创建用户 DB + 插入模块权限
-- `[id]/modules.put.ts` — 更新用户模块权限，清除该用户的权限缓存
-- `[id].delete.ts` — 删除用户：删 admin.db 记录 + 归档用户 DB 文件到 `data/archived/`（禁止删除最后一个 admin）
-- `[id]/reset-password.post.ts` — 重置用户密码
+- `index.post.ts` — 创建用户：校验用户名 + admin.db + initUserDB() + 模块权限
+- `[id]/modules.put.ts` — 更新模块权限 + clearAuthCache()
+- `[id].delete.ts` — 删除用户（归档 DB 到 `data/archived/`，禁删最后一个 admin）
+- `[id]/reset-password.post.ts` — 重置密码
 
 ---
 
