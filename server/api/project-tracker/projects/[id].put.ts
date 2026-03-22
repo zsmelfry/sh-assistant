@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
 
   // Log activity when project status changes to done
   if (body.status === 'done' && existing.status !== 'done') {
-    logActivity({
+    logActivity(db, {
       source: 'project',
       sourceRef: `project:${id}`,
       description: `完成项目：${existing.title}`,

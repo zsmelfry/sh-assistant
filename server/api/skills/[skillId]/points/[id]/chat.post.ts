@@ -6,14 +6,13 @@ import { requireNumericParam, requireNonEmpty } from '~/server/utils/handler-hel
 import { handleChatRequest } from '~/server/utils/chat-handler';
 
 export default defineEventHandler(async (event) => {
-  const { skillId, config } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId, config } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 
   const body = await readBody(event);
   const { message, providerId } = body || {};
   requireNonEmpty(message, '消息内容');
-
-  const db = useDB();
   const { point, topic, domain } = await requirePointForSkill(db, id, skillId);
 
   // Fetch teaching content summary

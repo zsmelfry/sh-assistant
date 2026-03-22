@@ -1,5 +1,5 @@
 import { eq, sql, and } from 'drizzle-orm';
-import { useDB } from '~/server/database';
+import type { useDB } from '~/server/database';
 import { skills, milestones, abilityCategories } from '~/server/database/schema';
 
 interface SelfManagementSkillDef {
@@ -65,8 +65,7 @@ const SELF_MANAGEMENT_SKILLS: SelfManagementSkillDef[] = [
  * Called during daily scheduled task or on first dashboard load.
  * Creates the 3 auto skills under "自我管理" category if they don't exist.
  */
-export async function ensureSelfManagementSkills() {
-  const db = useDB();
+export async function ensureSelfManagementSkills(db: ReturnType<typeof useDB>) {
 
   // Find the "自我管理" category
   const [category] = await db.select().from(abilityCategories)

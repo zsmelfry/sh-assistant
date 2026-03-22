@@ -5,8 +5,8 @@ import { resolveSkill } from '~/server/lib/skill-learning';
 import type { SeedDomain, SeedStage } from '~/server/database/seeds/startup-map';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
   const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
 
   // Idempotent: skip if data already exists for this skill
   const existing = await db.select().from(smDomains).where(eq(smDomains.skillId, skillId)).limit(1);

@@ -5,14 +5,13 @@ import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning'
 import { requireNumericParam, requireNonEmpty } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const pointId = requireNumericParam(event, 'id', '知识点');
   const quizId = requireNumericParam(event, 'quizId', '测验');
 
   const body = await readBody(event);
   const answer = requireNonEmpty(body?.answer, '答案');
-
-  const db = useDB();
   await requirePointForSkill(db, pointId, skillId);
 
   // Verify quiz belongs to this point

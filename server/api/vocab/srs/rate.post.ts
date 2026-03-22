@@ -159,7 +159,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Log activity for ability system (daily dedup via logActivity)
-  logActivity({
+  logActivity(db, {
     source: 'vocab',
     description: '法语词汇复习',
   }).catch(() => {});

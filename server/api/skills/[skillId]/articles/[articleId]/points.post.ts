@@ -4,15 +4,14 @@ import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning'
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const articleId = requireNumericParam(event, 'articleId', '文章');
 
   const body = await readBody(event);
   if (!Array.isArray(body.pointIds) || body.pointIds.length === 0) {
     throw createError({ statusCode: 400, message: '缺少 pointIds 数组' });
   }
-
-  const db = useDB();
 
   // Verify each point belongs to this skill
   for (const pointId of body.pointIds) {

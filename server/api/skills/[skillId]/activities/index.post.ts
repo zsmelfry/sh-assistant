@@ -7,7 +7,8 @@ import { logActivity } from '~/server/lib/ability/log-activity';
 const VALID_TYPES = ['view', 'chat', 'note', 'task', 'status_change'] as const;
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const body = await readBody(event);
 
   if (!body.pointId || !body.type) {
@@ -22,8 +23,6 @@ export default defineEventHandler(async (event) => {
   if (!VALID_TYPES.includes(body.type)) {
     throw createError({ statusCode: 400, message: `无效的 type，允许值：${VALID_TYPES.join(', ')}` });
   }
-
-  const db = useDB();
   const now = Date.now();
 
   // Same-hour dedup: check if same pointId + type + skillId exists within the current hour
@@ -69,7 +68,7 @@ export default defineEventHandler(async (event) => {
       .limit(1);
 
     if (abilitySkill) {
-      await logActivity({
+      await logActivity(db, {
         skillId: abilitySkill.id,
         categoryId: abilitySkill.categoryId,
         source: 'skill_learning',

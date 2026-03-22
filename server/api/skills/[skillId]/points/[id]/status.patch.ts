@@ -6,7 +6,8 @@ import { VALID_POINT_STATUSES } from '~/server/lib/skill-learning/types';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 
   const body = await readBody(event);
@@ -18,8 +19,6 @@ export default defineEventHandler(async (event) => {
       message: `status 必须是 ${VALID_POINT_STATUSES.join(', ')} 之一`,
     });
   }
-
-  const db = useDB();
   await requirePointForSkill(db, id, skillId);
 
   await db.update(smPoints).set({

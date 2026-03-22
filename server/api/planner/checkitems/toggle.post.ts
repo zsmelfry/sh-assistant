@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
   // Log activity when completing a checkitem
   if (newCompleted) {
-    const activityParams: Parameters<typeof logActivity>[0] = {
+    const activityParams: Parameters<typeof logActivity>[1] = {
       source: 'planner',
       sourceRef: `checkitem:${id}`,
       description: `完成检查项：${existing.content}`,
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    logActivity(activityParams).catch(() => {});
+    logActivity(db, activityParams).catch(() => {});
   }
 
   return {

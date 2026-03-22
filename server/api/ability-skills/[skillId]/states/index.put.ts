@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
   // Log activity if states were updated
   if (results.length > 0) {
     const [skill] = await db.select().from(skills).where(eq(skills.id, skillId));
-    await logActivity({
+    await logActivity(db, {
       skillId,
       categoryId: skill?.categoryId ?? null,
       source: 'manual',

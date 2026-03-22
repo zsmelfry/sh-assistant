@@ -4,8 +4,8 @@ import { smActivities } from '~/server/database/schema';
 import { resolveSkill } from '~/server/lib/skill-learning';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
   const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
 
   const rows = await db
     .selectDistinct({ date: smActivities.date })

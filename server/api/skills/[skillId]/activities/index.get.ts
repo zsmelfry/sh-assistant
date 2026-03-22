@@ -5,11 +5,11 @@ import { resolveSkill } from '~/server/lib/skill-learning';
 import { parsePagination } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const query = getQuery(event);
   const { page, limit: pageSize, offset } = parsePagination(query, { maxLimit: 50, pageSizeKey: 'pageSize' });
   const date = typeof query.date === 'string' ? query.date : undefined;
-  const db = useDB();
 
   const conditions = [eq(smActivities.skillId, skillId)];
   if (date) conditions.push(eq(smActivities.date, date));

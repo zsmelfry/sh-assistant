@@ -103,7 +103,7 @@ export function createDeleteHandler(
     } else {
       id = requireNumericParam(event, paramName, label);
     }
-    const db = useDB();
+    const db = useDB(event);
     await requireEntity(db, table, id, label);
     await db.delete(table).where(eq(table.id, id));
     return { success: true };

@@ -117,7 +117,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Log activity
-  await logActivity({
+  await logActivity(db, {
     skillId: inserted.id,
     categoryId,
     source: 'manual',

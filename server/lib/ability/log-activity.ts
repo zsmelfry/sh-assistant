@@ -1,4 +1,4 @@
-import { useDB } from '~/server/database';
+import type { useDB } from '~/server/database';
 import { activityLogs } from '~/server/database/schema';
 
 interface LogActivityParams {
@@ -13,9 +13,9 @@ interface LogActivityParams {
 /**
  * Record an activity log entry.
  * Used by various modules to track user activity for the ability profile system.
+ * Caller must pass the db instance obtained from useDB().
  */
-export async function logActivity(params: LogActivityParams) {
-  const db = useDB();
+export async function logActivity(db: ReturnType<typeof useDB>, params: LogActivityParams) {
   const now = Date.now();
   const today = params.date || new Date().toISOString().slice(0, 10);
 

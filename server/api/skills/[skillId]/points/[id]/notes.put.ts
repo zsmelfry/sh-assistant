@@ -5,15 +5,14 @@ import { resolveSkill, requirePointForSkill } from '~/server/lib/skill-learning'
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 
   const body = await readBody(event);
   if (typeof body.content !== 'string') {
     throw createError({ statusCode: 400, message: '缺少 content 字段' });
   }
-
-  const db = useDB();
   await requirePointForSkill(db, id, skillId);
 
   const now = Date.now();

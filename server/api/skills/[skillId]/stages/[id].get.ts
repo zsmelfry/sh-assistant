@@ -5,9 +5,9 @@ import { resolveSkill } from '~/server/lib/skill-learning';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
-  const id = requireNumericParam(event, 'id', '阶段');
   const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
+  const id = requireNumericParam(event, 'id', '阶段');
 
   const [stage] = await db.select()
     .from(smStages)

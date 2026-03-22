@@ -33,7 +33,7 @@ export default defineEventHandler(async () => {
 
     try {
       const config = JSON.parse(row.verifyConfig);
-      const result = await verifyPlatformAuto(config);
+      const result = await verifyPlatformAuto(db, config);
 
       if (result.passed) {
         claimable.push({

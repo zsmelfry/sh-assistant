@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22
+> 更新日期: 2026-03-22 (Phase 0 Steps 0.1-0.3 已完成)
 
 ## 需求
 
@@ -104,34 +104,34 @@ data/
 
 > 不做这些，后续 Phase 会崩溃或引入安全漏洞。
 
-### Step 0.1: 用户名校验规则
+### Step 0.1: 用户名校验规则 ✅ 已完成
 
-**修改**: 创建用户的所有入口（admin API、seed 脚本）
-- 强制用户名匹配 `/^[a-z0-9_-]{3,30}$/`
-- `useUserDB()` 中二次校验：`path.resolve()` 后确认路径在 `data/users/` 内
-- 防止路径穿越攻击（如 `../../admin` 写入 admin.db）
+**新建**: `server/utils/username-validation.ts` — 共享校验函数 `validateUsername()`，强制匹配 `/^[a-z0-9_-]{3,30}$/`
+**修改**: `server/api/_test/seed-user.post.ts` — 调用 `validateUsername()` 校验用户名
 
-### Step 0.2: 重构 5 个 lib 函数为接收 db 参数
+- `useUserDB()` 中二次路径校验将在 Phase 1 Step 2 创建 `useUserDB()` 时实现
 
-这些函数内部直接调用 `useDB()`，改签名后无法获取 event 上下文，必须先改为接收 `db` 参数：
+### Step 0.2: 重构 4 个 lib 函数为接收 db 参数 ✅ 已完成
 
-| 文件 | 函数 | 当前调用方式 | 改为 |
-|------|------|-------------|------|
-| `server/lib/ability/log-activity.ts:18` | `logActivity()` | `useDB()` 内部调用 | `logActivity(db, params)` |
-| `server/lib/ability/self-management.ts:69` | `ensureSelfManagementSkills()` | `useDB()` 内部调用 | `ensureSelfManagementSkills(db)` |
-| `server/lib/ability/verify.ts:30` | `verifyPlatformAuto()` | `useDB()` 内部调用 | `verifyPlatformAuto(db, config)` |
-| `server/lib/skill-learning/db-helpers.ts:151` | `resolveSkill()` | `useDB()` 内部调用 | `resolveSkill(db, event)` |
+这些函数内部直接调用 `useDB()`，已改为接收 `db` 参数：
 
-同步修改所有调用方（API handler 中传入 `db`）。
+| 文件 | 函数 | 改为 | 调用方更新数 |
+|------|------|------|------------|
+| `server/lib/ability/log-activity.ts` | `logActivity()` | `logActivity(db, params)` | 15 处（11 个文件） |
+| `server/lib/ability/self-management.ts` | `ensureSelfManagementSkills()` | `ensureSelfManagementSkills(db)` | 1 处 |
+| `server/lib/ability/verify.ts` | `verifyPlatformAuto()` | `verifyPlatformAuto(db, config)` | 2 处（2 个文件） |
+| `server/lib/skill-learning/db-helpers.ts` | `resolveSkill()` | `resolveSkill(db, event)` | 36 处（36 个文件） |
 
-### Step 0.3: 重构 2 个 handler 工厂
+所有调用方已同步修改。这 4 个函数的 `import { useDB }` 已改为 `import type { useDB }` 以确保不再直接调用。
+
+### Step 0.3: 重构 2 个 handler 工厂 ✅ 已完成
 
 | 文件 | 函数 | 修改 |
 |------|------|------|
-| `server/utils/handler-helpers.ts:106` | `createDeleteHandler()` | 闭包内 `useDB()` → `useDB(event)` |
-| `server/utils/reorder-handler.ts:29` | `createReorderHandler()` | 闭包内 `useDB()` → `useDB(event)` |
+| `server/utils/handler-helpers.ts` | `createDeleteHandler()` | 闭包内 `useDB()` → `useDB(event)` |
+| `server/utils/reorder-handler.ts` | `createReorderHandler()` | 闭包内 `useDB()` → `useDB(event)` |
 
-这两个在 `defineEventHandler` 闭包内，有 `event` 访问权限，修改简单。
+同时 `server/database/index.ts` 的 `useDB()` 已添加可选 `_event` 参数以兼容新调用方式，Phase 1 将改为实际使用该参数进行用户路由。
 
 ### Step 0.4: 删除后台定时任务和通知系统 ✅ 已完成
 
@@ -153,11 +153,13 @@ data/
 - 前端提醒时间输入/显示 UI 保留（用户仍可设置提醒时间，未来可用 Web Push 等机制替代）
 - 3 个 PUT API handler 中 `reminderAt` 的读写逻辑保留
 
-### Step 0.5: 测试基础设施适配（从 Phase 7 前移）
+### Step 0.5: 测试基础设施适配（从 Phase 7 前移）⏳ 待 Phase 1 完成后实施
 
+**依赖**: 需要 Phase 1 的 `useAdminDB()` 和 `initUserDB()` 才能实施
 **修改**: 在 Phase 2 之前完成，否则改完 `useDB()` 签名后所有测试立即崩溃
 - `_test/reset.post.ts` — 改为清理 admin.db + 删除 `data/users/*.db`
 - `_test/seed-user.post.ts` — 改用 `useAdminDB()` 写入用户 + 调用 `initUserDB()` 创建用户 DB
+- `_test/seed-user.post.ts` 已添加 `validateUsername()` 校验（Step 0.1 完成）
 
 ---
 

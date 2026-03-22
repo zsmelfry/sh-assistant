@@ -17,13 +17,12 @@ interface QuizItem {
 }
 
 export default defineEventHandler(async (event) => {
-  const { skillId, config } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId, config } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 
   const body = await readBody(event);
   const { providerId } = body || {};
-
-  const db = useDB();
   const { point, topic, domain } = await requirePointForSkill(db, id, skillId);
 
   // Load teaching content

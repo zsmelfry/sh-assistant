@@ -1,5 +1,5 @@
 import { eq, sql, and } from 'drizzle-orm';
-import { useDB } from '~/server/database';
+import type { useDB } from '~/server/database';
 import {
   vocabProgress,
   checkins,
@@ -26,8 +26,7 @@ interface VerifyConfig {
 /**
  * Execute platform_auto verification by querying real platform data.
  */
-export async function verifyPlatformAuto(config: VerifyConfig): Promise<VerifyResult> {
-  const db = useDB();
+export async function verifyPlatformAuto(db: ReturnType<typeof useDB>, config: VerifyConfig): Promise<VerifyResult> {
   const { source, metric, threshold } = config;
 
   if (source === 'vocab') {

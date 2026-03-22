@@ -23,7 +23,7 @@ export default defineEventHandler(async () => {
     rows = await db.select().from(abilityCategories).orderBy(abilityCategories.sortOrder);
 
     // Auto-create self-management skills after first seed
-    await ensureSelfManagementSkills();
+    await ensureSelfManagementSkills(db);
   }
 
   return rows;

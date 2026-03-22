@@ -4,10 +4,10 @@ import { smActivities } from '~/server/database/schema';
 import { resolveSkill } from '~/server/lib/skill-learning';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
   const query = getQuery(event);
   const year = Number(query.year) || new Date().getFullYear();
-  const db = useDB();
 
   const startDate = `${year}-01-01`;
   const endDate = `${year}-12-31`;

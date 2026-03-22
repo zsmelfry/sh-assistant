@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
 
   // Get article title for activity log
   const [articleRow] = await db.select({ title: articles.title }).from(articles).where(eq(articles.id, id)).limit(1);
-  logActivity({
+  logActivity(db, {
     source: 'article',
     sourceRef: `article:${id}`,
     description: `收藏文章：${articleRow?.title ?? '未知'}`,

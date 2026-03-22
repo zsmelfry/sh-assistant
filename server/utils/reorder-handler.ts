@@ -26,7 +26,7 @@ export function createReorderHandler(
       }
     }
 
-    const db = useDB();
+    const db = useDB(event);
     const now = Date.now();
 
     db.transaction((tx) => {

@@ -4,8 +4,8 @@ import { smStages, smStagePoints, smPoints, smTopics, smDomains } from '~/server
 import { resolveSkill } from '~/server/lib/skill-learning';
 
 export default defineEventHandler(async (event) => {
-  const { skillId } = await resolveSkill(event);
   const db = useDB();
+  const { skillId } = await resolveSkill(db, event);
 
   const stages = await db
     .select({

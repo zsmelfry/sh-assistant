@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
   }).returning();
 
   // Log activity
-  await logActivity({
+  await logActivity(db, {
     skillId,
     categoryId: skill.categoryId,
     source: 'milestone',
@@ -133,7 +133,7 @@ async function checkTierUnlock(
     updatedAt: Date.now(),
   }).where(eq(skills.id, skillId));
 
-  await logActivity({
+  await logActivity(db, {
     skillId,
     categoryId: skill.categoryId,
     source: 'milestone',

@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
   // Execute verification
   let result: VerifyResult;
   if (milestone.verifyMethod === 'platform_auto') {
-    result = await verifyPlatformAuto(verifyConfig);
+    result = await verifyPlatformAuto(db, verifyConfig);
   } else {
     result = await verifyPlatformTest(verifyConfig);
   }
@@ -77,7 +77,7 @@ export default defineEventHandler(async (event) => {
   }).returning();
 
   // Log activity
-  await logActivity({
+  await logActivity(db, {
     skillId,
     categoryId: skill.categoryId,
     source: 'milestone',
@@ -128,7 +128,7 @@ async function checkTierUnlock(
     updatedAt: Date.now(),
   }).where(eq(skills.id, skillId));
 
-  await logActivity({
+  await logActivity(db, {
     skillId,
     categoryId: skill.categoryId,
     source: 'milestone',

@@ -25,13 +25,12 @@ function parseSections(fullContent: string): Record<string, string> {
 }
 
 export default defineEventHandler(async (event) => {
-  const { skillId, config } = await resolveSkill(event);
+  const db = useDB();
+  const { skillId, config } = await resolveSkill(db, event);
   const id = requireNumericParam(event, 'id', '知识点');
 
   const body = await readBody(event);
   const { regenerate, providerId } = body || {};
-
-  const db = useDB();
   const { point, topic, domain } = await requirePointForSkill(db, id, skillId);
 
   // Check cache (skip in regenerate mode)

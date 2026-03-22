@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3';
 import { eq } from 'drizzle-orm';
 import { smPoints, smTopics, smDomains, skillConfigs } from '~/server/database/schema';
-import { useDB } from '~/server/database';
+import type { useDB } from '~/server/database';
 import {
   POINT_STATUS_LABELS,
   ACTIVITY_TYPE_LABELS,
@@ -142,13 +142,11 @@ function buildSkillConfigFromDb(row: SkillConfigRow): SkillConfig {
 }
 
 /** Extract skillId from route param, query DB, and return config */
-export async function resolveSkill(event: H3Event): Promise<{ skillId: string; config: SkillConfig }> {
+export async function resolveSkill(db: ReturnType<typeof useDB>, event: H3Event): Promise<{ skillId: string; config: SkillConfig }> {
   const skillId = getRouterParam(event, 'skillId');
   if (!skillId) {
     throw createError({ statusCode: 400, message: '缺少 skillId' });
   }
-
-  const db = useDB();
   const [row] = await db.select().from(skillConfigs)
     .where(eq(skillConfigs.skillId, skillId))
     .limit(1);

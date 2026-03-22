@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
     const [habit] = await db.select({ name: habits.name, linkedAbilitySkillId: habits.linkedAbilitySkillId })
       .from(habits).where(eq(habits.id, habitId));
 
-    const activityParams: Parameters<typeof logActivity>[0] = {
+    const activityParams: Parameters<typeof logActivity>[1] = {
       source: 'habit',
       sourceRef: habitId,
       description: `习惯打卡：${habit?.name ?? habitId}`,
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    logActivity(activityParams).catch(() => {});
+    logActivity(db, activityParams).catch(() => {});
 
     return { checked: true, checkin: newCheckin };
   }
