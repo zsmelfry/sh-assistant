@@ -36,5 +36,10 @@ export function initUserDB(username: string): void {
     migrate(db, { migrationsFolder });
   }
 
+  // Clean up: remove users table from user DB (auth lives in admin.db)
+  try {
+    sqlite.exec('DROP TABLE IF EXISTS users');
+  } catch { /* may not exist */ }
+
   sqlite.close();
 }

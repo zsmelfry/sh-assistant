@@ -129,12 +129,13 @@ onMounted(fetchUsers);
 
 .btn-primary {
   padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--color-accent);
+  background: var(--color-text);
   color: var(--color-bg);
-  border: none;
+  border: 1px solid var(--color-text);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .btn-primary:hover {
