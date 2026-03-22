@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0-6 已完成)
+> 更新日期: 2026-03-22 (全部 Phase 0-7 已完成 ✅)
 
 ## 需求
 
@@ -316,22 +316,20 @@ data/
 
 ## Phase 7: 测试 + 部署
 
-### Step 25: E2E 测试
+### Step 25: E2E 测试 ✅ 已完成
 
-**新建**: `e2e/admin.spec.ts`
-- admin 可见用户管理工具，普通用户不可见
-- admin 创建新用户 → 验证用户 DB 文件已创建
-- admin 切换模块权限 → 用户侧边栏相应变化
-- 普通用户访问禁用模块 API → 403
-- 两个用户数据完全隔离（用户 A 的习惯，用户 B 看不到）
-- Dashboard 禁用后侧边栏不显示、路由重定向
+`e2e/admin.spec.ts` — 3 组测试：
+- Admin CRUD API（列表、创建、模块权限、密码重置、删除、最后 admin 保护）
+- 模块权限执行（禁用模块 API 返回 403，普通用户访问 admin API 返回 403）
+- 数据隔离（用户 A 的习惯用户 B 不可见，登录返回 role + enabledModules）
 
-### Step 26: 部署脚本更新
+### Step 26: 部署脚本更新 ✅ 已完成
 
-**修改**: `scripts/deploy.sh`
-- 备份策略：`admin.db` + `users/*.db` 全部备份
-- 迁移：先 admin.db，再遍历 `users/*.db`
-- 首次部署：运行 `migrate-to-multi-user.ts` 从 `assistant.db` 拆分
+`scripts/deploy.sh` — 7 步部署流程：
+- 首次部署自动运行 migrate-to-multi-user.ts
+- 备份 admin.db + 所有 users/*.db
+- 先 admin 迁移，再遍历 user DB 迁移
+- 保留最近 5 个备份
 
 ---
 

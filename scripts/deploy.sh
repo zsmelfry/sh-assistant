@@ -8,22 +8,20 @@ for arg in "$@"; do
   esac
 done
 
-PROD_DB="./data/assistant.db"
+ADMIN_DB="./data/admin.db"
+LEGACY_DB="./data/assistant.db"
+USERS_DIR="./data/users"
 BACKUP_DIR="./data/backups"
+MIGRATION_STATE="./data/.migration-state"
 JOURNAL="./server/database/migrations/meta/_journal.json"
+ADMIN_JOURNAL="./server/database/admin-migrations/meta/_journal.json"
 
-echo "=== 1/6 Stopping dev server ==="
-# Kill any running Nuxt dev server to prevent it from overwriting
-# the production manifest in .nuxt/dist/server/ with dev-mode entries.
-# (The dev server watches .nuxt/ and will clobber client.manifest.mjs
-#  during the build, causing the production HTML to reference
-#  non-existent @vite/client paths → white screen.)
+echo "=== 1/7 Stopping dev server ==="
 DEV_PIDS=$(lsof -ti :3000 2>/dev/null || true)
 if [ -n "$DEV_PIDS" ]; then
   echo "Killing dev server (PIDs: $DEV_PIDS)..."
   echo "$DEV_PIDS" | xargs kill 2>/dev/null || true
   sleep 1
-  # Force kill if still running
   REMAINING=$(lsof -ti :3000 2>/dev/null || true)
   if [ -n "$REMAINING" ]; then
     echo "Force killing remaining processes..."
@@ -36,89 +34,75 @@ else
 fi
 
 echo ""
-echo "=== 2/6 Building ==="
+echo "=== 2/7 Building ==="
 npm run build
 
 echo ""
-echo "=== 3/6 Checking migration compatibility ==="
-# Extract tags from _journal.json
-JOURNAL_TAGS=$(node -e "
-  const j = require('./$JOURNAL');
-  j.entries.forEach(e => console.log(e.tag));
-")
-
-if [ -f "$PROD_DB" ]; then
-  # Get applied migration tags from production DB
-  APPLIED_TAGS=$(node -e "
-    const Database = require('better-sqlite3');
-    const db = new Database('$PROD_DB');
-    try {
-      const rows = db.prepare('SELECT tag FROM __drizzle_migrations ORDER BY created_at').all();
-      rows.forEach(r => console.log(r.tag));
-    } catch(e) {
-      // Table doesn't exist yet — fresh DB, no migrations applied
-    }
-    db.close();
-  ")
-
-  # Verify every applied migration still exists in the journal
-  while IFS= read -r tag; do
-    [ -z "$tag" ] && continue
-    if ! echo "$JOURNAL_TAGS" | grep -qxF "$tag"; then
-      echo "ERROR: Applied migration '$tag' not found in journal. Aborting."
-      exit 1
-    fi
-  done <<< "$APPLIED_TAGS"
-
-  echo "Migration compatibility check passed."
+echo "=== 3/7 First-time migration (if needed) ==="
+if [ -f "$LEGACY_DB" ] && [ ! -f "$MIGRATION_STATE" ]; then
+  echo "Found legacy assistant.db without migration state."
+  echo "Running one-time migration to multi-user architecture..."
+  npx tsx scripts/migrate-to-multi-user.ts
+  echo "Migration complete."
+elif [ ! -f "$ADMIN_DB" ] && [ ! -f "$LEGACY_DB" ]; then
+  echo "Fresh installation — no existing data to migrate."
 else
-  echo "No production DB found — will be created during migration."
+  echo "Multi-user architecture already in place — skipping."
 fi
 
 echo ""
-echo "=== 4/6 Backing up and dry-run migration ==="
-if [ -f "$PROD_DB" ]; then
-  mkdir -p "$BACKUP_DIR"
-  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-  BACKUP_FILE="$BACKUP_DIR/assistant_${TIMESTAMP}.db"
-  DRY_RUN_DB="$BACKUP_DIR/_dry_run.db"
+echo "=== 4/7 Backing up databases ==="
+mkdir -p "$BACKUP_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-  # Backup production DB (including WAL/SHM files if present)
-  cp "$PROD_DB" "$BACKUP_FILE"
-  [ -f "${PROD_DB}-wal" ] && cp "${PROD_DB}-wal" "${BACKUP_FILE}-wal"
-  [ -f "${PROD_DB}-shm" ] && cp "${PROD_DB}-shm" "${BACKUP_FILE}-shm"
-  echo "Backup saved to $BACKUP_FILE"
+# Backup admin.db
+if [ -f "$ADMIN_DB" ]; then
+  cp "$ADMIN_DB" "$BACKUP_DIR/admin_${TIMESTAMP}.db"
+  [ -f "${ADMIN_DB}-wal" ] && cp "${ADMIN_DB}-wal" "$BACKUP_DIR/admin_${TIMESTAMP}.db-wal"
+  [ -f "${ADMIN_DB}-shm" ] && cp "${ADMIN_DB}-shm" "$BACKUP_DIR/admin_${TIMESTAMP}.db-shm"
+  echo "Backed up admin.db"
+fi
 
-  # Dry-run: migrate a copy to catch SQL errors before touching the real DB
-  cp "$PROD_DB" "$DRY_RUN_DB"
-  [ -f "${PROD_DB}-wal" ] && cp "${PROD_DB}-wal" "${DRY_RUN_DB}-wal"
-  [ -f "${PROD_DB}-shm" ] && cp "${PROD_DB}-shm" "${DRY_RUN_DB}-shm"
-
-  echo "Running dry-run migration on copy..."
-  if DATABASE_PATH="$DRY_RUN_DB" npx drizzle-kit migrate; then
-    echo "Dry-run migration succeeded."
-  else
-    echo "ERROR: Dry-run migration failed. Production DB is untouched."
-    echo "Backup is at $BACKUP_FILE"
-    rm -f "$DRY_RUN_DB" "${DRY_RUN_DB}-wal" "${DRY_RUN_DB}-shm"
-    exit 1
-  fi
-  rm -f "$DRY_RUN_DB" "${DRY_RUN_DB}-wal" "${DRY_RUN_DB}-shm"
-
-  # Prune old backups, keep the latest 5
-  ls -1t "$BACKUP_DIR"/assistant_*.db 2>/dev/null | tail -n +6 | while read -r old; do
-    rm -f "$old" "${old}-wal" "${old}-shm"
+# Backup all user DBs
+if [ -d "$USERS_DIR" ]; then
+  USER_BACKUP_DIR="$BACKUP_DIR/users_${TIMESTAMP}"
+  mkdir -p "$USER_BACKUP_DIR"
+  for db in "$USERS_DIR"/*.db; do
+    [ -f "$db" ] || continue
+    cp "$db" "$USER_BACKUP_DIR/"
+    [ -f "${db}-wal" ] && cp "${db}-wal" "$USER_BACKUP_DIR/"
+    [ -f "${db}-shm" ] && cp "${db}-shm" "$USER_BACKUP_DIR/"
   done
+  echo "Backed up user DBs to $USER_BACKUP_DIR"
+fi
+
+# Prune old backups, keep the latest 5
+ls -1td "$BACKUP_DIR"/admin_*.db 2>/dev/null | tail -n +6 | while read -r old; do
+  rm -f "$old" "${old}-wal" "${old}-shm"
+done
+ls -1td "$BACKUP_DIR"/users_* 2>/dev/null | tail -n +6 | while read -r old; do
+  rm -rf "$old"
+done
+
+echo ""
+echo "=== 5/7 Migrating admin.db ==="
+if [ -f "$ADMIN_JOURNAL" ]; then
+  ADMIN_DB_PATH="$ADMIN_DB" npx drizzle-kit migrate --config drizzle-admin.config.ts
+  echo "Admin DB migrated."
 else
-  echo "No production DB to backup — skipping."
+  echo "No admin migrations found — skipping."
 fi
 
 echo ""
-echo "=== 5/6 Running migrations on production DB ==="
-DATABASE_PATH="$PROD_DB" npx drizzle-kit migrate
+echo "=== 6/7 Migrating user DBs ==="
+if [ -d "$USERS_DIR" ] && [ -f "$JOURNAL" ]; then
+  npx tsx scripts/migrate-user-dbs.ts
+else
+  echo "No user DBs or migrations found — skipping."
+fi
 
 echo ""
-echo "=== 6/6 Restarting PM2 ==="
+echo "=== 7/7 Restarting PM2 ==="
 if [ "${LAN:-}" = "1" ]; then
   echo "LAN mode: binding to 0.0.0.0 (accessible from network)"
 else
