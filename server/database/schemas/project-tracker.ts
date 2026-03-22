@@ -168,16 +168,6 @@ export const ptChats = sqliteTable('pt_chats', {
   index('idx_pt_chats_project').on(table.projectId),
 ]);
 
-// ===== 提醒记录 =====
-export const ptNotifications = sqliteTable('pt_notifications', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  targetType: text('target_type', { enum: ['project', 'checklist', 'milestone'] }).notNull(),
-  targetId: integer('target_id').notNull(),
-  reminderAt: integer('reminder_at', { mode: 'number' }).notNull(), // The reminder timestamp that was fired
-  sentAt: integer('sent_at', { mode: 'number' }).notNull(),
-}, (table) => [
-  uniqueIndex('idx_pt_notifications_unique').on(table.targetType, table.targetId, table.reminderAt),
-]);
 
 // ===== 常量 =====
 export const PT_STATUSES = ['idea', 'todo', 'in_progress', 'blocked', 'done', 'dropped'] as const;

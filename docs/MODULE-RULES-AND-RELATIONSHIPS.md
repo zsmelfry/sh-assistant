@@ -314,11 +314,9 @@ idea → todo → in_progress → done
 - 可关联笔记 `linkedNoteId`
 - 支持完成/取消完成切换
 
-#### 5.4 提醒系统
+#### 5.4 提醒字段
 
-- 项目、里程碑、清单项都有 `reminderAt` 字段
-- 通知表 `ptNotifications` 记录提醒是否已发送
-- 系统定期检查到期提醒
+- 项目、里程碑、清单项都有 `reminderAt` 字段（数据保留，暂无自动通知机制）
 
 #### 5.5 归档
 
