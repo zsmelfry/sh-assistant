@@ -74,11 +74,14 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 - `02.auth.ts` — JWT validation (whitelists `/api/_test/*` and `/api/auth/login`)
 - `03.test-guard.ts` — Blocks test endpoints in production
 
-**Database:** SQLite via `better-sqlite3` + Drizzle ORM, WAL mode, foreign keys enabled.
-- Schema split into files under `server/database/schemas/` (auth, habits, vocab, llm, srs, planner, articles, startup-map)
-- Migrations: `server/database/migrations/`
-- Singleton connection: `server/database/index.ts` exports `useDB()`
-- DB file: `./data/assistant.db` (configurable via `DATABASE_PATH` env var)
+**Database:** Multi-user SQLite via `better-sqlite3` + Drizzle ORM, WAL mode, foreign keys enabled.
+- **Admin DB** (`data/admin.db`): Users + module permissions only. Schema: `server/database/admin-schema.ts`. Access: `useAdminDB()`
+- **User DBs** (`data/users/{username}.db`): All feature data per user. Schema: `server/database/schema.ts`. Access: `useDB(event)` or `useUserDB(username)`
+- **Legacy fallback**: `useDB()` without event still works (returns singleton `data/assistant.db`), will be removed after Phase 2
+- User DB connections use LRU cache (max=20, ttl=5min)
+- Schema files: `server/database/schemas/` (habits, vocab, llm, srs, planner, articles, startup-map, etc.)
+- Migrations: `server/database/migrations/` (user), `server/database/admin-migrations/` (admin)
+- **New tool module must**: Update `MODULE_NAMESPACE_MAP` in module-ids.ts (Phase 2)
 
 **Key API groups:**
 - `/api/auth` — Login (JWT, 365-day expiry)
@@ -132,7 +135,7 @@ PM2-based production setup. Config in `ecosystem.config.cjs`, deploy script in `
 
 ## Key Conventions
 
-- **DB access:** Always call `useDB()` inside the handler function, never at module level
+- **DB access:** Always call `useDB(event)` inside the handler function, never at module level. Use `useAdminDB()` only for auth/admin operations. Lib functions receive `db` as parameter from caller.
 - **API error pattern:** Validate input → check existence (throw 404) → then mutate. Use `createError({ statusCode, message })`
 - **Timestamps:** Unix milliseconds (integer) for timestamps, `YYYY-MM-DD` strings for dates
 - **IDs:** UUID strings for habits/checkins, auto-increment integers for vocab/SRS/planner/articles/startup-map

@@ -1,25 +1,108 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { LRUCache } from 'lru-cache';
 import * as schema from './schema';
+import * as adminSchema from './admin-schema';
 
-let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+// ── Types ──
 
-export function useDB(_event?: any) {
-  if (!_db) {
-    const dbPath = process.env.DATABASE_PATH || './data/assistant.db';
+type UserDB = ReturnType<typeof drizzle<typeof schema>>;
+type AdminDB = ReturnType<typeof drizzle<typeof adminSchema>>;
 
-    // 确保数据库目录存在
-    mkdirSync(dirname(dbPath), { recursive: true });
+// ── Helper: create SQLite connection with standard pragmas ──
 
-    const sqlite = new Database(dbPath);
-
-    // 启用 WAL 模式，提升并发读性能
-    sqlite.pragma('journal_mode = WAL');
-    sqlite.pragma('foreign_keys = ON');
-
-    _db = drizzle(sqlite, { schema });
-  }
-  return _db;
+function createSqliteDb(dbPath: string) {
+  mkdirSync(dirname(dbPath), { recursive: true });
+  const sqlite = new Database(dbPath);
+  sqlite.pragma('journal_mode = WAL');
+  sqlite.pragma('foreign_keys = ON');
+  sqlite.pragma('busy_timeout = 5000');
+  return sqlite;
 }
+
+// ── Admin DB — 全局单例，仅认证 + 权限 ──
+
+let _adminDb: AdminDB | null = null;
+
+export function useAdminDB(): AdminDB {
+  if (!_adminDb) {
+    const dbPath = process.env.ADMIN_DB_PATH || './data/admin.db';
+    const sqlite = createSqliteDb(dbPath);
+    _adminDb = drizzle(sqlite, { schema: adminSchema });
+  }
+  return _adminDb;
+}
+
+// ── User DB — LRU 缓存，按 username 路由 ──
+
+const userDbCache = new LRUCache<string, UserDB>({
+  max: 20,
+  ttl: 5 * 60 * 1000, // 空闲 5 分钟自动回收
+  dispose: (db) => {
+    try {
+      // @ts-expect-error - access underlying session to close
+      db._.session.client.close();
+    } catch { /* already closed */ }
+  },
+});
+
+export function useUserDB(username: string): UserDB {
+  // 校验用户名安全性（防路径穿越）
+  if (!/^[a-z0-9_-]{3,30}$/.test(username)) {
+    throw new Error('Invalid username');
+  }
+
+  const cached = userDbCache.get(username);
+  if (cached) return cached;
+
+  const dbPath = resolve('./data/users', `${username}.db`);
+  // 二次校验：确保路径在 data/users/ 内
+  const usersDir = resolve('./data/users');
+  if (!dbPath.startsWith(usersDir + '/')) {
+    throw new Error('Invalid DB path');
+  }
+
+  const sqlite = createSqliteDb(dbPath);
+  const db = drizzle(sqlite, { schema });
+  userDbCache.set(username, db);
+  return db;
+}
+
+// ── 主入口：从 event.context 自动取 username ──
+
+// Legacy singleton for backward compatibility during Phase 2 migration.
+// Once all handlers pass event, this can be removed.
+let _legacyDb: UserDB | null = null;
+
+export function useDB(event?: any): UserDB {
+  // If event has auth context, route to user DB
+  if (event?.context?.auth?.username) {
+    return useUserDB(event.context.auth.username);
+  }
+
+  // Fallback: legacy singleton (for handlers not yet passing event)
+  if (!_legacyDb) {
+    const dbPath = process.env.DATABASE_PATH || './data/assistant.db';
+    const sqlite = createSqliteDb(dbPath);
+    _legacyDb = drizzle(sqlite, { schema });
+  }
+  return _legacyDb;
+}
+
+// ── 进程退出时清理所有连接 ──
+
+function cleanupConnections() {
+  userDbCache.clear(); // triggers dispose callbacks
+  for (const db of [_adminDb, _legacyDb]) {
+    if (db) {
+      try {
+        // @ts-expect-error - access underlying session to close
+        db._.session.client.close();
+      } catch { /* already closed */ }
+    }
+  }
+}
+
+process.on('exit', cleanupConnections);

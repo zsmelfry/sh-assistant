@@ -1,67 +1,22 @@
-import { useDB } from '~/server/database';
-import {
-  users,
-  habits, checkins,
-  vocabStatusHistory, vocabProgress, vocabWords, vocabUsers, vocabSettings,
-  reviewLogs, srsCards, definitions, studySessions,
-  llmProviders,
-  plannerGoalTags, plannerCheckitems, plannerGoals, plannerDomains, plannerTags,
-  articleChats, articleTagMap, articleTags, articleTranslations, articleBookmarks, articles,
-  smChats, smTeachings, smPoints, smTopics, smDomains, smProducts,
-  smActivities, smPointArticles, smNotes, smTasks, smStagePoints, smStages,
-  smQuizAttempts, smQuizzes,
-  skillConfigs,
-} from '~/server/database/schema';
+import { readdirSync, unlinkSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { useAdminDB } from '~/server/database';
+import { users, userModules } from '~/server/database/admin-schema';
 
 export default defineEventHandler(async () => {
-  const db = useDB();
-  // auth
-  await db.delete(users);
-  // habit-tracker
-  await db.delete(checkins);
-  await db.delete(habits);
-  // SRS 子表 (先删子表: reviewLogs → srsCards → definitions, studySessions)
-  await db.delete(reviewLogs);
-  await db.delete(srsCards);
-  await db.delete(definitions);
-  await db.delete(studySessions);
-  // vocab-tracker (顺序: 先删子表)
-  await db.delete(vocabStatusHistory);
-  await db.delete(vocabProgress);
-  await db.delete(vocabWords);
-  await db.delete(vocabUsers);
-  await db.delete(vocabSettings);
-  // LLM
-  await db.delete(llmProviders);
-  // article-reader (child tables first, including cross-module FK)
-  await db.delete(smPointArticles);
-  await db.delete(articleChats);
-  await db.delete(articleTagMap);
-  await db.delete(articleTags);
-  await db.delete(articleTranslations);
-  await db.delete(articleBookmarks);
-  await db.delete(articles);
-  // planner (child tables first)
-  await db.delete(plannerGoalTags);
-  await db.delete(plannerCheckitems);
-  await db.delete(plannerGoals);
-  await db.delete(plannerDomains);
-  await db.delete(plannerTags);
-  // startup-map (child tables first)
-  await db.delete(smQuizAttempts);
-  await db.delete(smQuizzes);
-  await db.delete(smActivities);
-  await db.delete(smNotes);
-  await db.delete(smTasks);
-  await db.delete(smStagePoints);
-  await db.delete(smStages);
-  await db.delete(smChats);
-  await db.delete(smTeachings);
-  await db.delete(smPoints);
-  await db.delete(smTopics);
-  await db.delete(smDomains);
-  await db.delete(smProducts);
-  // skill-configs
-  await db.delete(skillConfigs);
+  // 1. Clear admin.db
+  const adminDb = useAdminDB();
+  await adminDb.delete(userModules);
+  await adminDb.delete(users);
+
+  // 2. Delete all user DB files
+  const usersDir = resolve('./data/users');
+  if (existsSync(usersDir)) {
+    const files = readdirSync(usersDir).filter((f) => f.endsWith('.db') || f.endsWith('.db-wal') || f.endsWith('.db-shm'));
+    for (const file of files) {
+      unlinkSync(resolve(usersDir, file));
+    }
+  }
+
   return { success: true };
 });

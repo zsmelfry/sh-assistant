@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { useDB } from '~/server/database';
-import { users } from '~/server/database/schema';
+import { useAdminDB } from '~/server/database';
+import { users, userModules } from '~/server/database/admin-schema';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '用户名和密码不能为空' });
   }
 
-  const db = useDB();
+  const db = useAdminDB();
   const [user] = await db.select()
     .from(users)
     .where(eq(users.username, body.username.trim()))
@@ -33,10 +33,18 @@ export default defineEventHandler(async (event) => {
   }
 
   const token = jwt.sign(
-    { userId: user.id, username: user.username },
+    { userId: user.id, username: user.username, role: user.role },
     secret,
     { expiresIn: '365d' },
   );
 
-  return { token };
+  // Query enabled modules for this user
+  const modules = await db.select({ moduleId: userModules.moduleId })
+    .from(userModules)
+    .where(eq(userModules.userId, user.id));
+  const enabledModules = modules
+    .filter((m) => m.moduleId)
+    .map((m) => m.moduleId);
+
+  return { token, role: user.role, enabledModules };
 });

@@ -1,13 +1,3 @@
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
-
-export const users = sqliteTable('users', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  username: text('username').notNull(),
-  passwordHash: text('password_hash').notNull(),
-  createdAt: integer('created_at', { mode: 'number' }).notNull(),
-}, (table) => [
-  uniqueIndex('idx_users_username').on(table.username),
-]);
-
-// 类型推导
-export type User = typeof users.$inferSelect;
+// User authentication tables have been moved to admin-schema.ts (admin.db)
+// This file is kept empty to avoid breaking imports that may reference it.
+// The users table now lives only in admin.db for security isolation.

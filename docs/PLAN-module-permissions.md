@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0 Steps 0.1-0.3 已完成)
+> 更新日期: 2026-03-22 (Phase 0 + Phase 1 已完成)
 
 ## 需求
 
@@ -153,121 +153,55 @@ data/
 - 前端提醒时间输入/显示 UI 保留（用户仍可设置提醒时间，未来可用 Web Push 等机制替代）
 - 3 个 PUT API handler 中 `reminderAt` 的读写逻辑保留
 
-### Step 0.5: 测试基础设施适配（从 Phase 7 前移）⏳ 待 Phase 1 完成后实施
+### Step 0.5: 测试基础设施适配（从 Phase 7 前移）✅ 已在 Phase 1 中完成
 
-**依赖**: 需要 Phase 1 的 `useAdminDB()` 和 `initUserDB()` 才能实施
-**修改**: 在 Phase 2 之前完成，否则改完 `useDB()` 签名后所有测试立即崩溃
 - `_test/reset.post.ts` — 改为清理 admin.db + 删除 `data/users/*.db`
-- `_test/seed-user.post.ts` — 改用 `useAdminDB()` 写入用户 + 调用 `initUserDB()` 创建用户 DB
-- `_test/seed-user.post.ts` 已添加 `validateUsername()` 校验（Step 0.1 完成）
+- `_test/seed-user.post.ts` — 改用 `useAdminDB()` 写入用户 + 调用 `initUserDB()` 创建用户 DB + 启用全部模块
 
 ---
 
 ## Phase 1: 数据库分离基础设施
 
-### Step 1: 创建 admin schema
+### Step 1: 创建 admin schema ✅ 已完成
 
-**新建**: `server/database/admin-schema.ts`
-- 仅包含两张表：`users`（新增 `role` 列）、`userModules`（新表）
-- `users`: `id`, `username`, `passwordHash`, `role`(text, default 'user'), `createdAt`
-- `userModules`: `id`, `userId`(FK→users, CASCADE), `moduleId`(text), `enabled`(integer boolean), `updatedAt`(timestamp)
-- `(userId, moduleId)` 唯一索引
+**新建**: `server/database/admin-schema.ts` — `users`（含 `role` 列）+ `userModules` 表
+**修改**: `server/database/schema.ts` — 移除 `users` 表导出
+**修改**: `server/database/schemas/auth.ts` — 清空（users 已移至 admin-schema）
+**新建**: `drizzle-admin.config.ts` — admin schema 的 drizzle-kit 配置
+**生成**: `server/database/admin-migrations/0000_thick_lady_vermin.sql`
 
-**修改**: `server/database/schema.ts`
-- 保留所有现有表（用户 DB 的 schema 不变）
-- `users` 表从用户 schema 中移除（认证表只在 admin.db）
-
-### Step 2: 改造 `useDB()` 为多数据库路由
+### Step 2: 改造 `useDB()` 为多数据库路由 ✅ 已完成
 
 **改造**: `server/database/index.ts`
+- `useAdminDB()`: admin.db 全局单例
+- `useUserDB(username)`: LRU 缓存（max=20, ttl=5min），按 username 路由到 `data/users/{username}.db`
+- `useDB(event?)`: 有 auth context 时路由到用户 DB，否则回退到 legacy 单例（Phase 2 完成后移除回退）
+- 进程退出清理所有连接
+- 安装了 `lru-cache` 依赖
 
-```typescript
-import { LRUCache } from 'lru-cache';
-
-// admin.db — 全局单例，仅认证 + 权限
-let _adminDb = null;
-export function useAdminDB() {
-  if (!_adminDb) {
-    const dbPath = process.env.ADMIN_DB_PATH || './data/admin.db';
-    mkdirSync(dirname(dbPath), { recursive: true });
-    const sqlite = new Database(dbPath);
-    sqlite.pragma('journal_mode = WAL');
-    sqlite.pragma('foreign_keys = ON');
-    sqlite.pragma('busy_timeout = 5000');
-    _adminDb = drizzle(sqlite, { schema: adminSchema });
-  }
-  return _adminDb;
-}
-
-// 用户 DB — LRU 缓存，按 username 路由
-const userDbCache = new LRUCache<string, DrizzleDB>({
-  max: 20,
-  ttl: 5 * 60 * 1000,         // 空闲 5 分钟自动回收
-  dispose: (db) => db.close(), // 回收时关闭连接
-});
-
-export function useUserDB(username: string) {
-  // 校验用户名安全性（防路径穿越）
-  if (!/^[a-z0-9_-]{3,30}$/.test(username)) {
-    throw new Error('Invalid username');
-  }
-  const cached = userDbCache.get(username);
-  if (cached) return cached;
-
-  const dbPath = resolve('./data/users', `${username}.db`);
-  // 二次校验：确保路径在 data/users/ 内
-  if (!dbPath.startsWith(resolve('./data/users/'))) {
-    throw new Error('Invalid DB path');
-  }
-  const sqlite = new Database(dbPath);
-  sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('foreign_keys = ON');
-  sqlite.pragma('busy_timeout = 5000');
-  const db = drizzle(sqlite, { schema });
-  userDbCache.set(username, db);
-  return db;
-}
-
-// 主入口：从 event.context 自动取 username
-export function useDB(event: H3Event) {
-  const username = event.context.auth?.username;
-  if (!username) throw new Error('No authenticated user');
-  return useUserDB(username);
-}
-
-// 进程退出时清理所有连接
-process.on('exit', () => {
-  userDbCache.clear(); // 触发 dispose 回调关闭连接
-  if (_adminDb) _adminDb.close();
-});
-```
-
-### Step 3: 用户 DB 自动初始化
+### Step 3: 用户 DB 自动初始化 ✅ 已完成
 
 **新建**: `server/utils/user-db-init.ts`
-- `initUserDB(username: string)`: 创建 `data/users/{username}.db`，执行全部 user schema 迁移
-- 新用户注册时自动调用
-- 可选：从模板 DB 复制（预建一个空的 `data/template.db`，包含 seed 数据如 `ability_categories` 的 7 个维度、`badges` 定义等）
+- `initUserDB(username)`: 创建 `data/users/{username}.db`，用 drizzle migrate 执行全部 user schema 迁移
+- 含用户名校验 + 路径安全校验
 
-### Step 4: 迁移现有数据
+### Step 4: 迁移现有数据 ✅ 已完成
 
-**新建**: `scripts/migrate-to-multi-user.ts`
-一次性迁移脚本（幂等，可重复运行）：
-1. 检查 `admin.db` 是否已存在，存在则跳过（幂等）
-2. 备份原始 `./data/assistant.db` → `./data/backups/`
-3. 创建 `./data/admin.db`，建 `users` + `user_modules` 表
-4. 从 `assistant.db` 复制用户记录到 `admin.db`，设 `role: 'admin'`，插入全部模块启用记录
-5. 复制 `assistant.db` → `./data/users/{username}.db`（完整保留所有数据）
-6. 从用户 DB 中 DROP `users` 表（防止密码哈希泄露）
-7. 清理用户 DB 中的 `vocabUsers` 相关表和数据
-8. 写入 `.migration-state` 文件记录完成状态
+**新建**: `scripts/migrate-to-multi-user.ts` — 幂等迁移脚本
+- 备份 → 创建 admin.db → 复制用户 → 创建用户 DB → DROP users 表 → 清理 vocab_users → 写状态文件
+- `npm run db:migrate-to-multi-user` 执行
 
-### Step 5: 改造迁移脚本
+### Step 5: 改造迁移脚本 ✅ 已完成
 
-**修改**: `npm run db:migrate`
-- admin.db 执行 admin schema 迁移
-- 遍历 `data/users/*.db` 逐个执行 user schema 迁移
-- 新增 `npm run db:migrate:admin` 和 `npm run db:migrate:users` 子命令
+**新建**: `scripts/migrate-all.ts` — `npm run db:migrate` 入口，先 admin 再遍历 user DBs
+**新建**: `scripts/migrate-user-dbs.ts` — 遍历 `data/users/*.db` 逐个执行 user schema 迁移
+**新增 npm scripts**: `db:migrate:admin`, `db:migrate:users`, `db:migrate:legacy`, `db:migrate-to-multi-user`
+
+**同步完成的关联修改：**
+- `server/api/auth/login.post.ts` → 改用 `useAdminDB()` + 返回 `role` 和 `enabledModules`
+- `server/api/_test/reset.post.ts` → 清理 admin.db + 删除用户 DB 文件
+- `server/api/_test/seed-user.post.ts` → 改用 `useAdminDB()` + `initUserDB()`
+- `scripts/seed-user.ts` → 改用 admin.db + 创建用户 DB + 启用全部模块
 
 ---
 

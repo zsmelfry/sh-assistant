@@ -1,5 +1,5 @@
-// 聚合所有 schema 导出
-export * from './schemas/auth';
+// 聚合所有 schema 导出（用户 DB）
+// 注意: users 表已移至 admin-schema.ts（admin.db）
 export * from './schemas/habits';
 export * from './schemas/vocab';
 export * from './schemas/llm';
