@@ -1,5 +1,5 @@
 import { useDB } from '~/server/database';
-import { sql, like, count } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { vocabWords, LEARNING_STATUS } from '../../database/schemas/vocab';
 
 const STATUS_MAP: Record<string, string> = {
@@ -13,27 +13,10 @@ export default defineEventHandler(async (event) => {
   const db = useDB(event);
   const query = getQuery(event);
 
-  const userId = query.userId ? Number(query.userId) : null;
   const filter = (query.filter as string) || 'all';
   const { page, limit: pageSize, offset } = parsePagination(query, { defaultLimit: 50, pageSizeKey: 'pageSize' });
   const search = (query.search as string) || '';
 
-  // 无用户 - 只返回词汇列表（不含 progress）
-  if (!userId) {
-    const where = search ? like(vocabWords.word, `%${search}%`) : undefined;
-    const [words, totalResult] = await Promise.all([
-      db.select().from(vocabWords).where(where).orderBy(vocabWords.rank).limit(pageSize).offset(offset),
-      db.select({ count: count() }).from(vocabWords).where(where),
-    ]);
-    return {
-      words: words.map(w => ({ ...w, progress: null })),
-      total: totalResult[0]?.count || 0,
-      page,
-      pageSize,
-    };
-  }
-
-  // 有用户 - 动态构建 SQL
   const targetStatus = filter !== 'all' ? STATUS_MAP[filter] : null;
 
   // JOIN 类型：UNREAD 或无过滤用 LEFT JOIN，其他状态用 INNER JOIN
@@ -55,8 +38,8 @@ export default defineEventHandler(async (event) => {
     : sql``;
 
   const joinClause = joinType === 'LEFT'
-    ? sql`LEFT JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}`
-    : sql`INNER JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}`;
+    ? sql`LEFT JOIN vocab_progress p ON w.id = p.word_id`
+    : sql`INNER JOIN vocab_progress p ON w.id = p.word_id`;
 
   const [rows, totalResult] = await Promise.all([
     db.all(sql`

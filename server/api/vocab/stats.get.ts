@@ -1,15 +1,8 @@
 import { useDB } from '~/server/database';
-import { eq, sql, count } from 'drizzle-orm';
+import { sql, count } from 'drizzle-orm';
 import { vocabWords, vocabProgress, LEARNING_STATUS } from '../../database/schemas/vocab';
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const userId = query.userId ? Number(query.userId) : null;
-
-  if (!userId) {
-    throw createError({ statusCode: 400, message: 'userId is required' });
-  }
-
   const db = useDB(event);
 
   // 总词数
@@ -22,7 +15,7 @@ export default defineEventHandler(async (event) => {
       COALESCE(p.learning_status, ${LEARNING_STATUS.UNREAD}) as status,
       COUNT(*) as count
     FROM vocab_words w
-    LEFT JOIN vocab_progress p ON w.id = p.word_id AND p.user_id = ${userId}
+    LEFT JOIN vocab_progress p ON w.id = p.word_id
     GROUP BY COALESCE(p.learning_status, ${LEARNING_STATUS.UNREAD})
   `);
 

@@ -1,5 +1,5 @@
 import { useDB } from '~/server/database';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { srsCards, reviewLogs, studySessions } from '../../../database/schemas/srs';
 import { vocabProgress, vocabWords, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { vocabStatusHistory } from '../../../database/schemas/vocab';
@@ -10,12 +10,9 @@ import { logActivity } from '~/server/lib/ability/log-activity';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { userId, wordId, cardId, quality, isNew } = body;
+  const { wordId, cardId, quality, isNew } = body;
 
   // 输入校验
-  if (!userId || !Number.isInteger(Number(userId))) {
-    throw createError({ statusCode: 400, message: 'userId 是必填参数（整数）' });
-  }
   if (!wordId || !Number.isInteger(Number(wordId))) {
     throw createError({ statusCode: 400, message: 'wordId 是必填参数（整数）' });
   }
@@ -24,7 +21,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB(event);
-  const uid = Number(userId);
   const wid = Number(wordId);
   const q = Number(quality) as StudyQuality;
   const now = Date.now();
@@ -49,7 +45,7 @@ export default defineEventHandler(async (event) => {
     // 查找或创建卡片（新词）
     const existing = await db.select()
       .from(srsCards)
-      .where(and(eq(srsCards.userId, uid), eq(srsCards.wordId, wid)))
+      .where(eq(srsCards.wordId, wid))
       .limit(1);
 
     if (existing.length > 0) {
@@ -57,7 +53,7 @@ export default defineEventHandler(async (event) => {
     } else {
       // 创建新卡片
       const result = await db.insert(srsCards).values({
-        userId: uid,
+        userId: 1,
         wordId: wid,
         easeFactor: 2.5,
         interval: 0,
@@ -87,7 +83,7 @@ export default defineEventHandler(async (event) => {
 
   // 记录复习日志
   await db.insert(reviewLogs).values({
-    userId: uid,
+    userId: 1,
     wordId: wid,
     srsCardId: card.id,
     quality: q,
@@ -101,7 +97,7 @@ export default defineEventHandler(async (event) => {
   // 更新/创建今日会话
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(and(eq(studySessions.userId, uid), eq(studySessions.date, today)))
+    .where(eq(studySessions.date, today))
     .limit(1);
 
   if (sessionResult.length > 0) {
@@ -117,7 +113,7 @@ export default defineEventHandler(async (event) => {
       .where(eq(studySessions.id, session.id));
   } else {
     await db.insert(studySessions).values({
-      userId: uid,
+      userId: 1,
       date: today,
       newWordsStudied: isNew ? 1 : 0,
       reviewsCompleted: 1,
@@ -129,7 +125,7 @@ export default defineEventHandler(async (event) => {
   if (reviewResult.interval >= AUTO_MASTERY_INTERVAL_DAYS) {
     const progress = await db.select()
       .from(vocabProgress)
-      .where(and(eq(vocabProgress.userId, uid), eq(vocabProgress.wordId, wid)))
+      .where(eq(vocabProgress.wordId, wid))
       .limit(1);
 
     if (progress.length > 0 && progress[0].learningStatus !== LEARNING_STATUS.MASTERED) {
@@ -149,7 +145,7 @@ export default defineEventHandler(async (event) => {
 
       // 记录状态变更历史
       await db.insert(vocabStatusHistory).values({
-        userId: uid,
+        userId: 1,
         wordId: wid,
         previousStatus: prevStatus,
         newStatus: LEARNING_STATUS.MASTERED,

@@ -100,10 +100,7 @@ export const useStudyStore = defineStore('study', () => {
 
   // Load overview
   async function loadOverview(): Promise<void> {
-    if (!vocabStore.currentUserId) return;
-    overview.value = await $fetch<StudyOverview>('/api/vocab/srs/overview', {
-      params: { userId: vocabStore.currentUserId },
-    });
+    overview.value = await $fetch<StudyOverview>('/api/vocab/srs/overview');
   }
 
   // Load definition for a card (with caching)
@@ -141,14 +138,10 @@ export const useStudyStore = defineStore('study', () => {
 
   // Start study session
   async function startSession(): Promise<void> {
-    if (!vocabStore.currentUserId) return;
-
     isLoading.value = true;
     error.value = null;
     try {
-      const plan = await $fetch<DailyPlan>('/api/vocab/srs/daily-plan', {
-        params: { userId: vocabStore.currentUserId },
-      });
+      const plan = await $fetch<DailyPlan>('/api/vocab/srs/daily-plan');
 
       // Build card queue: reviews first, then new words
       const cards: StudyCard[] = [
@@ -195,15 +188,12 @@ export const useStudyStore = defineStore('study', () => {
 
   // Rate current card
   async function rateCard(quality: 0 | 1 | 2 | 3 | 4 | 5): Promise<void> {
-    if (!vocabStore.currentUserId) return;
-
     const card = currentCard.value;
     if (!card) return;
 
     await $fetch('/api/vocab/srs/rate', {
       method: 'POST',
       body: {
-        userId: vocabStore.currentUserId,
         wordId: card.wordId,
         cardId: card.cardId,
         quality,
@@ -233,11 +223,9 @@ export const useStudyStore = defineStore('study', () => {
 
   // Complete session
   async function completeSession(): Promise<void> {
-    if (!vocabStore.currentUserId) return;
     try {
       await $fetch('/api/vocab/srs/session/complete', {
         method: 'POST',
-        body: { userId: vocabStore.currentUserId },
       });
     } catch {
       // silent - session might not exist if no cards

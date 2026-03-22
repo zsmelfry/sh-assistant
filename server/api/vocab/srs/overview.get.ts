@@ -1,17 +1,10 @@
 import { useDB } from '~/server/database';
-import { eq, and, sql, gte } from 'drizzle-orm';
+import { eq, sql, gte } from 'drizzle-orm';
 import { reviewLogs, studySessions } from '../../../database/schemas/srs';
 import { vocabProgress, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { formatDate } from '../../../utils/date';
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const userId = query.userId ? Number(query.userId) : null;
-
-  if (!userId) {
-    throw createError({ statusCode: 400, message: 'userId 是必填参数' });
-  }
-
   const db = useDB(event);
   const now = Date.now();
   const today = formatDate(new Date());
@@ -25,7 +18,7 @@ export default defineEventHandler(async (event) => {
         WHEN interval <= 6 THEN 'beginner'
         ELSE 'consolidating'
       END as stage
-      FROM srs_cards WHERE user_id = ${userId}
+      FROM srs_cards
     ) GROUP BY stage
   `) as Array<{ stage: string; cnt: number }>;
   const stageCounts: Record<string, number> = { due: 0, beginner: 0, consolidating: 0, mastered: 0 };
@@ -38,7 +31,7 @@ export default defineEventHandler(async (event) => {
   // 2. 今日会话统计
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(and(eq(studySessions.userId, userId), eq(studySessions.date, today)))
+    .where(eq(studySessions.date, today))
     .limit(1);
   const todaySession = sessionResult[0] || null;
 
@@ -46,10 +39,7 @@ export default defineEventHandler(async (event) => {
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
   const recentLogs = await db.select()
     .from(reviewLogs)
-    .where(and(
-      eq(reviewLogs.userId, userId),
-      gte(reviewLogs.reviewedAt, sevenDaysAgo),
-    ));
+    .where(gte(reviewLogs.reviewedAt, sevenDaysAgo));
 
   // 按天分组统计
   const dailyStats: Record<string, { reviews: number; avgQuality: number }> = {};
@@ -69,18 +59,14 @@ export default defineEventHandler(async (event) => {
   // 4. 最近 7 天会话
   const recentSessions = await db.select()
     .from(studySessions)
-    .where(and(
-      eq(studySessions.userId, userId),
-      gte(studySessions.startedAt, sevenDaysAgo),
-    ));
+    .where(gte(studySessions.startedAt, sevenDaysAgo));
 
   // 5. 可学新词总数（LEARNING 状态但还没有 SRS 卡片的词）
   const availableCountResult = await db.all(sql`
     SELECT COUNT(*) as count
     FROM vocab_progress p
-    LEFT JOIN srs_cards s ON p.word_id = s.word_id AND s.user_id = ${userId}
-    WHERE p.user_id = ${userId}
-      AND p.learning_status = ${LEARNING_STATUS.LEARNING}
+    LEFT JOIN srs_cards s ON p.word_id = s.word_id
+    WHERE p.learning_status = ${LEARNING_STATUS.LEARNING}
       AND s.id IS NULL
   `) as Array<{ count: number }>;
   const availableLearningCount = availableCountResult[0]?.count || 0;
@@ -89,7 +75,6 @@ export default defineEventHandler(async (event) => {
   const statusCounts = await db.all(sql`
     SELECT learning_status as status, COUNT(*) as count
     FROM vocab_progress
-    WHERE user_id = ${userId}
     GROUP BY learning_status
   `) as Array<{ status: string; count: number }>;
 

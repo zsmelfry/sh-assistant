@@ -1,24 +1,16 @@
 import { useDB } from '~/server/database';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { studySessions } from '../../../../database/schemas/srs';
 import { formatDate } from '../../../../utils/date';
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-  const { userId } = body;
-
-  if (!userId || !Number.isInteger(Number(userId))) {
-    throw createError({ statusCode: 400, message: 'userId 是必填参数（整数）' });
-  }
-
   const db = useDB(event);
-  const uid = Number(userId);
   const today = formatDate(new Date());
   const now = Date.now();
 
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(and(eq(studySessions.userId, uid), eq(studySessions.date, today)))
+    .where(eq(studySessions.date, today))
     .limit(1);
 
   if (sessionResult.length === 0) {

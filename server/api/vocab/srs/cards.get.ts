@@ -1,16 +1,9 @@
 import { useDB } from '~/server/database';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { srsCards } from '../../../database/schemas/srs';
 import { vocabWords } from '../../../database/schemas/vocab';
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const userId = query.userId ? Number(query.userId) : null;
-
-  if (!userId) {
-    throw createError({ statusCode: 400, message: 'userId 是必填参数' });
-  }
-
   const db = useDB(event);
   const now = Date.now();
 
@@ -29,7 +22,6 @@ export default defineEventHandler(async (event) => {
     })
     .from(srsCards)
     .innerJoin(vocabWords, eq(srsCards.wordId, vocabWords.id))
-    .where(eq(srsCards.userId, userId))
     .orderBy(vocabWords.rank);
 
   // Compute SRS stage for each card
