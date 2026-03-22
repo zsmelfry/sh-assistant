@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0-3 已完成)
+> 更新日期: 2026-03-22 (Phase 0-4 已完成)
 
 ## 需求
 
@@ -253,39 +253,28 @@ data/
 
 ## Phase 4: 前端权限系统
 
-### Step 14: 权限 composable
+### Step 14: 权限 composable ✅ 已完成
 
-**新建**: `composables/useModulePermissions.ts`
-- 响应式状态：`enabledModules: Set<string>`, `role: string`
-- 方法：`isModuleEnabled(moduleId: string): boolean`, `isAdmin(): boolean`
-- 持久化到 localStorage（与 token 同步生命周期）
+`composables/useModulePermissions.ts` — `isModuleEnabled()`, `isAdmin()`, `setPermissions()`, localStorage 持久化
 
-### Step 15: 更新 `useAuth`
+### Step 15: 更新 useAuth ✅ 已完成
 
-**修改**: `composables/useAuth.ts`
-- 登录成功后调用 `setPermissions(response.enabledModules, response.role)`
-- `init()` 从 localStorage 恢复权限
-- `logout()` 清除权限
+登录时 `setPermissions(res.enabledModules, res.role)`，logout 时清除
 
-### Step 16: 工具过滤
+### Step 16: 工具过滤 ✅ 已完成
 
-**修改**: `composables/useCurrentTool.ts`
-- `getAll()` 结果通过 `isModuleEnabled(tool.id)` 过滤
-- admin 工具仅 `isAdmin()` 时可见
+`useCurrentTool.ts` — 按 `isModuleEnabled` 过滤工具列表，admin 工具仅管理员可见
 
-### Step 17: UI 组件适配
+### Step 17: UI 组件适配 ✅ 已完成
 
 - `AppSidebar.vue` — 小爽按钮 `v-if="isModuleEnabled('xiaoshuang')"`
 - `MobileBottomNav.vue` — 同上
-- `layouts/default.vue` — XiaoshuangChat 渲染条件加 `isModuleEnabled('xiaoshuang')`
+- `layouts/default.vue` — XiaoshuangChat 条件加 `isModuleEnabled('xiaoshuang')`
 
-### Step 18: 路由守卫
+### Step 18: 路由守卫 ✅ 已完成
 
-**修改**: `pages/[...slug].vue`
-- 模块存在但未启用 → 重定向到第一个启用的工具
-
-**修改**: `pages/index.vue`
-- 默认重定向到第一个**已启用**的工具（而非固定第一个）
+- `pages/[...slug].vue` — 模块未启用 → 重定向到第一个启用的工具
+- `pages/index.vue` — 默认重定向到第一个已启用的工具
 
 ---
 

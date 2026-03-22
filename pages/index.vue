@@ -3,12 +3,12 @@
 </template>
 
 <script setup lang="ts">
-const { getAll } = useToolRegistry();
+const { tools } = useCurrentTool();
 
 onMounted(() => {
-  const tools = getAll();
-  if (tools.length > 0) {
-    navigateTo(`/${tools[0].id}`, { replace: true });
+  const enabled = tools.value;
+  if (enabled.length > 0) {
+    navigateTo(`/${enabled[0].id}`, { replace: true });
   }
 });
 </script>

@@ -11,7 +11,7 @@
       <span class="tab-label">{{ tool.name }}</span>
     </NuxtLink>
 
-    <button class="nav-tab" :class="{ active: xiaoshuangStore.isOpen }" @click="xiaoshuangStore.toggle()">
+    <button v-if="isModuleEnabled('xiaoshuang')" class="nav-tab" :class="{ active: xiaoshuangStore.isOpen }" @click="xiaoshuangStore.toggle()">
       <span class="tab-icon-wrap">
         <MessageCircle :size="20" :stroke-width="1.5" />
         <span v-if="xiaoshuangStore.unreadCount > 0" class="tab-badge">
@@ -51,6 +51,7 @@ const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
 
 const xiaoshuangStore = useXiaoshuangStore();
+const { isModuleEnabled } = useModulePermissions();
 const showMenu = ref(false);
 const showLlmSettings = ref(false);
 

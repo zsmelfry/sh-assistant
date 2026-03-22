@@ -8,7 +8,7 @@
       <slot />
     </main>
     <MobileBottomNav />
-    <XiaoshuangChat v-if="xiaoshuangStore.isOpen" />
+    <XiaoshuangChat v-if="xiaoshuangStore.isOpen && isModuleEnabled('xiaoshuang')" />
   </div>
 </template>
 
@@ -17,6 +17,7 @@ import { useXiaoshuangStore } from '~/stores/xiaoshuang';
 
 const sidebarCollapsed = ref(false);
 const xiaoshuangStore = useXiaoshuangStore();
+const { isModuleEnabled } = useModulePermissions();
 
 // Load notification count on mount
 onMounted(() => {

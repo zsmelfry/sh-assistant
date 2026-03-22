@@ -29,6 +29,7 @@
 
     <div class="sidebar-footer">
       <button
+        v-if="isModuleEnabled('xiaoshuang')"
         class="settings-btn xiaoshuang-btn"
         title="小爽助手"
         @click="xiaoshuangStore.toggle()"
@@ -78,6 +79,7 @@ defineEmits<{
 
 const { currentToolId, tools } = useCurrentTool();
 const { logout } = useAuth();
+const { isModuleEnabled } = useModulePermissions();
 const showLlmSettings = ref(false);
 
 const xiaoshuangStore = useXiaoshuangStore();

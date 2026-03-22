@@ -6,30 +6,35 @@ const authState = reactive({
 });
 
 export function useAuth() {
+  const { setPermissions, restore: restorePermissions, clear: clearPermissions } = useModulePermissions();
+
   /** Initialize from localStorage (call once on app startup) */
   function init() {
     if (authState.initialized) return;
     authState.token = localStorage.getItem(TOKEN_KEY);
+    restorePermissions();
     authState.initialized = true;
   }
 
   /** Whether user is currently authenticated */
   const isAuthenticated = computed(() => !!authState.token);
 
-  /** Login: call API then store token */
+  /** Login: call API then store token + permissions */
   async function login(username: string, password: string) {
-    const { token } = await $fetch<{ token: string }>('/api/auth/login', {
+    const res = await $fetch<{ token: string; role: string; enabledModules: string[] }>('/api/auth/login', {
       method: 'POST',
       body: { username, password },
     });
-    authState.token = token;
-    localStorage.setItem(TOKEN_KEY, token);
+    authState.token = res.token;
+    localStorage.setItem(TOKEN_KEY, res.token);
+    setPermissions(res.enabledModules || [], res.role || 'user');
   }
 
-  /** Logout: clear token and redirect to login */
+  /** Logout: clear token, permissions, and redirect to login */
   function logout() {
     authState.token = null;
     localStorage.removeItem(TOKEN_KEY);
+    clearPermissions();
     navigateTo('/login');
   }
 
@@ -48,6 +53,7 @@ export function useAuth() {
   function clearToken() {
     authState.token = null;
     localStorage.removeItem(TOKEN_KEY);
+    clearPermissions();
   }
 
   return { init, isAuthenticated, login, logout, getToken, getAuthHeaders, clearToken };

@@ -11,7 +11,9 @@
 
 <script setup lang="ts">
 const route = useRoute();
-const { get, getAll } = useToolRegistry();
+const { get } = useToolRegistry();
+const { tools } = useCurrentTool();
+const { isModuleEnabled, isAdmin } = useModulePermissions();
 
 const toolId = computed(() => {
   const slug = route.params.slug;
@@ -26,11 +28,22 @@ const toolComponent = computed(() =>
     : null
 );
 
-// Redirect to first registered tool if current tool not found
+// Redirect if tool exists but module is not enabled, or tool not found
 watch(toolId, (id) => {
-  if (id && !get(id)) {
-    const all = getAll();
-    navigateTo(all.length > 0 ? `/${all[0].id}` : '/', { replace: true });
+  if (!id) return;
+
+  const tool = get(id);
+  const enabled = tools.value;
+
+  if (tool) {
+    // Tool exists — check if module is enabled
+    const isAllowed = id === 'admin' ? isAdmin() : isModuleEnabled(id);
+    if (!isAllowed && enabled.length > 0) {
+      navigateTo(`/${enabled[0].id}`, { replace: true });
+    }
+  } else if (enabled.length > 0) {
+    // Tool not found — redirect to first enabled
+    navigateTo(`/${enabled[0].id}`, { replace: true });
   }
 }, { immediate: true });
 </script>
