@@ -1,29 +1,16 @@
 import { defineStore } from 'pinia';
 import type {
-  User,
   WordWithProgress,
   FilterType,
   StatusAction,
   Stats,
   ChartDataPoint,
-  UsersResponse,
   WordListResponse,
   ChartRawResponse,
   ImportResponse,
 } from '~/tools/vocab-tracker/types';
 
-const LAST_USER_KEY = 'vocab-last-user-id';
-
 export const useVocabStore = defineStore('vocab', () => {
-  // ===== 用户状态 =====
-  const users = ref<User[]>([]);
-  const currentUserId = ref<number | null>(null);
-
-  const currentUser = computed(() =>
-    users.value.find(u => u.id === currentUserId.value) ?? null,
-  );
-  const hasUsers = computed(() => users.value.length > 0);
-
   // ===== 词汇状态 =====
   const words = ref<WordWithProgress[]>([]);
   const totalWords = ref(0);
@@ -45,71 +32,12 @@ export const useVocabStore = defineStore('vocab', () => {
   const stats = ref<Stats>({ total: 0, unread: 0, toLearn: 0, learning: 0, mastered: 0 });
   const chartData = ref<ChartDataPoint[]>([]);
 
-  // ===== 用户操作 =====
-  async function loadUsers(): Promise<number | null> {
-    const result = await $fetch<UsersResponse>('/api/vocab/users');
-    users.value = result.users;
-    return result.lastUserId;
-  }
-
-  async function initializeUser() {
-    const lastUserId = await loadUsers();
-
-    // 优先使用服务端记录的 lastUserId，其次 localStorage，最后取第一个用户
-    if (lastUserId && users.value.some(u => u.id === lastUserId)) {
-      currentUserId.value = lastUserId;
-    } else {
-      const localId = Number(localStorage.getItem(LAST_USER_KEY));
-      if (localId && users.value.some(u => u.id === localId)) {
-        currentUserId.value = localId;
-      } else if (users.value.length > 0) {
-        currentUserId.value = users.value[0].id;
-      }
-    }
-  }
-
-  async function switchUser(userId: number) {
-    currentUserId.value = userId;
-    localStorage.setItem(LAST_USER_KEY, String(userId));
-    await refreshAll();
-  }
-
-  async function createUser(nickname: string) {
-    const user = await $fetch<User>('/api/vocab/users', {
-      method: 'POST',
-      body: { nickname },
-    });
-    users.value.push(user);
-    // 后端已自动设置 lastUserId，前端也同步
-    currentUserId.value = user.id;
-    localStorage.setItem(LAST_USER_KEY, String(user.id));
-    await refreshAll();
-    return user;
-  }
-
-  async function deleteUser(userId: number) {
-    await $fetch(`/api/vocab/users/${userId}`, { method: 'DELETE' });
-    users.value = users.value.filter(u => u.id !== userId);
-    if (currentUserId.value === userId) {
-      currentUserId.value = users.value[0]?.id ?? null;
-      if (currentUserId.value) {
-        localStorage.setItem(LAST_USER_KEY, String(currentUserId.value));
-        await refreshAll();
-      } else {
-        localStorage.removeItem(LAST_USER_KEY);
-        resetWordState();
-      }
-    }
-  }
-
   // ===== 词汇操作 =====
   async function loadWords() {
-    if (!currentUserId.value) return;
     isLoading.value = true;
     try {
       const result = await $fetch<WordListResponse>('/api/vocab/words', {
         params: {
-          userId: currentUserId.value,
           filter: filter.value,
           search: searchQuery.value,
           page: page.value,
@@ -125,19 +53,13 @@ export const useVocabStore = defineStore('vocab', () => {
   }
 
   async function loadStats() {
-    if (!currentUserId.value) return;
-    const result = await $fetch<Stats>('/api/vocab/stats', {
-      params: { userId: currentUserId.value },
-    });
+    const result = await $fetch<Stats>('/api/vocab/stats');
     stats.value = result;
     hasWords.value = result.total > 0;
   }
 
   async function loadChartData() {
-    if (!currentUserId.value) return;
-    const result = await $fetch<ChartRawResponse>('/api/vocab/progress/chart', {
-      params: { userId: currentUserId.value },
-    });
+    const result = await $fetch<ChartRawResponse>('/api/vocab/progress/chart');
 
     // 将后端的 masteredCurve 和 interactedCurve 合并为 ChartDataPoint[]
     const dateMap = new Map<string, ChartDataPoint>();
@@ -164,10 +86,7 @@ export const useVocabStore = defineStore('vocab', () => {
   }
 
   async function initialize() {
-    await initializeUser();
-    if (currentUserId.value) {
-      await Promise.all([loadStats(), loadWords(), loadChartData()]);
-    }
+    await Promise.all([loadStats(), loadWords(), loadChartData()]);
   }
 
   async function refreshAll() {
@@ -200,23 +119,20 @@ export const useVocabStore = defineStore('vocab', () => {
 
   // ===== 状态更新 =====
   async function updateWordStatus(wordId: number, action: StatusAction) {
-    if (!currentUserId.value) return;
-
     await $fetch('/api/vocab/progress/status', {
       method: 'POST',
-      body: { userId: currentUserId.value, wordId, action },
+      body: { wordId, action },
     });
 
     await Promise.all([loadWords(), loadStats(), loadChartData()]);
   }
 
   async function batchUpdateStatus(action: StatusAction) {
-    if (!currentUserId.value || selectedWordIds.value.size === 0) return;
+    if (selectedWordIds.value.size === 0) return;
 
     await $fetch('/api/vocab/progress/batch', {
       method: 'POST',
       body: {
-        userId: currentUserId.value,
         wordIds: Array.from(selectedWordIds.value),
         action,
       },
@@ -233,9 +149,7 @@ export const useVocabStore = defineStore('vocab', () => {
       body: { csv },
     });
 
-    if (currentUserId.value) {
-      await refreshAll();
-    }
+    await refreshAll();
 
     return result;
   }
@@ -269,8 +183,6 @@ export const useVocabStore = defineStore('vocab', () => {
   }
 
   return {
-    // 用户
-    users, currentUserId, currentUser, hasUsers,
     // 词汇
     words, totalWords, filter, searchQuery, page, pageSize,
     isLoading, hasWords, totalPages,
@@ -278,8 +190,6 @@ export const useVocabStore = defineStore('vocab', () => {
     selectedWordIds, selectedCount, someSelected,
     // 统计
     stats, chartData,
-    // 用户操作
-    loadUsers, switchUser, createUser, deleteUser,
     // 词汇操作
     initialize, refreshAll, loadWords, loadStats, loadChartData,
     setFilter, setSearch, setPage,

@@ -1,16 +1,8 @@
 <template>
   <div class="vocabTracker">
     <!-- 顶部工具栏 -->
-    <div class="toolbar">
-      <div class="userInfo">
-        <span v-if="store.currentUser" class="currentUserName">
-          {{ store.currentUser.nickname }}
-        </span>
-        <button class="toolbarBtn" @click="showUserModal = true">
-          用户管理
-        </button>
-      </div>
-      <div v-if="!store.hasWords" class="toolbarRight">
+    <div v-if="!store.hasWords" class="toolbar">
+      <div class="toolbarRight">
         <button class="toolbarBtn" @click="showImportModal = true">
           导入 CSV
         </button>
@@ -21,15 +13,6 @@
     <div v-if="initError" class="emptyState">
       <p class="errorMsg">{{ initError }}</p>
       <button class="primaryBtn" @click="handleReload">刷新页面</button>
-    </div>
-
-    <!-- 无用户状态 -->
-    <div v-else-if="!store.hasUsers" class="emptyState">
-      <p class="emptyTitle">欢迎使用法语词汇学习工具</p>
-      <p class="emptyHint">请先创建一个用户开始学习</p>
-      <button class="primaryBtn" @click="showUserModal = true">
-        创建用户
-      </button>
     </div>
 
     <!-- 无词汇状态 -->
@@ -87,7 +70,6 @@
     </template>
 
     <!-- 模态框 -->
-    <UserModal :open="showUserModal" @close="showUserModal = false" />
     <ImportModal :open="showImportModal" @close="showImportModal = false" />
   </div>
 </template>
@@ -96,7 +78,6 @@
 import StatsPanel from './components/StatsPanel.vue';
 import ProgressChart from './components/ProgressChart.vue';
 import VocabList from './components/VocabList.vue';
-import UserModal from './components/UserModal.vue';
 import ImportModal from './components/ImportModal.vue';
 import StudyView from './components/StudyView.vue';
 import CategorizeView from './components/CategorizeView.vue';
@@ -104,7 +85,6 @@ import CategorizeView from './components/CategorizeView.vue';
 const store = useVocabStore();
 
 const activeTab = ref<'vocab' | 'study' | 'categorize'>('vocab');
-const showUserModal = ref(false);
 const showImportModal = ref(false);
 const initError = ref('');
 

@@ -13,6 +13,11 @@ export function useAuth() {
     if (authState.initialized) return;
     authState.token = localStorage.getItem(TOKEN_KEY);
     restorePermissions();
+    // If token exists but no permissions stored (pre-migration session), force re-login
+    if (authState.token && !localStorage.getItem('module_permissions')) {
+      authState.token = null;
+      localStorage.removeItem(TOKEN_KEY);
+    }
     authState.initialized = true;
   }
 
