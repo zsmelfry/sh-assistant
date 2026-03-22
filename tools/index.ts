@@ -8,3 +8,4 @@ import './habit-tracker';
 import './project-tracker';
 import './skill-manager';
 import './vocab-tracker';
+import './admin';

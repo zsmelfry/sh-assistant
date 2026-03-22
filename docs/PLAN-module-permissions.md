@@ -1,7 +1,7 @@
 # 实施计划：多用户 + 模块权限 + 数据隔离
 
 > 创建日期: 2026-03-22
-> 更新日期: 2026-03-22 (Phase 0-5 已完成)
+> 更新日期: 2026-03-22 (Phase 0-6 已完成)
 
 ## 需求
 
@@ -298,26 +298,19 @@ data/
 
 ## Phase 6: 超管 UI
 
-### Step 22: 注册 admin 工具
+### Step 22: 注册 admin 工具 ✅ 已完成
 
-**新建**: `tools/admin/index.ts`
-- `registerTool({ id: 'admin', name: '用户管理', order: 100, icon: Users, namespaces: ['admin'] })`
+`tools/admin/index.ts` — registerTool, `tools/index.ts` — import
 
-**修改**: `tools/index.ts`
-- 添加 `import './admin'`
+### Step 23: Admin 主面板 ✅ 已完成
 
-### Step 23: Admin 主面板
+`tools/admin/Admin.vue` — 用户列表表格 + 添加用户 + 删除确认 + 重置密码
 
-**新建**: `tools/admin/Admin.vue`
-- 用户列表表格：用户名、角色、创建时间、DB 文件大小、操作按钮
-- 「添加用户」按钮
+### Step 24: Admin 子组件 ✅ 已完成
 
-### Step 24: Admin 子组件
-
-**新建**: `tools/admin/components/`
-- `UserList.vue` — 用户表格 + 编辑/删除操作
-- `UserForm.vue` — 创建/编辑用户模态框（用户名、密码、角色选择）
-- `ModuleToggles.vue` — 模块开关网格（点击用户行展开，显示所有模块的 toggle 开关）
+- `UserList.vue` — 用户表格 + 操作按钮 + 展开模块权限
+- `UserForm.vue` — 创建用户 / 重置密码模态框
+- `ModuleToggles.vue` — 模块开关网格
 
 ---
 
