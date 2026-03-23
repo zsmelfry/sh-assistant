@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { useAdminDB } from '~/server/database';
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
   // Query enabled modules for this user
   const modules = await db.select({ moduleId: userModules.moduleId })
     .from(userModules)
-    .where(eq(userModules.userId, user.id));
+    .where(and(eq(userModules.userId, user.id), eq(userModules.enabled, true)));
   const enabledModules = modules
     .filter((m) => m.moduleId)
     .map((m) => m.moduleId);

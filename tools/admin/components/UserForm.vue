@@ -91,7 +91,7 @@ async function submit() {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -99,12 +99,13 @@ async function submit() {
 }
 
 .modal {
-  background: var(--color-bg);
+  background: var(--color-bg-primary);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
   width: 400px;
   max-width: 90vw;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-text-primary);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 h3 {
@@ -130,8 +131,8 @@ input, select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 14px;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .error {
@@ -170,6 +171,6 @@ input, select {
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 14px;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 </style>

@@ -8,6 +8,9 @@ export default defineNuxtPlugin(async () => {
 export async function registerSkillTools() {
   if (!useAuth().getToken()) return;
 
+  const { isModuleEnabled } = useModulePermissions();
+  if (!isModuleEnabled('skill-manager')) return;
+
   try {
     const configs = await $fetch<Array<{ skillId: string; name: string; icon: string; sortOrder: number; isActive: boolean }>>('/api/skill-configs');
     const { register, getAll, unregister } = useToolRegistry();

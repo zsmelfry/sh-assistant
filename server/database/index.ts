@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { LRUCache } from 'lru-cache';
 import * as schema from './schema';
@@ -65,6 +66,13 @@ export function useUserDB(username: string): UserDB {
   }
 
   const sqlite = createSqliteDb(dbPath);
+
+  // Auto-migrate: ensure all tables exist on first connect
+  const migrationsFolder = resolve('./server/database/migrations');
+  if (existsSync(migrationsFolder)) {
+    migrate(drizzle(sqlite), { migrationsFolder });
+  }
+
   const db = drizzle(sqlite, { schema });
   userDbCache.set(username, db);
   return db;
