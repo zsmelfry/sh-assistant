@@ -7,6 +7,7 @@ import { calculateNextReview, AUTO_MASTERY_INTERVAL_DAYS } from '../../../utils/
 import type { StudyQuality } from '../../../utils/srs-algorithm';
 import { formatDate } from '../../../utils/date';
 import { logActivity } from '~/server/lib/ability/log-activity';
+import { ensureVocabUser } from '../../../utils/ensure-vocab-user';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -21,6 +22,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB(event);
+  const username = event.context.auth?.username;
+  if (!username) throw createError({ statusCode: 401, message: 'Unauthorized' });
+  const vocabUserId = ensureVocabUser(db, username);
   const wid = Number(wordId);
   const q = Number(quality) as StudyQuality;
   const now = Date.now();
@@ -53,7 +57,7 @@ export default defineEventHandler(async (event) => {
     } else {
       // 创建新卡片
       const result = await db.insert(srsCards).values({
-        userId: 1,
+        userId: vocabUserId,
         wordId: wid,
         easeFactor: 2.5,
         interval: 0,
@@ -83,7 +87,7 @@ export default defineEventHandler(async (event) => {
 
   // 记录复习日志
   await db.insert(reviewLogs).values({
-    userId: 1,
+    userId: vocabUserId,
     wordId: wid,
     srsCardId: card.id,
     quality: q,
@@ -113,7 +117,7 @@ export default defineEventHandler(async (event) => {
       .where(eq(studySessions.id, session.id));
   } else {
     await db.insert(studySessions).values({
-      userId: 1,
+      userId: vocabUserId,
       date: today,
       newWordsStudied: isNew ? 1 : 0,
       reviewsCompleted: 1,
@@ -145,7 +149,7 @@ export default defineEventHandler(async (event) => {
 
       // 记录状态变更历史
       await db.insert(vocabStatusHistory).values({
-        userId: 1,
+        userId: vocabUserId,
         wordId: wid,
         previousStatus: prevStatus,
         newStatus: LEARNING_STATUS.MASTERED,

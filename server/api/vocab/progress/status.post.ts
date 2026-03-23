@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { vocabProgress, vocabWords, vocabStatusHistory, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import type { LearningStatus } from '../../../database/schemas/vocab';
 import { transitionStatus, deriveFlags, isFirstInteraction, isValidAction } from '../../../utils/vocab-state-machine';
+import { ensureVocabUser } from '../../../utils/ensure-vocab-user';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -17,6 +18,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB(event);
+  const username = event.context.auth?.username;
+  if (!username) throw createError({ statusCode: 401, message: 'Unauthorized' });
+  const vocabUserId = ensureVocabUser(db, username);
   const now = Date.now();
 
   // 验证单词存在
@@ -44,6 +48,7 @@ export default defineEventHandler(async (event) => {
   if (existing.length === 0) {
     // 创建新 progress
     const result = await db.insert(vocabProgress).values({
+      userId: vocabUserId,
       wordId: Number(wordId),
       learningStatus: newStatus,
       isRead: flags.isRead,
@@ -78,6 +83,7 @@ export default defineEventHandler(async (event) => {
 
   // 记录状态变更历史
   await db.insert(vocabStatusHistory).values({
+    userId: vocabUserId,
     wordId: Number(wordId),
     previousStatus: currentStatus,
     newStatus,

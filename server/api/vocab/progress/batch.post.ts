@@ -3,6 +3,7 @@ import { inArray } from 'drizzle-orm';
 import { vocabProgress, vocabStatusHistory, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import type { LearningStatus } from '../../../database/schemas/vocab';
 import { transitionStatus, deriveFlags, isFirstInteraction, isValidAction } from '../../../utils/vocab-state-machine';
+import { ensureVocabUser } from '../../../utils/ensure-vocab-user';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -21,6 +22,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDB(event);
+  const username = event.context.auth?.username;
+  if (!username) throw createError({ statusCode: 401, message: 'Unauthorized' });
+  const vocabUserId = ensureVocabUser(db, username);
   const now = Date.now();
   const numWordIds = wordIds.map(Number);
 
@@ -50,6 +54,7 @@ export default defineEventHandler(async (event) => {
 
     if (!existing) {
       toInsert.push({
+        userId: vocabUserId,
         wordId,
         learningStatus: newStatus,
         isRead: flags.isRead,
@@ -67,6 +72,7 @@ export default defineEventHandler(async (event) => {
     }
 
     historyEntries.push({
+      userId: vocabUserId,
       wordId,
       previousStatus: currentStatus,
       newStatus,
