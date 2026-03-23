@@ -23,7 +23,8 @@ const ALL_MODULE_IDS = [
 ];
 
 function getAdminDB() {
-  const dbPath = process.env.ADMIN_DB_PATH || './data/admin.db';
+  const dataDir = process.env.DATA_DIR || './data';
+  const dbPath = process.env.ADMIN_DB_PATH || resolve(dataDir, 'admin.db');
   mkdirSync(dirname(dbPath), { recursive: true });
   const sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
@@ -55,7 +56,8 @@ function getAdminDB() {
 }
 
 function initUserDB(username: string) {
-  const usersDir = resolve('./data/users');
+  const dataDir = process.env.DATA_DIR || './data';
+  const usersDir = resolve(dataDir, 'users');
   mkdirSync(usersDir, { recursive: true });
   const dbPath = resolve(usersDir, `${username}.db`);
   const sqlite = new Database(dbPath);

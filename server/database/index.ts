@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { LRUCache } from 'lru-cache';
 import * as schema from './schema';
 import * as adminSchema from './admin-schema';
+import { getDataDir } from '~/server/utils/data-dir';
 
 // ── Types ──
 
@@ -29,7 +30,7 @@ let _adminDb: AdminDB | null = null;
 
 export function useAdminDB(): AdminDB {
   if (!_adminDb) {
-    const dbPath = process.env.ADMIN_DB_PATH || './data/admin.db';
+    const dbPath = process.env.ADMIN_DB_PATH || resolve(getDataDir(), 'admin.db');
     const sqlite = createSqliteDb(dbPath);
     _adminDb = drizzle(sqlite, { schema: adminSchema });
   }
@@ -58,9 +59,9 @@ export function useUserDB(username: string): UserDB {
   const cached = userDbCache.get(username);
   if (cached) return cached;
 
-  const dbPath = resolve('./data/users', `${username}.db`);
+  const dbPath = resolve(getDataDir(), 'users', `${username}.db`);
   // 二次校验：确保路径在 data/users/ 内
-  const usersDir = resolve('./data/users');
+  const usersDir = resolve(getDataDir(), 'users');
   if (!dbPath.startsWith(usersDir + '/')) {
     throw new Error('Invalid DB path');
   }
@@ -92,7 +93,7 @@ export function useDB(event?: any): UserDB {
 
   // Fallback: legacy singleton (for handlers not yet passing event)
   if (!_legacyDb) {
-    const dbPath = process.env.DATABASE_PATH || './data/assistant.db';
+    const dbPath = process.env.DATABASE_PATH || resolve(getDataDir(), 'assistant.db');
     const sqlite = createSqliteDb(dbPath);
     _legacyDb = drizzle(sqlite, { schema });
   }

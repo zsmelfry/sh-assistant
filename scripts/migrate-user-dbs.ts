@@ -9,7 +9,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from '../server/database/schema';
 
-const USERS_DIR = resolve('./data/users');
+const DATA_DIR = process.env.DATA_DIR || './data';
+const USERS_DIR = resolve(DATA_DIR, 'users');
 const MIGRATIONS_DIR = resolve('./server/database/migrations');
 
 if (!existsSync(USERS_DIR)) {

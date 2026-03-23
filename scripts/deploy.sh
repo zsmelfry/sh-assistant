@@ -8,11 +8,12 @@ for arg in "$@"; do
   esac
 done
 
-ADMIN_DB="./data/admin.db"
-LEGACY_DB="./data/assistant.db"
-USERS_DIR="./data/users"
-BACKUP_DIR="./data/backups"
-MIGRATION_STATE="./data/.migration-state"
+DATA_DIR="${DATA_DIR:-./data}"
+ADMIN_DB="$DATA_DIR/admin.db"
+LEGACY_DB="$DATA_DIR/assistant.db"
+USERS_DIR="$DATA_DIR/users"
+BACKUP_DIR="$DATA_DIR/backups"
+MIGRATION_STATE="$DATA_DIR/.migration-state"
 JOURNAL="./server/database/migrations/meta/_journal.json"
 ADMIN_JOURNAL="./server/database/admin-migrations/meta/_journal.json"
 

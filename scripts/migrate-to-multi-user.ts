@@ -12,9 +12,10 @@ import { resolve, dirname } from 'node:path';
 import * as adminSchema from '../server/database/admin-schema';
 import * as userSchema from '../server/database/schema';
 
-const STATE_FILE = './data/.migration-state';
-const ASSISTANT_DB_PATH = process.env.DATABASE_PATH || './data/assistant.db';
-const ADMIN_DB_PATH = process.env.ADMIN_DB_PATH || './data/admin.db';
+const DATA_DIR = process.env.DATA_DIR || './data';
+const STATE_FILE = resolve(DATA_DIR, '.migration-state');
+const ASSISTANT_DB_PATH = process.env.DATABASE_PATH || resolve(DATA_DIR, 'assistant.db');
+const ADMIN_DB_PATH = process.env.ADMIN_DB_PATH || resolve(DATA_DIR, 'admin.db');
 
 // All module IDs that can be managed
 const ALL_MODULE_IDS = [
@@ -53,7 +54,7 @@ function main() {
   log('Starting migration from single-user to multi-user architecture...');
 
   // 1. Backup original DB
-  const backupDir = resolve('./data/backups');
+  const backupDir = resolve(DATA_DIR, 'backups');
   mkdirSync(backupDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupPath = resolve(backupDir, `assistant-pre-multiuser-${timestamp}.db`);
@@ -168,7 +169,7 @@ function main() {
   migrateUsers();
 
   // 4. Create per-user DBs
-  const usersDir = resolve('./data/users');
+  const usersDir = resolve(DATA_DIR, 'users');
   mkdirSync(usersDir, { recursive: true });
 
   for (const u of srcUsers) {

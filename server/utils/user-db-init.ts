@@ -4,6 +4,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import * as schema from '~/server/database/schema';
+import { getDataDir } from '~/server/utils/data-dir';
 
 /**
  * Initialize a new user's database.
@@ -15,8 +16,8 @@ export function initUserDB(username: string): void {
     throw new Error(`Invalid username: ${username}`);
   }
 
-  const dbPath = resolve('./data/users', `${username}.db`);
-  const usersDir = resolve('./data/users');
+  const dbPath = resolve(getDataDir(), 'users', `${username}.db`);
+  const usersDir = resolve(getDataDir(), 'users');
   if (!dbPath.startsWith(usersDir + '/')) {
     throw new Error('Invalid DB path');
   }

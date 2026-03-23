@@ -7,10 +7,8 @@ node_modules/
 dist/
 
 # Database
-data/*.db
-data/*.db-wal
-data/*.db-shm
-data/backups/
+data/
+data-dev/
 
 # Environment
 .env

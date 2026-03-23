@@ -2,6 +2,7 @@ import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { useAdminDB } from '~/server/database';
 import { users, userModules } from '~/server/database/admin-schema';
+import { getDataDir } from '~/server/utils/data-dir';
 
 export default defineEventHandler(async () => {
   const db = useAdminDB();
@@ -17,7 +18,7 @@ export default defineEventHandler(async () => {
     // Get DB file size
     let dbSize: number | null = null;
     try {
-      const dbPath = resolve('./data/users', `${u.username}.db`);
+      const dbPath = resolve(getDataDir(), 'users', `${u.username}.db`);
       const stat = statSync(dbPath);
       dbSize = stat.size;
     } catch { /* file may not exist */ }

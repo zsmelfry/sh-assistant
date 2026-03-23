@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { useAdminDB } from '~/server/database';
 import { users, userModules } from '~/server/database/admin-schema';
 import { clearAuthCache } from '~/server/middleware/02.auth';
+import { getDataDir } from '~/server/utils/data-dir';
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'));
@@ -38,9 +39,9 @@ export default defineEventHandler(async (event) => {
   await db.delete(users).where(eq(users.id, id));
 
   // Archive user DB file
-  const userDbPath = resolve('./data/users', `${user.username}.db`);
+  const userDbPath = resolve(getDataDir(), 'users', `${user.username}.db`);
   if (existsSync(userDbPath)) {
-    const archiveDir = resolve('./data/archived');
+    const archiveDir = resolve(getDataDir(), 'archived');
     mkdirSync(archiveDir, { recursive: true });
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const archivePath = resolve(archiveDir, `${user.username}-${timestamp}.db`);
