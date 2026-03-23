@@ -23,6 +23,7 @@
       <div class="formRow">
         <label class="formLabel">类型</label>
         <select v-model="newProvider.provider" class="formInput">
+          <option value="gemini">Gemini (API)</option>
           <option value="claude">Claude (CLI)</option>
           <option value="claude-api">Claude (API)</option>
           <option value="ollama">Ollama</option>
@@ -41,9 +42,9 @@
         <label class="formLabel">端点</label>
         <input v-model="newProvider.endpoint" class="formInput" placeholder="http://localhost:11434" />
       </div>
-      <div v-if="newProvider.provider === 'claude-api' || newProvider.provider === 'openai'" class="formRow">
+      <div v-if="newProvider.provider === 'claude-api' || newProvider.provider === 'openai' || newProvider.provider === 'gemini'" class="formRow">
         <label class="formLabel">API Key</label>
-        <input v-model="newProvider.apiKey" class="formInput" type="password" placeholder="sk-ant-..." />
+        <input v-model="newProvider.apiKey" class="formInput" type="password" :placeholder="newProvider.provider === 'gemini' ? 'AIza...' : 'sk-ant-...'" />
       </div>
       <div class="formActions">
         <button class="cancelBtn" @click="showAddForm = false">取消</button>

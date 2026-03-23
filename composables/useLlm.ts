@@ -29,7 +29,7 @@ export interface LlmProvider {
 }
 
 export interface CreateProviderRequest {
-  provider: 'claude' | 'claude-api' | 'ollama' | 'openai';
+  provider: 'claude' | 'claude-api' | 'ollama' | 'openai' | 'gemini';
   name: string;
   modelName: string;
   endpoint?: string;

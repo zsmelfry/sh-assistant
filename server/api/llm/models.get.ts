@@ -1,4 +1,4 @@
-import { OllamaProvider } from '../../lib/llm';
+import { OllamaProvider, GeminiProvider } from '../../lib/llm';
 
 export default defineEventHandler(async () => {
   // Claude 模型（固定列表，总是可用）
@@ -7,6 +7,14 @@ export default defineEventHandler(async () => {
     { provider: 'claude', modelName: 'sonnet', displayName: 'Claude Sonnet 4.5', available: true },
     { provider: 'claude', modelName: 'opus', displayName: 'Claude Opus 4.6', available: true },
   ];
+
+  // Gemini 模型（固定列表，免费可用）
+  const geminiModels = GeminiProvider.listModels().map(m => ({
+    provider: 'gemini',
+    modelName: m.name,
+    displayName: m.displayName,
+    available: true,
+  }));
 
   // Ollama 模型（动态发现）
   let ollamaModels: Array<{ provider: string; modelName: string; displayName: string; available: boolean; size?: number }> = [];
@@ -24,6 +32,6 @@ export default defineEventHandler(async () => {
   }
 
   return {
-    models: [...claudeModels, ...ollamaModels],
+    models: [...claudeModels, ...geminiModels, ...ollamaModels],
   };
 });
