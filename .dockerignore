@@ -11,5 +11,6 @@ logs
 .env.*
 .git
 e2e
+docs
 test-results
 playwright-report

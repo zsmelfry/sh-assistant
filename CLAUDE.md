@@ -8,7 +8,45 @@ A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLit
 
 **Tool modules** (ordered by sidebar `order`): Dashboard (今日, 0), Ability Profile (能力画像, 1), Vocab Tracker (法语词汇, 2), Annual Planner (年度计划, 3), Project Tracker (事项追踪, 4), Article Reader (文章阅读, 5), Skill Manager (技能管理, ∞), Admin (用户管理, 100). Skill-based tools are dynamically registered via the Skill Learning Core.
 
-**Xiaoshuang (小爽):** A global AI assistant overlay accessible from any tool, with its own store (`stores/xiaoshuang.ts`) and API at `/api/xiaoshuang/chat`.
+**Xiaoshuang (小爽):** A global AI assistant overlay accessible from any tool, with its own store (`src/stores/xiaoshuang.ts`) and API at `/api/xiaoshuang/chat`.
+
+## Directory Structure
+
+```
+├── src/                    # App source (Nuxt srcDir)
+│   ├── app.vue
+│   ├── assets/             # CSS variables, static assets
+│   ├── components/         # Shared Vue components
+│   ├── composables/        # Vue composables (auto-imported)
+│   ├── layouts/            # Nuxt layouts
+│   ├── middleware/          # Client-side route middleware
+│   ├── pages/              # File-based routing
+│   ├── plugins/            # Nuxt plugins
+│   ├── server/             # Nitro server (API routes, DB, middleware)
+│   ├── stores/             # Pinia stores
+│   ├── tools/              # Tool plugin modules
+│   ├── types/              # TypeScript types
+│   └── utils/              # Shared utilities
+├── deployment/             # Deployment & ops
+│   ├── Dockerfile
+│   ├── docker-compose.local.yml
+│   ├── ecosystem.config.cjs  # PM2 config
+│   ├── entrypoint.sh
+│   ├── render.yaml
+│   ├── scripts/            # deploy.sh, migrate, seed scripts
+│   └── README.md
+├── e2e/                    # Playwright E2E tests
+├── docs/                   # Documentation
+├── public/                 # Static assets (served at /)
+├── nuxt.config.ts          # Nuxt config (srcDir: 'src')
+├── drizzle.config.ts       # Drizzle user DB config
+├── drizzle-admin.config.ts # Drizzle admin DB config
+├── playwright.config.ts    # Playwright config
+├── package.json
+└── tsconfig.json
+```
+
+**Gitignored runtime data:** `data/` (production DBs), `data-dev/` (dev DBs), `logs/` (PM2), `test-results/` (Playwright), `.nuxt/`, `.output/`, `node_modules/`
 
 ## Commands
 
@@ -38,33 +76,33 @@ npx playwright test -g "test name"     # Run test by name
 
 ### Tool Plugin System
 
-Tools are self-registering modules under `tools/`. Each tool has:
-- `index.ts` — calls `registerTool()` from `composables/useToolRegistry.ts` at import time
+Tools are self-registering modules under `src/tools/`. Each tool has:
+- `index.ts` — calls `registerTool()` from `src/composables/useToolRegistry.ts` at import time
 - Root `.vue` component — lazy-loaded via `() => import('./Tool.vue')`
 - `components/` — tool-specific subcomponents
 - `types.ts` — tool-specific types
 
-Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect imports) → each tool's `index.ts` calls `registerTool(definition)` → stored in module-level `Map`.
+Registration flow: `src/plugins/tools.client.ts` → `src/tools/index.ts` (side-effect imports) → each tool's `index.ts` calls `registerTool(definition)` → stored in module-level `Map`.
 
-**To add a new tool:** Create `tools/my-tool/index.ts` calling `registerTool(...)`, add side-effect import in `tools/index.ts`. Routing is automatic — `pages/[...slug].vue` resolves `slug[0]` as the tool ID.
+**To add a new tool:** Create `src/tools/my-tool/index.ts` calling `registerTool(...)`, add side-effect import in `src/tools/index.ts`. Routing is automatic — `src/pages/[...slug].vue` resolves `slug[0]` as the tool ID.
 
 ### Skill Learning Core
 
 A reusable structured learning engine. Any skill tool shares the same DB tables (isolated by `skillId`), API routes (`/api/skills/[skillId]/...`), and UI components.
 
 **To add a new skill tool** (~4 files):
-1. Define seed data (`server/database/seeds/my-skill.ts`)
-2. Register skill config with AI prompts (`server/lib/skill-learning/skills/my-skill.ts`) + add side-effect import in `server/plugins/skill-learning.ts`
-3. Register tool (`tools/my-skill/index.ts`)
-4. Create root component (`tools/my-skill/MySkill.vue`) using `createSkillLearningStore(skillId)` + `provide(SKILL_STORE_KEY, store)`
+1. Define seed data (`src/server/database/seeds/my-skill.ts`)
+2. Register skill config with AI prompts (`src/server/lib/skill-learning/skills/my-skill.ts`) + add side-effect import in `src/server/plugins/skill-learning.ts`
+3. Register tool (`src/tools/my-skill/index.ts`)
+4. Create root component (`src/tools/my-skill/MySkill.vue`) using `createSkillLearningStore(skillId)` + `provide(SKILL_STORE_KEY, store)`
 
 **Key files:**
-- `server/lib/skill-learning/` — SkillConfig types, registry, DB helpers, skill configs
-- `server/plugins/skill-learning.ts` — Ensures skill registration at server startup
-- `composables/skill-learning/` — Store factory (`createSkillLearningStore`), shared types, `SKILL_STORE_KEY`
-- `components/skill-learning/` — 22 shared learning UI components (excluded from Nuxt auto-import)
+- `src/server/lib/skill-learning/` — SkillConfig types, registry, DB helpers, skill configs
+- `src/server/plugins/skill-learning.ts` — Ensures skill registration at server startup
+- `src/composables/skill-learning/` — Store factory (`createSkillLearningStore`), shared types, `SKILL_STORE_KEY`
+- `src/components/skill-learning/` — 22 shared learning UI components (excluded from Nuxt auto-import)
 
-### Server (`server/`)
+### Server (`src/server/`)
 
 **API routes** use Nuxt file-based routing with method suffix convention: `index.get.ts`, `toggle.post.ts`, `[id].delete.ts`.
 
@@ -77,15 +115,15 @@ A reusable structured learning engine. Any skill tool shares the same DB tables 
 - `04.module-guard.ts` — Enforces module permissions (namespace → moduleId reverse lookup via `MODULE_NAMESPACE_MAP`)
 
 **Database:** Multi-user SQLite via `better-sqlite3` + Drizzle ORM, WAL mode, foreign keys enabled.
-- **Admin DB** (`data/admin.db`): Users + module permissions only. Schema: `server/database/admin-schema.ts`. Access: `useAdminDB()`
-- **User DBs** (`data/users/{username}.db`): All feature data per user. Schema: `server/database/schema.ts`. Access: `useDB(event)` or `useUserDB(username)`
+- **Admin DB** (`data/admin.db`): Users + module permissions only. Schema: `src/server/database/admin-schema.ts`. Access: `useAdminDB()`
+- **User DBs** (`data/users/{username}.db`): All feature data per user. Schema: `src/server/database/schema.ts`. Access: `useDB(event)` or `useUserDB(username)`
 - **Legacy fallback**: `useDB()` without event still works (returns singleton `data/assistant.db`), will be removed
 - User DB connections use LRU cache (max=20, ttl=5min)
-- Schema files: `server/database/schemas/` — habits, vocab, llm, srs, planner, articles, startup-map, skill-configs, project-tracker, ability, dashboard, music-ear, auth (13 files)
-- Migrations: `server/database/migrations/` (user, 27+), `server/database/admin-migrations/` (admin)
-- **New tool module must**: Update `MODULE_NAMESPACE_MAP` in `server/utils/module-ids.ts`
+- Schema files: `src/server/database/schemas/` — habits, vocab, llm, srs, planner, articles, startup-map, skill-configs, project-tracker, ability, dashboard, music-ear, auth (13 files)
+- Migrations: `src/server/database/migrations/` (user, 27+), `src/server/database/admin-migrations/` (admin)
+- **New tool module must**: Update `MODULE_NAMESPACE_MAP` in `src/server/utils/module-ids.ts`
 
-**Module permission map** (`server/utils/module-ids.ts`):
+**Module permission map** (`src/server/utils/module-ids.ts`):
 - `dashboard` → dashboard, badges
 - `ability-profile` → ability-skills, ability-categories, ability-stats, skill-templates
 - `habit-tracker` → habits, checkins
@@ -116,11 +154,11 @@ A reusable structured learning engine. Any skill tool shares the same DB tables 
 
 ### Frontend
 
-- **State:** Pinia stores in `stores/` using Composition API style (`defineStore('id', () => { ... })`)
-- **Routing:** `pages/index.vue` redirects to first tool; `pages/[...slug].vue` renders the matched tool component; `pages/login.vue` for auth
-- **Layout:** `layouts/default.vue` with collapsible sidebar (`AppSidebar.vue`) + mobile bottom nav (`MobileBottomNav.vue`)
-- **Styling:** CSS variables in `assets/css/variables.css`, all components use `<style scoped>`
-- **Auth:** `composables/useAuth.ts` manages JWT in localStorage; `plugins/auth.client.ts` attaches token to all `$fetch` requests and redirects to `/login` on 401
+- **State:** Pinia stores in `src/stores/` using Composition API style (`defineStore('id', () => { ... })`)
+- **Routing:** `src/pages/index.vue` redirects to first tool; `src/pages/[...slug].vue` renders the matched tool component; `src/pages/login.vue` for auth
+- **Layout:** `src/layouts/default.vue` with collapsible sidebar (`AppSidebar.vue`) + mobile bottom nav (`MobileBottomNav.vue`)
+- **Styling:** CSS variables in `src/assets/css/variables.css`, all components use `<style scoped>`
+- **Auth:** `src/composables/useAuth.ts` manages JWT in localStorage; `src/plugins/auth.client.ts` attaches token to all `$fetch` requests and redirects to `/login` on 401
 
 **Shared composables:**
 - `useToolRegistry` — Tool registration/retrieval
@@ -132,11 +170,11 @@ A reusable structured learning engine. Any skill tool shares the same DB tables 
 - `useMarkdown` — Markdown rendering utility
 - `useAbilitySkillOptions` — Ability Profile skill option helpers
 
-**Pinia stores** (`stores/`): `dashboard`, `habit`, `vocab`, `planner`, `article-reader`, `study`, `ability`, `project-tracker`, `xiaoshuang` (global AI assistant state)
+**Pinia stores** (`src/stores/`): `dashboard`, `habit`, `vocab`, `planner`, `article-reader`, `study`, `ability`, `project-tracker`, `xiaoshuang` (global AI assistant state)
 
 ### LLM Integration
 
-Providers are pluggable via `server/lib/llm/`:
+Providers are pluggable via `src/server/lib/llm/`:
 - **Claude CLI:** Invokes `claude` CLI via `child_process.spawn` (must be installed and authenticated)
 - **Claude API:** REST API via Anthropic API (requires API key, encrypted in DB)
 - **Gemini:** REST API (free tier, supports gemini-2.5-flash / flash-lite)
@@ -146,7 +184,10 @@ Supports streaming via SSE (used in article translation, AI teaching). Vocab def
 
 ### Deployment
 
-PM2-based production setup. Config in `ecosystem.config.cjs`, deploy script in `scripts/deploy.sh`.
+All deployment configs live in `deployment/`. PM2-based production setup with Docker option for Render.
+- PM2 config: `deployment/ecosystem.config.cjs`
+- Deploy script: `deployment/scripts/deploy.sh`
+- Docker: `deployment/Dockerfile` + `deployment/render.yaml`
 - Build output: `.output/server/index.mjs`
 - DB backups: `./data/backups/` (keeps latest 5)
 - Logs: `./logs/pm2-*.log`
