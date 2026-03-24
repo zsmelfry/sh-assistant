@@ -1,1386 +1,321 @@
-# 技术架构文档 v2.0 - 可扩展日常助手工具
+# 技术架构文档
 
-> 版本: v2.0
-> 日期: 2026-02-18
-> 作者: 小M (架构师)
-> 状态: 待评审
-> 前置版本: archive/v1/ARCHITECTURE-v1.md (React + Vite + IndexedDB)
-> 需求依据: PRD.md (REQ-1, REQ-2, REQ-3)
+> 版本: v3.0 | 最后更新: 2026-03-24
 
 ---
 
 ## 1. 架构总览
 
-### 1.1 系统架构图
-
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     浏览器 (Vue 3 SPA)                    │
-│                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐   │
-│  │ Pages    │  │ Layouts  │  │ Tools (插件化)         │   │
-│  │ index    │  │ default  │  │ ├─ habit-tracker/     │   │
-│  └──────────┘  └──────────┘  │ │  ├─ components/    │   │
-│                               │ │  └─ types.ts      │   │
-│  ┌──────────────────────┐    │ └─ (future tools)    │   │
-│  │ Pinia Stores         │    └──────────────────────┘   │
-│  │ ├─ habit.ts          │                                │
-│  │ └─ tool-registry.ts  │    ┌──────────────────────┐   │
-│  └──────────────────────┘    │ Composables          │   │
-│                               │ ├─ useApi.ts         │   │
-│                               │ └─ useToolRegistry   │   │
-│                               └──────────────────────┘   │
-│                          │                                │
-│                   $fetch (HTTP)                           │
-│                          │                                │
-├──────────────────────────┼───────────────────────────────┤
-│                     Nitro Server                          │
-│                                                          │
-│  ┌──────────────────────┐    ┌──────────────────────┐   │
-│  │ server/api/           │    │ server/middleware/    │   │
-│  │ ├─ habits/           │    │ └─ log.ts            │   │
-│  │ └─ checkins/         │    └──────────────────────┘   │
-│  └──────────────────────┘                                │
-│              │                                            │
-│  ┌──────────────────────┐                                │
-│  │ server/database/      │                                │
-│  │ ├─ index.ts (连接)    │                                │
-│  │ ├─ schema.ts (表定义) │                                │
-│  │ └─ repositories/     │                                │
-│  └──────────────────────┘                                │
-│              │                                            │
-│  ┌──────────────────────┐                                │
-│  │   SQLite (.db 文件)   │                                │
-│  └──────────────────────┘                                │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     浏览器 (Vue 3 SPA)                        │
+│                                                               │
+│  ┌──────────┐  ┌──────────┐  ┌─────────────────────────┐    │
+│  │ Pages    │  │ Layouts  │  │ Tools (插件化, 9 个静态)  │    │
+│  │ index    │  │ default  │  │ + 动态 Skill Learning    │    │
+│  │ login    │  │          │  │   工具 (按 skillId 注册)  │    │
+│  │ [...slug]│  │          │  └─────────────────────────┘    │
+│  └──────────┘  └──────────┘                                  │
+│                                                               │
+│  ┌──────────────────────┐    ┌──────────────────────────┐    │
+│  │ Pinia Stores (8个)    │    │ Composables (自动导入)    │    │
+│  └──────────────────────┘    └──────────────────────────┘    │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │ 小爽助手 (全局浮层, 任意页面可呼出)                      │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                          │ $fetch (HTTP)                       │
+├──────────────────────────┼───────────────────────────────────┤
+│                     Nitro Server                               │
+│                                                               │
+│  Middleware: SecurityHeaders → Log → Auth → TestGuard         │
+│             → ModuleGuard                                     │
+│  150+ API Routes (file-based routing)                         │
+│  LLM Providers (Claude CLI/API, Gemini, Ollama)               │
+│  Skill Learning Core (通用学习引擎)                             │
+├───────────────────────────────────────────────────────────────┤
+│              多用户 SQLite (WAL mode)                          │
+│  Admin DB (data/admin.db) ← 用户 + 模块权限                   │
+│  User DBs (data/users/{username}.db) ← 各用户功能数据          │
+│  13 Schema 文件 · Drizzle ORM · 自动迁移                      │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 技术栈对比
+### 技术栈
 
-| 类别 | v1.x (React) | v2.0 (Nuxt 3) | 迁移理由 |
-|------|-------------|---------------|---------|
-| 全栈框架 | 无 | **Nuxt 3.16** | 内置 Nitro 服务端，前后端一体化 |
-| 前端框架 | React 19 | **Vue 3** (Nuxt 内置) | Nuxt 依赖 Vue 3；组合式 API 与 React Hooks 概念相通 |
-| 状态管理 | Zustand 5 | **Pinia 3** | Nuxt 官方推荐，Vue devtools 集成 |
-| 路由 | React Router 7 | **Nuxt 文件系统路由** | 零配置，约定优于配置 |
-| 数据存储 | Dexie.js (IndexedDB) | **SQLite + Drizzle ORM** | 服务端持久化，跨浏览器/设备 |
-| 构建工具 | Vite 6 | **Nuxt (内置 Vite)** | Nuxt 内部使用 Vite，无额外配置 |
-| 样式方案 | CSS Modules | **Scoped CSS + CSS Variables** | Vue SFC 原生 `<style scoped>` 更简洁 |
-| 日期处理 | date-fns 4 | **date-fns 4** | 保留不变，tree-shakable |
-| 图表渲染 | 无 | **纯 CSS Grid + SVG** | 需求简单，不引入图表库 |
-| TypeScript | 5.7 | **5.7** | 保留不变 |
-
-### 1.3 不选什么，为什么
-
-| 不选 | 理由 |
+| 层级 | 技术 |
 |------|------|
-| Prisma ORM | schema 编译慢，SQLite 支持不如 Drizzle 原生；包体积大 |
-| TypeORM | 维护不积极，TypeScript 支持不如 Drizzle |
-| better-sqlite3 裸用 | 无类型安全，迁移管理需手写 |
-| PostgreSQL / MySQL | 个人工具不需要独立数据库服务，SQLite 零配置即可 |
-| ECharts / Chart.js | 只需热力图+折线图，纯 CSS Grid + SVG 即可，减少依赖 |
-| Tailwind CSS | 黑白设计系统颜色固定，Scoped CSS + 变量更轻量 |
-| SSR 模式 | 个人工具无 SEO 需求，SPA 模式启动更快 |
-| Vuex | 已被 Pinia 取代，Nuxt 官方不再推荐 |
+| 全栈框架 | Nuxt 3 (SPA 模式, ssr: false) |
+| 前端框架 | Vue 3 Composition API |
+| 状态管理 | Pinia (Composition API 风格) |
+| 数据库 | SQLite (better-sqlite3) + Drizzle ORM |
+| 认证 | JWT (365 天有效期) |
+| AI | 插件式 LLM 接入 (Claude CLI / Claude API / Gemini / Ollama) |
+| 部署 | PM2 进程管理 + 自动备份 |
 
 ---
 
 ## 2. 项目目录结构
 
 ```
-personal-assistant-v2/
-├── nuxt.config.ts                    # Nuxt 配置（SPA 模式、模块注册等）
-├── app.vue                           # 根组件（NuxtLayout + NuxtPage）
-├── package.json
-├── tsconfig.json
-├── drizzle.config.ts                 # Drizzle ORM 配置
-├── .env                              # 环境变量（DATABASE_PATH 等）
-├── .gitignore                        # 排除 data/*.db, node_modules 等
+personal-assistant/
+├── nuxt.config.ts                    # Nuxt 配置（SPA 模式）
+├── app.vue                           # 根组件
+├── assets/css/variables.css          # 全局 CSS 变量（黑白色板）
+├── layouts/default.vue               # 主布局：侧边栏 + 主内容区
 │
-├── assets/                           # 静态资源
-│   └── css/
-│       └── variables.css             # 全局 CSS 变量（色板 + 图表变量）
-│
-├── public/                           # 静态文件（favicon 等）
-│
-├── layouts/                          # 布局组件
-│   └── default.vue                   # 主布局：侧边栏 + 主内容区
-│
-├── pages/                            # 文件系统路由
+├── pages/
 │   ├── index.vue                     # / → 重定向到第一个工具
-│   └── [...slug].vue                 # 动态捕获路由（/habit-tracker 等）
+│   ├── login.vue                     # 登录页
+│   └── [...slug].vue                 # 动态捕获路由 → 渲染对应工具
 │
 ├── components/                       # 全局共享组件（Nuxt 自动导入）
-│   ├── AppSidebar.vue                # 侧边栏（工具导航）
-│   ├── BaseButton.vue                # 按钮（primary / ghost 变体）
-│   ├── BaseModal.vue                 # 模态框
-│   └── ConfirmDialog.vue             # 确认对话框
+│   ├── AppSidebar.vue                # 侧边栏导航
+│   ├── BaseButton.vue / BaseModal.vue / BaseChatPanel.vue
+│   ├── ConfirmDialog.vue
+│   ├── LlmSettings.vue              # LLM 设置弹窗
+│   ├── MobileBottomNav.vue           # 移动端底部导航
+│   └── XiaoshuangChat.vue            # 小爽助手全局浮层
 │
-├── composables/                      # 组合式函数（Nuxt 自动导入）
-│   ├── useApi.ts                     # API 调用封装（$fetch wrapper）
-│   └── useToolRegistry.ts            # 工具注册表 composable
+├── composables/                      # 组合式函数（自动导入）
+│   ├── useAuth.ts                    # JWT 认证
+│   ├── useToolRegistry.ts            # 工具注册/检索
+│   ├── useLlm.ts                     # LLM 调用
+│   ├── useTts.ts                     # 语音合成 (法语优先)
+│   ├── useIsMobile.ts                # 响应式断点 (768px)
+│   ├── useModulePermissions.ts       # 模块权限控制
+│   ├── useMarkdown.ts                # Markdown 工具
+│   ├── useAbilitySkillOptions.ts     # 能力画像技能选项
+│   └── skill-learning/               # 技能学习 Store 工厂 + 共享类型
 │
 ├── stores/                           # Pinia stores
-│   └── habit.ts                      # 习惯打卡 store
+│   ├── habit.ts / vocab.ts / planner.ts / article-reader.ts
+│   ├── ability.ts / project-tracker.ts / dashboard.ts
+│   ├── study.ts                      # 技能学习通用 store
+│   └── xiaoshuang.ts                 # 小爽助手全局状态
 │
-├── tools/                            # 工具模块目录（插件化架构）
-│   ├── index.ts                      # 工具注册清单（导入所有工具）
-│   └── habit-tracker/                # 习惯打卡工具
-│       ├── index.ts                  # ToolDefinition 定义 + 导出
-│       ├── HabitTracker.vue          # 工具根组件
-│       ├── components/               # 工具内部组件
-│       │   ├── HabitList.vue         # 习惯列表
-│       │   ├── HabitForm.vue         # 创建/编辑表单
-│       │   ├── Calendar.vue          # 月历视图
-│       │   ├── CalendarDay.vue       # 单日格子
-│       │   ├── CalendarNav.vue       # 月份切换
-│       │   ├── StatsBar.vue          # 统计栏
-│       │   ├── EmptyState.vue        # 空状态
-│       │   ├── HistoryPanel.vue      # 图表面板（折叠/展开）
-│       │   ├── HeatmapChart.vue      # 年度热力图
-│       │   ├── TrendChart.vue        # 月度趋势折线图
-│       │   └── ChartTooltip.vue      # 图表 tooltip
-│       └── types.ts                  # 工具类型定义
+├── tools/                            # 工具模块（插件化架构）
+│   ├── index.ts                      # 工具注册清单（side-effect imports）
+│   ├── dashboard/                    # 今日面板
+│   ├── ability-profile/              # 能力画像
+│   ├── vocab-tracker/                # 法语词汇
+│   ├── annual-planner/               # 年度计划
+│   ├── project-tracker/              # 事项追踪
+│   ├── article-reader/               # 文章阅读
+│   ├── skill-manager/                # 技能管理
+│   ├── admin/                        # 用户管理
+│   └── skill-learning/               # 技能学习通用组件 + GenericSkillTool.vue
 │
-├── types/                            # 全局类型定义
-│   ├── index.ts                      # ToolDefinition、BaseEntity 等
-│   └── api.ts                        # API 请求/响应类型
+├── server/
+│   ├── api/                          # API 路由 (Nitro file-based routing)
+│   ├── middleware/                    # 中间件链 (编号控制执行顺序)
+│   ├── database/
+│   │   ├── index.ts                  # DB 连接管理 (useDB / useAdminDB / useUserDB)
+│   │   ├── schema.ts                 # 用户 DB schema 聚合
+│   │   ├── admin-schema.ts           # Admin DB schema
+│   │   ├── schemas/                  # 13 个 schema 文件
+│   │   ├── migrations/               # 用户 DB 迁移 (27+)
+│   │   └── admin-migrations/         # Admin DB 迁移
+│   ├── lib/llm/                      # LLM Provider 抽象层
+│   ├── lib/skill-learning/           # 技能学习引擎
+│   ├── utils/module-ids.ts           # 模块 ID 与 API 命名空间映射
+│   └── plugins/skill-learning.ts     # 技能注册启动插件
 │
-├── server/                           # Nitro 后端
-│   ├── api/                          # API 路由
-│   │   ├── habits/
-│   │   │   ├── index.get.ts          # GET    /api/habits
-│   │   │   ├── index.post.ts         # POST   /api/habits
-│   │   │   ├── [id].put.ts           # PUT    /api/habits/:id
-│   │   │   └── [id].delete.ts        # DELETE /api/habits/:id
-│   │   └── checkins/
-│   │       ├── index.get.ts          # GET    /api/checkins?habitId=&month=
-│   │       ├── toggle.post.ts        # POST   /api/checkins/toggle
-│   │       ├── stats.get.ts          # GET    /api/checkins/stats?habitId=
-│   │       ├── heatmap.get.ts        # GET    /api/checkins/heatmap?habitId=&year=
-│   │       └── trend.get.ts          # GET    /api/checkins/trend?habitId=&months=
-│   ├── database/                     # 数据库层
-│   │   ├── index.ts                  # DB 初始化 + 单例连接
-│   │   ├── schema.ts                 # Drizzle 表定义
-│   │   └── migrations/               # 数据库迁移
-│   │       └── 0001_initial.sql      # 初始建表
-│   ├── utils/                        # 服务端工具函数
-│   │   └── db.ts                     # 获取 DB 实例的工具函数
-│   └── middleware/
-│       └── log.ts                    # 请求日志
+├── data/                             # 数据库文件 (gitignored)
+│   ├── admin.db                      # 用户 + 模块权限
+│   └── users/{username}.db           # 各用户功能数据
 │
-├── data/                             # 数据库文件（gitignored）
-│   └── assistant.db                  # SQLite 数据库文件
-│
-├── docs/                             # 文档
-│   ├── PRD.md                        # 当前版本 PRD
-│   ├── ARCHITECTURE.md               # 本文件（当前版本架构）
-│   ├── DECISIONS.md                  # 技术决策记录
-│   ├── E2E-TEST-PLAN.md              # E2E 测试计划
-│   ├── TEAM.md                       # 团队结构
-│   └── archive/v1/                   # v1 归档文档
-│
-└── e2e/                              # E2E 测试（Playwright）
-    └── ...
+└── e2e/                              # Playwright E2E 测试 (15+ 文件)
 ```
-
-### 2.1 目录职责说明
-
-| 目录 | 职责 | Nuxt 自动处理 |
-|------|------|--------------|
-| `pages/` | 文件系统路由，每个 `.vue` 文件 = 一个路由 | ✅ 自动注册路由 |
-| `layouts/` | 页面布局组件，通过 `<NuxtLayout>` 使用 | ✅ 自动识别 |
-| `components/` | 共享 UI 组件 | ✅ 自动导入，无需手动 import |
-| `composables/` | 组合式函数（等价于 React Hooks） | ✅ 自动导入 |
-| `stores/` | Pinia 状态管理 | 需手动导入（通过 `useHabitStore()`）|
-| `tools/` | 工具插件模块（**自定义目录**，非 Nuxt 约定） | ❌ 需手动注册 |
-| `server/api/` | API 路由（Nitro 引擎） | ✅ 自动注册，文件名 = 路径 |
-| `server/database/` | 数据库层（schema、连接、迁移） | ❌ 自定义 |
-| `assets/css/` | 全局样式 | 需在 `nuxt.config.ts` 中引用 |
 
 ---
 
-## 3. 数据库设计
+## 3. 多用户数据库架构
 
-### 3.1 技术选型：SQLite + Drizzle ORM
+### 双 DB 设计
 
-**SQLite 选型理由**：
-- 零配置：数据库就是一个 `.db` 文件，随应用启动
-- 读性能极高：适合个人工具读多写少场景
-- 备份简单：复制文件即可
-- 部署零依赖：不需要额外的数据库服务
-- 10 年数据量预估 < 10MB，远在 SQLite 能力范围内
+| DB | 路径 | 用途 | 访问方式 |
+|----|------|------|----------|
+| Admin DB | `data/admin.db` | 用户表 + 模块权限表 | `useAdminDB()` |
+| User DB | `data/users/{username}.db` | 所有功能数据（按用户隔离） | `useDB(event)` 或 `useUserDB(username)` |
 
-**Drizzle ORM 选型理由**：
-- TypeScript-first：schema 即类型，从表定义自动推导 TS 类型
-- 轻量：无 schema 编译步骤（vs Prisma），零运行时生成
-- SQLite 原生支持：通过 `better-sqlite3` 驱动
-- 迁移工具：`drizzle-kit` 提供 generate + migrate 命令
-- 未来兼容：Drizzle 支持 SQLite → PostgreSQL 无缝切换
+- User DB 连接使用 LRU 缓存 (max=20, ttl=5min)
+- 所有 DB 启用 WAL 模式 + 外键约束
+- Legacy 单用户 DB (`data/assistant.db`) 仍有兼容支持，将在后续移除
 
-### 3.2 Drizzle Schema 定义
+### Admin DB 表
 
-```typescript
-// server/database/schema.ts
-import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+- `users` — username, passwordHash, role ('admin'|'user'), tokenVersion
+- `userModules` — userId, moduleId, enabled (模块权限开关)
 
-export const habits = sqliteTable('habits', {
-  id: text('id').primaryKey(),                                    // UUID
-  name: text('name').notNull(),                                   // 习惯名称
-  frequency: text('frequency', { enum: ['daily', 'weekly', 'monthly'] })
-    .notNull()
-    .default('daily'),                                            // 打卡频率
-  archived: integer('archived', { mode: 'boolean' })
-    .notNull()
-    .default(false),                                              // 软删除
-  createdAt: integer('created_at', { mode: 'number' }).notNull(), // Unix ms
-  updatedAt: integer('updated_at', { mode: 'number' }).notNull(), // Unix ms
-}, (table) => [
-  index('idx_habits_archived').on(table.archived),
-]);
+### User DB Schema 文件 (13 个)
 
-export const checkins = sqliteTable('checkins', {
-  id: text('id').primaryKey(),                                    // UUID
-  habitId: text('habit_id').notNull()
-    .references(() => habits.id, { onDelete: 'cascade' }),        // 级联删除
-  date: text('date').notNull(),                                   // YYYY-MM-DD
-  createdAt: integer('created_at', { mode: 'number' }).notNull(), // Unix ms
-}, (table) => [
-  uniqueIndex('idx_checkins_habit_date').on(table.habitId, table.date),
-  index('idx_checkins_habit_id').on(table.habitId),
-]);
+habits, vocab, srs, planner, articles, llm, ability, dashboard, project-tracker, skill-configs, startup-map, music-ear, auth (legacy)
 
-// 类型推导
-export type Habit = typeof habits.$inferSelect;
-export type NewHabit = typeof habits.$inferInsert;
-export type CheckIn = typeof checkins.$inferSelect;
-export type NewCheckIn = typeof checkins.$inferInsert;
-```
+---
 
-### 3.3 数据库初始化
+## 4. 工具插件系统
 
-```typescript
-// server/database/index.ts
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
-import * as schema from './schema';
+### 注册机制
 
-let _db: ReturnType<typeof drizzle> | null = null;
+每个工具是 `tools/<id>/` 目录下的自包含模块：
+- `index.ts` — 调用 `registerTool()` 注册元信息 (id, name, icon, order, namespaces)
+- 根 `.vue` 组件 — 通过 `() => import('./Tool.vue')` 延迟加载
+- `components/` — 工具内部子组件
 
-export function useDB() {
-  if (!_db) {
-    const dbPath = process.env.DATABASE_PATH || './data/assistant.db';
-    const sqlite = new Database(dbPath);
+注册流程：`plugins/tools.client.ts` → `tools/index.ts` (side-effect imports) → 各工具 `registerTool()` → 存入模块级 `Map`。
 
-    // 启用 WAL 模式，提升并发读性能
-    sqlite.pragma('journal_mode = WAL');
-    sqlite.pragma('foreign_keys = ON');
+路由自动解析：`pages/[...slug].vue` 将 URL path 映射为工具 ID。
 
-    _db = drizzle(sqlite, { schema });
-  }
-  return _db;
-}
-```
+### 已注册工具
 
-### 3.4 迁移策略
+| 工具 ID | 名称 | Order | 图标 |
+|---------|------|-------|------|
+| dashboard | 今日 | 0 | Home |
+| ability-profile | 能力画像 | 1 | Radar |
+| vocab-tracker | 法语词汇 | 2 | BookOpen |
+| annual-planner | 年度计划 | 3 | Target |
+| project-tracker | 事项追踪 | 4 | ClipboardList |
+| article-reader | 文章阅读 | 5 | FileText |
+| skill-manager | 技能管理 | Infinity | Settings |
+| admin | 用户管理 | 100 | Users |
+| (动态) | Skill 工具 | — | 按配置 |
 
-```typescript
-// drizzle.config.ts
-import { defineConfig } from 'drizzle-kit';
+### Skill Learning Core
 
-export default defineConfig({
-  schema: './server/database/schema.ts',
-  out: './server/database/migrations',
-  dialect: 'sqlite',
-  dbCredentials: {
-    url: process.env.DATABASE_PATH || './data/assistant.db',
-  },
-});
-```
+通用结构化学习引擎，所有技能工具共享同一套 DB 表（按 `skillId` 隔离）、API 路由和 UI 组件。
 
-**迁移命令**：
-```bash
-npx drizzle-kit generate    # 根据 schema 变更生成 SQL 迁移文件
-npx drizzle-kit migrate     # 应用迁移
-npx drizzle-kit studio      # 可视化数据库浏览器（开发用）
-```
+添加新技能工具 (~4 文件)：
+1. 定义种子数据
+2. 注册技能配置（含 AI 提示词）+ 在 `server/plugins/skill-learning.ts` 添加导入
+3. 注册工具 `tools/<id>/index.ts`
+4. 创建根组件，使用 `createSkillLearningStore(skillId)` + `provide(SKILL_STORE_KEY, store)`
 
-### 3.5 数据库文件管理
+---
 
-| 环境 | 路径 | 说明 |
+## 5. 服务端架构
+
+### 中间件链
+
+| 序号 | 文件 | 职责 |
 |------|------|------|
-| 开发 | `./data/assistant.db` | 项目根目录下 |
-| 生产 | `$DATABASE_PATH` | 环境变量配置 |
-| 测试 | `:memory:` | 内存数据库，每次测试隔离 |
+| 00 | cache-control.ts | 静态资源缓存头 |
+| 00 | security-headers.ts | CSP, X-Frame-Options, X-Content-Type-Options 等安全头 |
+| 01 | log.ts | 请求日志 |
+| 02 | auth.ts | JWT 验证 + 角色/模块缓存 (60s TTL) |
+| 03 | test-guard.ts | 生产环境禁止访问测试端点 |
+| 04 | module-guard.ts | 模块权限守卫 (namespace → moduleId 反向查找) |
 
-`.gitignore` 中排除 `data/*.db`。
+### 模块权限系统
 
----
+`server/utils/module-ids.ts` 定义了所有模块 ID 及其 API 命名空间映射：
 
-## 4. API 设计
+| 模块 ID | API 命名空间 |
+|---------|-------------|
+| dashboard | dashboard, badges |
+| ability-profile | ability-skills, ability-categories, ability-stats, skill-templates |
+| habit-tracker | habits, checkins |
+| annual-planner | planner |
+| vocab-tracker | vocab |
+| article-reader | articles, bookmarks, article-tags |
+| project-tracker | project-tracker |
+| skill-manager | skill-configs, skills |
+| xiaoshuang | xiaoshuang |
 
-### 4.1 API 路由总览
+免检路径：`/api/admin/`, `/api/auth/`, `/api/_test/`, `/api/llm/`, `/api/songs/`
 
-所有 API 遵循 RESTful 风格，前缀 `/api/`。
+### API 路由组
 
-#### 习惯管理
-
-| 方法 | 路径 | 处理函数 | 说明 |
-|------|------|---------|------|
-| GET | `/api/habits` | `server/api/habits/index.get.ts` | 获取所有未归档习惯 |
-| POST | `/api/habits` | `server/api/habits/index.post.ts` | 创建习惯 |
-| PUT | `/api/habits/:id` | `server/api/habits/[id].put.ts` | 更新习惯 |
-| DELETE | `/api/habits/:id` | `server/api/habits/[id].delete.ts` | 删除习惯（级联删除打卡） |
-
-#### 打卡操作
-
-| 方法 | 路径 | 处理函数 | 说明 |
-|------|------|---------|------|
-| GET | `/api/checkins` | `server/api/checkins/index.get.ts` | 按习惯+月份查询打卡记录 |
-| POST | `/api/checkins/toggle` | `server/api/checkins/toggle.post.ts` | 切换打卡状态（幂等） |
-| GET | `/api/checkins/stats` | `server/api/checkins/stats.get.ts` | 获取统计数据（连续数+完成率） |
-| GET | `/api/checkins/heatmap` | `server/api/checkins/heatmap.get.ts` | 年度热力图数据 |
-| GET | `/api/checkins/trend` | `server/api/checkins/trend.get.ts` | 月度趋势数据 |
-
-### 4.2 API 详细设计
-
-#### GET /api/habits
-
-```typescript
-// 响应
-type Response = Habit[]
-
-// 示例
-[
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "跑步",
-    "frequency": "daily",
-    "archived": false,
-    "createdAt": 1708300000000,
-    "updatedAt": 1708300000000
-  }
-]
-```
-
-#### POST /api/habits
-
-```typescript
-// 请求体
-type Request = { name: string; frequency?: 'daily' | 'weekly' | 'monthly' }
-
-// 响应: 201 Created
-type Response = Habit
-```
-
-#### PUT /api/habits/:id
-
-```typescript
-// 请求体
-type Request = { name?: string; frequency?: 'daily' | 'weekly' | 'monthly' }
-
-// 响应: 200 OK
-type Response = Habit
-
-// 错误: 404 Not Found
-type ErrorResponse = { error: string }
-```
-
-#### DELETE /api/habits/:id
-
-```typescript
-// 响应: 200 OK
-type Response = { success: true }
-
-// 效果: 级联删除所有关联 checkins（由数据库外键约束处理）
-```
-
-#### GET /api/checkins
-
-```typescript
-// 查询参数
-type Query = {
-  habitId: string;       // 必填
-  month?: string;        // YYYY-MM 格式，默认当前月
-  frequency?: string;    // 用于 weekly 频率扩展查询范围
-}
-
-// 响应
-type Response = CheckIn[]
-```
-
-**frequency=weekly 时的特殊处理**：查询范围扩展到完整自然周，即月初/月末如果落在某周中间，也返回该周的完整数据。
-
-#### POST /api/checkins/toggle
-
-```typescript
-// 请求体
-type Request = { habitId: string; date: string }  // date: YYYY-MM-DD
-
-// 响应: 200 OK
-type Response = { checked: boolean; checkin?: CheckIn }
-
-// 幂等设计:
-//   - 如果该日期无记录 → 创建 → { checked: true, checkin: {...} }
-//   - 如果该日期已有记录 → 删除 → { checked: false }
-```
-
-#### GET /api/checkins/stats
-
-```typescript
-// 查询参数
-type Query = { habitId: string }
-
-// 响应
-type Response = {
-  streak: number;           // 连续完成数（天/周/月视频率而定）
-  monthlyRate: number;      // 本月完成率 (0-100)
-  allDates: string[];       // 所有打卡日期列表（用于前端连续计算）
-}
-```
-
-#### GET /api/checkins/heatmap
-
-```typescript
-// 查询参数
-type Query = { habitId: string; year: number }
-
-// 响应
-type Response = { dates: string[] }  // 该年所有已打卡日期
-
-// 示例: { "dates": ["2026-01-03", "2026-01-05", ...] }
-```
-
-#### GET /api/checkins/trend
-
-```typescript
-// 查询参数
-type Query = { habitId: string; months?: number }  // months 默认 12
-
-// 响应
-type Response = {
-  months: Array<{
-    month: string;      // "YYYY-MM"
-    total: number;      // 总天数/总周数（视频率而定）
-    completed: number;  // 已完成天数/周数
-    rate: number;       // 完成率 (0-100)
-  }>
-}
-```
-
-### 4.3 API 通用规范
-
-```typescript
-// 成功响应
-HTTP 200 OK | 201 Created
-Content-Type: application/json
-Body: <数据对象或数组>
-
-// 客户端错误
-HTTP 400 Bad Request
-Body: { "error": "缺少必填参数: habitId" }
-
-// 资源未找到
-HTTP 404 Not Found
-Body: { "error": "习惯不存在" }
-
-// 服务端错误
-HTTP 500 Internal Server Error
-Body: { "error": "数据库操作失败" }
-```
-
-### 4.4 API 路由实现示例
-
-```typescript
-// server/api/habits/index.get.ts
-import { eq } from 'drizzle-orm';
-import { useDB } from '~/server/database';
-import { habits } from '~/server/database/schema';
-
-export default defineEventHandler(async () => {
-  const db = useDB();
-  return db.select()
-    .from(habits)
-    .where(eq(habits.archived, false))
-    .orderBy(habits.createdAt);
-});
-
-// server/api/habits/index.post.ts
-import { useDB } from '~/server/database';
-import { habits } from '~/server/database/schema';
-
-export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-
-  if (!body.name?.trim()) {
-    throw createError({ statusCode: 400, message: '习惯名称不能为空' });
-  }
-
-  const now = Date.now();
-  const newHabit = {
-    id: crypto.randomUUID(),
-    name: body.name.trim(),
-    frequency: body.frequency || 'daily',
-    archived: false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const db = useDB();
-  await db.insert(habits).values(newHabit);
-  return newHabit;
-});
-
-// server/api/checkins/toggle.post.ts
-import { and, eq } from 'drizzle-orm';
-import { useDB } from '~/server/database';
-import { checkins } from '~/server/database/schema';
-
-export default defineEventHandler(async (event) => {
-  const { habitId, date } = await readBody(event);
-
-  if (!habitId || !date) {
-    throw createError({ statusCode: 400, message: '缺少 habitId 或 date' });
-  }
-
-  const db = useDB();
-  const existing = await db.select()
-    .from(checkins)
-    .where(and(eq(checkins.habitId, habitId), eq(checkins.date, date)))
-    .limit(1);
-
-  if (existing.length > 0) {
-    // 已存在 → 删除
-    await db.delete(checkins)
-      .where(and(eq(checkins.habitId, habitId), eq(checkins.date, date)));
-    return { checked: false };
-  } else {
-    // 不存在 → 创建
-    const newCheckin = {
-      id: crypto.randomUUID(),
-      habitId,
-      date,
-      createdAt: Date.now(),
-    };
-    await db.insert(checkins).values(newCheckin);
-    return { checked: true, checkin: newCheckin };
-  }
-});
-```
+| 命名空间 | 端点前缀 | 功能 |
+|-----------|----------|------|
+| 认证 | `/api/auth` | 登录 (JWT, 365天) |
+| 管理 | `/api/admin` | 用户 CRUD + 模块权限 |
+| 习惯 | `/api/habits`, `/api/checkins` | 习惯 CRUD、打卡、统计 |
+| 词汇 | `/api/vocab` | 词汇导入、SRS、释义 |
+| 计划 | `/api/planner` | 领域、目标、检查项、标签、统计 |
+| 能力 | `/api/ability-skills`, `/api/ability-categories`, `/api/ability-stats`, `/api/skill-templates` | 能力画像 |
+| 文章 | `/api/articles`, `/api/bookmarks`, `/api/article-tags` | 文章抓取、翻译、书签 |
+| 项目 | `/api/project-tracker` | 项目管理 |
+| 面板 | `/api/dashboard`, `/api/badges` | 每日摘要、徽章 |
+| 小爽 | `/api/xiaoshuang` | AI 教练聊天 |
+| 技能学习 | `/api/skills/[skillId]` | 通用学习引擎 (30+ 端点) |
+| 技能配置 | `/api/skill-configs` | 技能定义管理 |
+| 歌曲 | `/api/songs` | Music Ear 技能工具 |
+| LLM | `/api/llm` | Provider 管理、模型发现、聊天、翻译 |
+| 测试 | `/api/_test` | 数据重置 (生产环境禁用) |
 
 ---
 
-## 5. 前端架构
+## 6. 前端架构
 
-### 5.1 Nuxt 配置
+### 路由
 
-```typescript
-// nuxt.config.ts
-export default defineNuxtConfig({
-  // SPA 模式（个人工具无 SEO 需求）
-  ssr: false,
+- `pages/index.vue` — 重定向到第一个工具
+- `pages/[...slug].vue` — 解析 slug 为工具 ID，渲染对应组件
+- `pages/login.vue` — 登录页
 
-  // 全局 CSS
-  css: ['~/assets/css/variables.css'],
+### 认证
 
-  // Pinia 模块
-  modules: ['@pinia/nuxt'],
+- `composables/useAuth.ts` 管理 JWT（localStorage）
+- `plugins/auth.client.ts` 自动附加 token 到所有 `$fetch` 请求，401 时重定向到 `/login`
 
-  // TypeScript 严格模式
-  typescript: {
-    strict: true,
-  },
+### 状态管理
 
-  // 开发服务器配置
-  devtools: { enabled: true },
+Pinia stores 使用 Composition API 风格 (`defineStore('id', () => { ... })`)。
 
-  // 路由配置
-  routeRules: {
-    '/': { redirect: '/habit-tracker' },
-  },
-});
-```
+### 样式系统
 
-### 5.2 插件化工具架构（迁移设计）
-
-#### 5.2.1 ToolDefinition 接口
-
-```typescript
-// types/index.ts
-import type { Component } from 'vue';
-
-export interface ToolDefinition {
-  id: string;                              // URL 路径标识（如 'habit-tracker'）
-  name: string;                            // 显示名称（如 '日历打卡'）
-  icon: string;                            // 图标（emoji 或图标名）
-  order: number;                           // 侧边栏排序
-  component: () => Promise<Component>;     // 异步组件加载函数
-  namespaces: string[];                    // 数据命名空间（文档用途）
-}
-```
-
-#### 5.2.2 工具注册 Composable
-
-```typescript
-// composables/useToolRegistry.ts
-import type { ToolDefinition } from '~/types';
-
-const tools = new Map<string, ToolDefinition>();
-
-export function registerTool(tool: ToolDefinition): void {
-  tools.set(tool.id, tool);
-}
-
-export function useToolRegistry() {
-  const getAll = (): ToolDefinition[] =>
-    Array.from(tools.values()).sort((a, b) => a.order - b.order);
-
-  const get = (id: string): ToolDefinition | undefined => tools.get(id);
-
-  return { getAll, get, register: registerTool };
-}
-```
-
-#### 5.2.3 工具注册示例
-
-```typescript
-// tools/habit-tracker/index.ts
-import { registerTool } from '~/composables/useToolRegistry';
-
-registerTool({
-  id: 'habit-tracker',
-  name: '日历打卡',
-  icon: '📅',
-  order: 1,
-  component: () => import('./HabitTracker.vue'),
-  namespaces: ['habits', 'checkins'],
-});
-```
-
-```typescript
-// tools/index.ts — 工具注册清单
-import './habit-tracker';
-// import './todo-list';     // 未来工具
-// import './pomodoro';      // 未来工具
-```
-
-#### 5.2.4 Nuxt Plugin 触发注册
-
-```typescript
-// plugins/tools.client.ts — 确保工具在应用启动时注册
-import '~/tools';
-
-export default defineNuxtPlugin(() => {
-  // 工具已通过 side-effect import 完成注册
-});
-```
-
-#### 5.2.5 新增工具仍然只需三步
-
-1. 创建 `tools/my-tool/` 目录 + 组件
-2. 在 `tools/my-tool/index.ts` 中调用 `registerTool()`
-3. 在 `tools/index.ts` 中 `import './my-tool'`
-
-**无需修改 pages、layouts、components 等平台代码。**
-
-### 5.3 动态路由 + 工具渲染
-
-```vue
-<!-- pages/[...slug].vue — 动态捕获所有工具路由 -->
-<template>
-  <component
-    v-if="currentTool"
-    :is="toolComponent"
-  />
-  <div v-else>
-    工具未找到
-  </div>
-</template>
-
-<script setup lang="ts">
-const route = useRoute();
-const { get } = useToolRegistry();
-
-const toolId = computed(() => {
-  const slug = route.params.slug;
-  return Array.isArray(slug) ? slug[0] : slug;
-});
-
-const currentTool = computed(() => get(toolId.value));
-const toolComponent = computed(() =>
-  currentTool.value
-    ? defineAsyncComponent(currentTool.value.component)
-    : null
-);
-</script>
-```
-
-### 5.4 布局组件
-
-```vue
-<!-- layouts/default.vue -->
-<template>
-  <div :class="$style.layout">
-    <AppSidebar
-      :collapsed="sidebarCollapsed"
-      @toggle="sidebarCollapsed = !sidebarCollapsed"
-    />
-    <main :class="$style.main">
-      <slot />
-    </main>
-  </div>
-</template>
-
-<script setup lang="ts">
-const sidebarCollapsed = ref(false);
-</script>
-
-<style module>
-.layout {
-  display: flex;
-  height: 100vh;
-}
-.main {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--spacing-lg);
-}
-</style>
-```
-
-### 5.5 Pinia Store 设计
-
-#### 5.5.1 从 Zustand 迁移到 Pinia
-
-**映射关系**：
-
-| Zustand 概念 | Pinia 等价 |
-|-------------|-----------|
-| `create<Store>((set, get) => {...})` | `defineStore('id', () => {...})` (Setup 语法) |
-| `set({ key: value })` | 直接赋值 `state.key = value`（响应式） |
-| `get().someAction()` | 直接调用，无需 `get()` |
-| `useStore((s) => s.key)` | `storeToRefs(useStore()).key` 或直接 `store.key` |
-| 派生状态（get() 中计算） | `computed()` |
-
-#### 5.5.2 Habit Store
-
-```typescript
-// stores/habit.ts
-import { defineStore } from 'pinia';
-import type { Habit, CheckIn, HabitFrequency, YearMonth } from '~/types';
-
-export const useHabitStore = defineStore('habit', () => {
-  // ===== 状态 =====
-  const habits = ref<Habit[]>([]);
-  const selectedHabitId = ref<string | null>(null);
-  const currentMonth = ref<YearMonth>(getCurrentMonth());
-  const checkIns = ref<CheckIn[]>([]);
-  const loading = ref(false);
-  const allCheckInDates = ref<Set<string>>(new Set());
-
-  // ===== 计算属性 =====
-  const selectedHabit = computed(() =>
-    habits.value.find(h => h.id === selectedHabitId.value)
-  );
-
-  const selectedFrequency = computed<HabitFrequency>(() =>
-    selectedHabit.value?.frequency ?? 'daily'
-  );
-
-  // ===== 动作 =====
-  async function loadHabits() {
-    habits.value = await $fetch<Habit[]>('/api/habits');
-  }
-
-  async function selectHabit(id: string) {
-    selectedHabitId.value = id;
-    await loadCheckIns();
-    await loadAllDates();
-  }
-
-  async function loadCheckIns() {
-    if (!selectedHabitId.value) return;
-    checkIns.value = await $fetch<CheckIn[]>('/api/checkins', {
-      params: {
-        habitId: selectedHabitId.value,
-        month: currentMonth.value,
-        frequency: selectedFrequency.value,
-      },
-    });
-  }
-
-  async function setMonth(month: YearMonth) {
-    currentMonth.value = month;
-    await loadCheckIns();
-  }
-
-  async function createHabit(name: string, frequency: HabitFrequency = 'daily') {
-    const habit = await $fetch<Habit>('/api/habits', {
-      method: 'POST',
-      body: { name, frequency },
-    });
-    await loadHabits();
-    await selectHabit(habit.id);
-  }
-
-  async function updateHabit(id: string, data: { name?: string; frequency?: HabitFrequency }) {
-    await $fetch<Habit>(`/api/habits/${id}`, {
-      method: 'PUT',
-      body: data,
-    });
-    await loadHabits();
-    if (id === selectedHabitId.value) {
-      await loadCheckIns();
-      await loadAllDates();
-    }
-  }
-
-  async function deleteHabit(id: string) {
-    await $fetch(`/api/habits/${id}`, { method: 'DELETE' });
-    await loadHabits();
-    if (id === selectedHabitId.value) {
-      selectedHabitId.value = habits.value[0]?.id ?? null;
-      if (selectedHabitId.value) await selectHabit(selectedHabitId.value);
-    }
-  }
-
-  async function toggleCheckIn(date: string) {
-    if (!selectedHabitId.value) return;
-
-    // 乐观更新：先更新 UI
-    const wasCheckedIn = checkIns.value.some(c => c.date === date);
-    if (wasCheckedIn) {
-      checkIns.value = checkIns.value.filter(c => c.date !== date);
-      allCheckInDates.value.delete(date);
-    } else {
-      const optimistic: CheckIn = {
-        id: 'temp-' + Date.now(),
-        habitId: selectedHabitId.value,
-        date,
-        createdAt: Date.now(),
-      };
-      checkIns.value.push(optimistic);
-      allCheckInDates.value.add(date);
-    }
-
-    try {
-      await $fetch('/api/checkins/toggle', {
-        method: 'POST',
-        body: { habitId: selectedHabitId.value, date },
-      });
-      // 成功后重新加载确保数据一致
-      await loadCheckIns();
-      await loadAllDates();
-    } catch {
-      // 失败回滚：重新加载服务端数据
-      await loadCheckIns();
-      await loadAllDates();
-    }
-  }
-
-  async function loadAllDates() {
-    if (!selectedHabitId.value) return;
-    const stats = await $fetch<{ allDates: string[] }>('/api/checkins/stats', {
-      params: { habitId: selectedHabitId.value },
-    });
-    allCheckInDates.value = new Set(stats.allDates);
-  }
-
-  // ===== 派生计算 =====
-  const streak = computed(() => {
-    return calculateStreak(selectedFrequency.value, allCheckInDates.value);
-  });
-
-  const monthlyRate = computed(() => {
-    return calculateMonthlyRate(
-      selectedFrequency.value,
-      currentMonth.value,
-      allCheckInDates.value,
-    );
-  });
-
-  return {
-    // 状态
-    habits, selectedHabitId, currentMonth, checkIns, loading,
-    allCheckInDates,
-    // 计算属性
-    selectedHabit, selectedFrequency, streak, monthlyRate,
-    // 动作
-    loadHabits, selectHabit, setMonth,
-    createHabit, updateHabit, deleteHabit, toggleCheckIn,
-  };
-});
-
-// 辅助函数（与 v1.x 逻辑相同，从 habit-store.ts 迁移）
-function getCurrentMonth(): YearMonth { /* ... */ }
-function calculateStreak(freq: HabitFrequency, dates: Set<string>): number { /* ... */ }
-function calculateMonthlyRate(freq: HabitFrequency, month: YearMonth, dates: Set<string>): number { /* ... */ }
-```
-
-### 5.6 API 调用封装
-
-```typescript
-// composables/useApi.ts
-// 基于 Nuxt 内置的 $fetch（ofetch），无需额外依赖
-
-export function useApi() {
-  /**
-   * 通用 API 调用，自动处理错误
-   */
-  async function api<T>(url: string, options?: Parameters<typeof $fetch>[1]): Promise<T> {
-    return $fetch<T>(url, {
-      ...options,
-      onResponseError({ response }) {
-        const message = response._data?.error || '请求失败';
-        console.error(`API Error [${response.status}]: ${message}`);
-        // 可扩展：接入全局 toast 通知
-      },
-    });
-  }
-
-  return { api };
-}
-```
-
-> **设计决策**：不保留 v1.x 的 DataStore 抽象接口。
->
-> 原因：v1.x 的 `DataStore` 接口是为了前端 IndexedDB 和未来 API 之间的切换设计的。现在已经确定使用 API，前端直接用 `$fetch` 调用后端即可，不需要中间抽象层。Pinia store 直接调用 API，更简洁直接。
->
-> **对小F建议的调整**：小F建议保留 DataStore 抽象，我评估后认为在 Nuxt 全栈架构下，前端不需要这层抽象（因为不再有切换实现的场景）。但后端的 repository 层承担了类似的抽象职责——如果未来要从 SQLite 迁移到 PostgreSQL，只需改 Drizzle 的 driver 配置，schema 和查询代码不变。
-
-### 5.7 样式系统
-
-#### 5.7.1 全局 CSS 变量
-
-```css
-/* assets/css/variables.css */
-:root {
-  /* 色板（保持 v1.x 黑白色调不变） */
-  --color-bg-primary: #FFFFFF;
-  --color-bg-sidebar: #FAFAFA;
-  --color-bg-hover: #F5F5F5;
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #666666;
-  --color-text-disabled: #CCCCCC;
-  --color-border: #E5E5E5;
-  --color-accent: #000000;
-  --color-accent-inverse: #FFFFFF;
-
-  /* 间距 */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-
-  /* 圆角 */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-
-  /* 动画 */
-  --transition-fast: 150ms ease;
-
-  /* 侧边栏 */
-  --sidebar-width: 200px;
-  --sidebar-width-collapsed: 56px;
-
-  /* 图表 (REQ-3 新增) */
-  --color-chart-fill: #1A1A1A;
-  --color-chart-empty: #EAEAEA;
-  --color-chart-bg: #F5F5F5;
-  --color-chart-grid: #E5E5E5;
-  --chart-cell-size: 10px;
-  --chart-cell-gap: 2px;
-}
-```
-
-#### 5.7.2 样式方案：Scoped CSS
-
-从 CSS Modules 迁移到 Vue SFC 的 `<style scoped>`：
-
-| CSS Modules (v1.x) | Scoped CSS (v2.0) |
-|--------------------|--------------------|
-| `import styles from './X.module.css'` | `<style scoped>` |
-| `className={styles.day}` | `class="day"` |
-| 需要 `.d.ts` 类型声明 | 无需额外配置 |
-| 独立 CSS 文件 | 内联在 `.vue` SFC 中 |
-
-**迁移理由**：Vue SFC 的 `<style scoped>` 是原生支持的样式隔离方案，无需额外配置，且样式与模板在同一文件中更易维护。
+- CSS 变量定义在 `assets/css/variables.css`
+- 黑白极简色板，`--color-accent: #000000`
+- 所有组件使用 `<style scoped>`，颜色/间距/圆角全部引用 CSS 变量
 
 ---
 
-## 6. 组件迁移映射
+## 7. LLM 集成
 
-### 6.1 React → Vue 3 组件映射表
+详见 [LLM-ARCHITECTURE.md](./LLM-ARCHITECTURE.md)。
 
-| React 组件 | Vue 3 组件 | 关键变化 |
-|-----------|-----------|---------|
-| `App.tsx` | `app.vue` + `pages/[...slug].vue` | 路由从手动配置改为文件系统 |
-| `AppLayout.tsx` | `layouts/default.vue` | Nuxt 布局约定 |
-| `Sidebar.tsx` | `components/AppSidebar.vue` | 自动导入，无需手动 import |
-| `Button.tsx` | `components/BaseButton.vue` | props 改用 `defineProps` |
-| `Modal.tsx` | `components/BaseModal.vue` | slot 语法 `<slot>` 替代 `children` |
-| `ConfirmDialog.tsx` | `components/ConfirmDialog.vue` | emit 替代 callback props |
-| `HabitTracker.tsx` | `tools/habit-tracker/HabitTracker.vue` | `useHabitStore()` 改为 Pinia |
-| `HabitList.tsx` | `tools/.../HabitList.vue` | `v-for` 替代 `.map()` |
-| `HabitForm.tsx` | `tools/.../HabitForm.vue` | `v-model` 替代 `useState` |
-| `Calendar.tsx` | `tools/.../Calendar.vue` | `computed` 替代 `useMemo` |
-| `CalendarDay.tsx` | `tools/.../CalendarDay.vue` | `:class` 绑定替代 `className` |
-| `CalendarNav.tsx` | `tools/.../CalendarNav.vue` | `@click` 替代 `onClick` |
-| `StatsBar.tsx` | `tools/.../StatsBar.vue` | 直接读 Pinia getter |
-| `EmptyState.tsx` | `tools/.../EmptyState.vue` | 基本不变 |
-
-### 6.2 新增组件（REQ-3）
-
-| 组件 | 职责 | 渲染方式 |
-|------|------|---------|
-| `HistoryPanel.vue` | 图表面板容器，折叠/展开控制 | 按频率选择显示哪些图表 |
-| `HeatmapChart.vue` | 年度热力图 | CSS Grid（7行 × 53列） |
-| `TrendChart.vue` | 月度趋势折线图 | SVG `<polyline>` + `<circle>` |
-| `ChartTooltip.vue` | 共享 tooltip | absolute 定位 + 延迟显示 |
-
-### 6.3 React → Vue 语法速查
-
-| React | Vue 3 |
-|-------|-------|
-| `useState(initial)` | `ref(initial)` |
-| `useMemo(() => expr, [deps])` | `computed(() => expr)` （自动追踪依赖）|
-| `useEffect(() => {...}, [deps])` | `watch(deps, () => {...})` 或 `onMounted` |
-| `{condition && <Comp />}` | `<Comp v-if="condition" />` |
-| `{list.map(item => <Comp key={item.id} />)}` | `<Comp v-for="item in list" :key="item.id" />` |
-| `<Comp onClick={handler} />` | `<Comp @click="handler" />` |
-| `<Comp className={styles.foo} />` | `<Comp class="foo" />` (scoped) |
-| `<Comp {...props} />` | `<Comp v-bind="props" />` |
-| `children` | `<slot />` |
-| `React.lazy(() => import(...))` | `defineAsyncComponent(() => import(...))` |
+| Provider | 接入方式 | 状态 |
+|----------|----------|------|
+| Claude CLI | `child_process.spawn` 调用本地 `claude` CLI | ✅ |
+| Claude API | REST API (需 API key) | ✅ |
+| Gemini | REST API (免费层, gemini-2.5-flash/flash-lite) | ✅ |
+| Ollama | REST API `http://localhost:11434` | ✅ |
 
 ---
 
-## 7. 图表架构（REQ-3）
+## 8. 部署
 
-### 7.1 设计决策：不引入图表库
+PM2 进程管理，配置在 `ecosystem.config.cjs`。
 
-**理由**（与 PRD 一致）：
-- 只需两种图表：热力图（CSS Grid）+ 折线图（SVG）
-- 黑白色调下无需复杂渐变或动画
-- 减少依赖，前端包体积控制在 100KB gzipped 以内
-- 自己实现更易定制（tooltip、响应式等）
+### 部署流程 (`scripts/deploy.sh`)
 
-### 7.2 热力图渲染方案
+1. 停止开发服务器
+2. `npm run build` 构建到 `.output/`
+3. Legacy 迁移检查 (单用户 → 多用户)
+4. 数据库备份 (`data/backups/`, 保留最近 5 份)
+5. 迁移 Admin DB
+6. 迁移所有 User DB
+7. PM2 重启
 
-#### Daily 频率：7行 × 53列 CSS Grid
+### 环境变量
 
-```vue
-<!-- tools/habit-tracker/components/HeatmapChart.vue (daily) -->
-<template>
-  <div class="heatmap">
-    <div class="year-nav">
-      <button @click="prevYear">&lt;</button>
-      <span>{{ year }}</span>
-      <button @click="nextYear">&gt;</button>
-    </div>
-    <div class="weekday-labels">
-      <span v-for="label in ['', '一', '', '三', '', '五', '']" :key="label">
-        {{ label }}
-      </span>
-    </div>
-    <div class="grid" :style="{ gridTemplateRows: 'repeat(7, var(--chart-cell-size))' }">
-      <div
-        v-for="day in gridDays"
-        :key="day.date"
-        class="cell"
-        :class="{ filled: day.checked, outside: !day.inYear }"
-        @mouseenter="showTooltip(day, $event)"
-        @mouseleave="hideTooltip"
-      />
-    </div>
-  </div>
-</template>
-```
-
-**Grid 布局说明**：
-- 列方向（column-first）填充，每列 = 一周（7天）
-- 总共约 53 列 × 7 行 = 371 个格子
-- 每个格子 `10px × 10px`，间距 `2px`
-
-#### Weekly 频率：1行 × 52列
-
-52 个格子排成一行，每格代表一周。
-
-#### Monthly 频率：1行 × 12列
-
-12 个格子排成一行，每格代表一月。
-
-### 7.3 折线图渲染方案
-
-```vue
-<!-- tools/habit-tracker/components/TrendChart.vue -->
-<template>
-  <svg :viewBox="`0 0 ${width} ${height}`" class="trend-chart">
-    <!-- 网格线 -->
-    <line
-      v-for="y in yGridLines"
-      :key="y"
-      :x1="padding.left" :y1="y"
-      :x2="width - padding.right" :y2="y"
-      class="grid-line"
-    />
-
-    <!-- 填充区域 -->
-    <polygon :points="areaPoints" class="area-fill" />
-
-    <!-- 折线 -->
-    <polyline :points="linePoints" class="line" />
-
-    <!-- 数据点 -->
-    <circle
-      v-for="point in dataPoints"
-      :key="point.month"
-      :cx="point.x" :cy="point.y" r="4"
-      class="dot"
-      @mouseenter="showTooltip(point, $event)"
-      @mouseleave="hideTooltip"
-    />
-
-    <!-- X 轴标签 -->
-    <text
-      v-for="label in xLabels"
-      :key="label.text"
-      :x="label.x" :y="height - 4"
-      class="axis-label"
-    >
-      {{ label.text }}
-    </text>
-
-    <!-- Y 轴标签 -->
-    <text
-      v-for="label in yLabels"
-      :key="label.text"
-      :x="4" :y="label.y"
-      class="axis-label"
-    >
-      {{ label.text }}
-    </text>
-  </svg>
-</template>
-```
-
-**SVG 优势**：
-- 矢量渲染，任意缩放不模糊
-- 原生支持事件绑定（tooltip）
-- CSS 可控制样式（stroke、fill 等）
-
-### 7.4 Tooltip 组件
-
-```vue
-<!-- tools/habit-tracker/components/ChartTooltip.vue -->
-<template>
-  <Teleport to="body">
-    <div
-      v-if="visible"
-      class="tooltip"
-      :style="{ left: x + 'px', top: y + 'px' }"
-    >
-      {{ text }}
-    </div>
-  </Teleport>
-</template>
-
-<script setup lang="ts">
-const props = defineProps<{
-  visible: boolean;
-  x: number;
-  y: number;
-  text: string;
-}>();
-</script>
-
-<style scoped>
-.tooltip {
-  position: fixed;
-  background: var(--color-text-primary);
-  color: var(--color-accent-inverse);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  pointer-events: none;
-  white-space: nowrap;
-  z-index: 1000;
-  transform: translate(-50%, -100%);
-  margin-top: -8px;
-}
-</style>
-```
-
-### 7.5 图表数据流
-
-```
-HabitTracker.vue
-  └─ HistoryPanel.vue（展开时加载数据）
-       ├─ $fetch('/api/checkins/heatmap') → HeatmapChart.vue
-       └─ $fetch('/api/checkins/trend')   → TrendChart.vue
-```
-
-- 图表数据在 `HistoryPanel` 展开时按需加载
-- 切换习惯时重新加载
-- 不存入 Pinia store（图表数据是局部 UI 状态，用组件内 `ref` 管理即可）
-
-### 7.6 响应式适配
-
-| 屏幕宽度 | 热力图 | 趋势图 |
-|---------|--------|--------|
-| >= 768px | 完整 52 周 | 12 个月 |
-| < 768px | 容器水平滚动 `overflow-x: auto` | 显示最近 6 个月 |
-
----
-
-## 8. Nuxt 配置详细
-
-### 8.1 依赖清单
-
-```json
-{
-  "dependencies": {
-    "nuxt": "^3.16",
-    "@pinia/nuxt": "^0.9",
-    "pinia": "^3.0",
-    "date-fns": "^4.0",
-    "better-sqlite3": "^11.0",
-    "drizzle-orm": "^0.40"
-  },
-  "devDependencies": {
-    "typescript": "^5.7",
-    "drizzle-kit": "^0.31",
-    "@types/better-sqlite3": "^7.0",
-    "@playwright/test": "^1.58",
-    "vue-tsc": "^2.0"
-  }
-}
-```
-
-### 8.2 TypeScript 配置
-
-Nuxt 自动生成 `tsconfig.json`，我们只需在 `nuxt.config.ts` 中启用 `strict: true`。
-
-### 8.3 环境变量
-
-```bash
-# .env
-DATABASE_PATH=./data/assistant.db
-```
-
----
-
-## 9. 迁移计划
-
-### 9.1 迁移策略：一次性重写
-
-与 PRD 一致，选择一次性迁移而非渐进式：
-- 项目体量小（~20 个源文件）
-- React → Vue 需要完全重写组件
-- IndexedDB → SQLite 不存在中间状态
-
-### 9.2 实施步骤
-
-| 步骤 | 负责人 | 内容 | 交付物 |
-|------|--------|------|--------|
-| 1 | 小I | 初始化 Nuxt 3 项目骨架 | `nuxt.config.ts`、目录结构、依赖安装 |
-| 2 | 小I | 数据库层 | `server/database/`（schema + 迁移 + 初始化） |
-| 3 | 小I | API 路由 | `server/api/`（全部 9 个 endpoint） |
-| 4 | 小F | 平台层迁移 | `layouts/`、`components/`（全局共享组件）、`composables/` |
-| 5 | 小F | 工具迁移 | `tools/habit-tracker/`（所有 Vue 组件 + Pinia store） |
-| 6 | 小F | 图表组件 | `HistoryPanel`、`HeatmapChart`、`TrendChart`、`ChartTooltip` |
-| 7 | 小Y | E2E 验收 | 功能映射验证 + 图表验收 |
-
-**并行策略**：步骤 3（后端 API）和步骤 4-5（前端迁移）可并行进行。前端在 API 未就绪时可使用 mock 数据开发。
-
-### 9.3 数据迁移
-
-不提供 IndexedDB → SQLite 自动迁移。新版本启动时展示一次性提示，用户重新创建习惯。
-
----
-
-## 10. 架构决策记录 (ADR)
-
-### ADR-001: 选择 SPA 模式而非 SSR
-
-- **决策**：Nuxt 配置 `ssr: false`
-- **理由**：个人工具无 SEO 需求；SPA 模式客户端渲染更简单，避免水合问题
-- **影响**：首屏依赖 JS 加载，但本地/局域网部署下影响可忽略
-
-### ADR-002: Scoped CSS 替代 CSS Modules
-
-- **决策**：使用 Vue SFC `<style scoped>` 替代独立 CSS Module 文件
-- **理由**：Vue 原生支持，模板+脚本+样式在同一文件；Nuxt 生态约定
-- **影响**：样式不再需要独立 `.module.css` 文件
-
-### ADR-003: 前端不保留 DataStore 抽象
-
-- **决策**：Pinia store 直接调用 `$fetch` API，不实现 ApiDataStore 中间层
-- **理由**：v1.x 的 DataStore 是为了 IndexedDB ↔ API 切换而设计。现在已确定使用 API，不再有切换场景。如果未来需要，Pinia store 本身就是抽象层。
-- **对小F建议的回应**：后端 repository 层 + Drizzle ORM 承担了数据抽象职责。前端多一层 DataStore 会增加不必要的复杂度。
-- **影响**：前端代码更简洁，少一层间接调用
-
-### ADR-004: SQLite + Drizzle ORM
-
-- **决策**：采纳小I建议，使用 SQLite（better-sqlite3）+ Drizzle ORM
-- **理由**：见 3.1 节
-- **影响**：数据库为文件级存储，部署简单；Drizzle 提供类型安全
-
-### ADR-005: 图表使用纯 CSS Grid + SVG
-
-- **决策**：不引入第三方图表库
-- **理由**：见 7.1 节
-- **影响**：需要手写热力图和折线图组件，但复杂度可控
-
-### ADR-006: 图表数据不存入 Pinia
-
-- **决策**：热力图和趋势图数据使用组件内 `ref` 管理，不存入全局 store
-- **理由**：图表数据是 HistoryPanel 的局部 UI 状态，无需全局共享
-- **影响**：每次展开面板重新加载，但数据量小（<1KB），延迟可忽略
-
-### ADR-007: 乐观更新 + 失败回滚
-
-- **决策**：打卡操作采用乐观更新，API 失败时回滚 UI
-- **理由**：满足 PRD 要求的 < 300ms 操作反馈
-- **影响**：代码需要处理回滚逻辑（见 5.5.2 toggleCheckIn）
-
----
-
-## 11. 安全考量
-
-| 场景 | 措施 |
+| 变量 | 说明 |
 |------|------|
-| API 输入校验 | 每个 API handler 校验必填参数和类型 |
-| SQL 注入 | Drizzle ORM 自动参数化查询，不拼接 SQL |
-| 日期校验 | 打卡日期不允许未来日期（服务端校验） |
-| CORS | Nuxt SPA 模式同源，无 CORS 问题 |
-| 认证 | MVP 不实现认证（单用户场景），未来可加 middleware |
-| 数据备份 | 用户可复制 `.db` 文件备份 |
+| DATA_DIR | 数据目录 (默认 `./data`, 开发可设为 `./data-dev`) |
+| JWT_SECRET | JWT 签名密钥 |
+| DATABASE_PATH | Legacy 单用户 DB 路径 |
 
 ---
 
-## 12. 性能目标
+## 9. 关键约定
 
-| 指标 | 目标 | 实现手段 |
-|------|------|---------|
-| 首屏加载 | < 1.5s | SPA 模式 + 工具懒加载 |
-| 工具切换 | < 200ms | defineAsyncComponent + API 并行加载 |
-| 打卡操作 | < 300ms 感知 | 乐观更新 |
-| API 响应 | < 100ms | SQLite 本地文件读写 + 索引优化 |
-| 热力图渲染 | < 100ms | CSS Grid，365 个 div |
-| 趋势图渲染 | < 50ms | SVG，12 个数据点 |
-| 前端包体积 | < 100KB gzipped | 无图表库，工具分片 |
-
----
-
-## 13. 未来扩展
-
-| 方向 | 当前设计如何支持 |
-|------|----------------|
-| 新增工具 | 三步注册，零平台改动 |
-| SQLite → PostgreSQL | 改 Drizzle driver 配置，schema 不变 |
-| 多用户 | 添加 users 表 + auth middleware + 数据隔离 |
-| 暗色主题 | 修改 CSS 变量值即可 |
-| 数据导入/导出 | 新增 API endpoint，导出 JSON |
-| 移动端 App | API 已是 HTTP 标准接口，直接对接 |
+- **DB 访问**: API handler 内调用 `useDB(event)`，不在模块顶层调用。Lib 函数接收 `db` 参数。
+- **API 错误**: 验证输入 → 检查存在性 (404) → 执行变更。用 `createError({ statusCode, message })`
+- **时间戳**: Unix 毫秒 (integer)；日期: `YYYY-MM-DD` 字符串
+- **ID**: UUID (习惯/打卡)，自增整数 (其他模块)
+- **乐观更新**: 习惯打卡 UI 立即反映，后台异步同步
+- **响应式**: `Set<number>` 状态需整体替换以触发 Vue 响应
+- **批量 DB**: 同步事务 + 500 行分块
+- **CSS**: 所有颜色/间距引用 CSS 变量，无硬编码值
+- **语言**: UI 文字中文，代码（变量、注释）英文

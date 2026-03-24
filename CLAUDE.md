@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLite. Uses a monochrome black/white design system with JWT authentication for LAN access.
+A personal assistant web app (个人助手) built with Nuxt 3 (SPA mode) + SQLite. Uses a monochrome black/white design system with multi-user support, module-level permissions, and JWT authentication for LAN access.
 
-**Tool modules** (ordered by sidebar `order`): Dashboard (今日), Ability Profile (能力画像), Annual Planner (年度计划), Habit Tracker (日历打卡), Project Tracker (事项追踪), Article Reader (文章阅读), Vocab Tracker (法语词汇), Skill Manager (技能管理). Skill-based tools (e.g. Startup Map) are dynamically registered via the Skill Learning Core.
+**Tool modules** (ordered by sidebar `order`): Dashboard (今日, 0), Ability Profile (能力画像, 1), Vocab Tracker (法语词汇, 2), Annual Planner (年度计划, 3), Project Tracker (事项追踪, 4), Article Reader (文章阅读, 5), Skill Manager (技能管理, ∞), Admin (用户管理, 100). Skill-based tools are dynamically registered via the Skill Learning Core.
 
 **Xiaoshuang (小爽):** A global AI assistant overlay accessible from any tool, with its own store (`stores/xiaoshuang.ts`) and API at `/api/xiaoshuang/chat`.
 
@@ -50,7 +50,7 @@ Registration flow: `plugins/tools.client.ts` → `tools/index.ts` (side-effect i
 
 ### Skill Learning Core
 
-A reusable structured learning engine extracted from Startup Map. Any skill tool shares the same DB tables (isolated by `skillId`), API routes (`/api/skills/[skillId]/...`), and UI components.
+A reusable structured learning engine. Any skill tool shares the same DB tables (isolated by `skillId`), API routes (`/api/skills/[skillId]/...`), and UI components.
 
 **To add a new skill tool** (~4 files):
 1. Define seed data (`server/database/seeds/my-skill.ts`)
@@ -70,21 +70,36 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 
 **Middleware chain** (numbered prefixes control execution order):
 - `00.cache-control.ts` — Asset cache headers
+- `00.security-headers.ts` — CSP, X-Frame-Options, X-Content-Type-Options, etc.
 - `01.log.ts` — Request logging
-- `02.auth.ts` — JWT validation (whitelists `/api/_test/*` and `/api/auth/login`)
+- `02.auth.ts` — JWT validation + role/module caching (60s TTL, whitelists `/api/_test/*` and `/api/auth/login`)
 - `03.test-guard.ts` — Blocks test endpoints in production
+- `04.module-guard.ts` — Enforces module permissions (namespace → moduleId reverse lookup via `MODULE_NAMESPACE_MAP`)
 
 **Database:** Multi-user SQLite via `better-sqlite3` + Drizzle ORM, WAL mode, foreign keys enabled.
 - **Admin DB** (`data/admin.db`): Users + module permissions only. Schema: `server/database/admin-schema.ts`. Access: `useAdminDB()`
 - **User DBs** (`data/users/{username}.db`): All feature data per user. Schema: `server/database/schema.ts`. Access: `useDB(event)` or `useUserDB(username)`
-- **Legacy fallback**: `useDB()` without event still works (returns singleton `data/assistant.db`), will be removed after Phase 2
+- **Legacy fallback**: `useDB()` without event still works (returns singleton `data/assistant.db`), will be removed
 - User DB connections use LRU cache (max=20, ttl=5min)
-- Schema files: `server/database/schemas/` (habits, vocab, llm, srs, planner, articles, startup-map, etc.)
-- Migrations: `server/database/migrations/` (user), `server/database/admin-migrations/` (admin)
-- **New tool module must**: Update `MODULE_NAMESPACE_MAP` in module-ids.ts (Phase 2)
+- Schema files: `server/database/schemas/` — habits, vocab, llm, srs, planner, articles, startup-map, skill-configs, project-tracker, ability, dashboard, music-ear, auth (13 files)
+- Migrations: `server/database/migrations/` (user, 27+), `server/database/admin-migrations/` (admin)
+- **New tool module must**: Update `MODULE_NAMESPACE_MAP` in `server/utils/module-ids.ts`
+
+**Module permission map** (`server/utils/module-ids.ts`):
+- `dashboard` → dashboard, badges
+- `ability-profile` → ability-skills, ability-categories, ability-stats, skill-templates
+- `habit-tracker` → habits, checkins
+- `annual-planner` → planner
+- `vocab-tracker` → vocab
+- `article-reader` → articles, bookmarks, article-tags
+- `project-tracker` → project-tracker
+- `skill-manager` → skill-configs, skills
+- `xiaoshuang` → xiaoshuang
+- Exception paths (skip module guard): `/api/admin/`, `/api/auth/`, `/api/_test/`, `/api/llm/`, `/api/songs/`
 
 **Key API groups:**
 - `/api/auth` — Login (JWT, 365-day expiry)
+- `/api/admin` — User CRUD + module permissions
 - `/api/habits` + `/api/checkins` — Habit CRUD, checkin management, heatmap/trend data
 - `/api/vocab` — Word import/list, progress tracking, SRS spaced repetition
 - `/api/planner` — Domains, goals, check items, tags, stats (overview/by-domain/by-tag)
@@ -95,7 +110,7 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 - `/api/xiaoshuang` — Xiaoshuang AI assistant chat
 - `/api/skills/[skillId]` — Skill Learning Core: knowledge tree, AI teaching (SSE), AI chat, learning status/stages, practice tasks, notes, recommendations, stats, article linking, activities (hourly dedup), heatmap/streak, seed data import. Data isolated by `skillId` column.
 - `/api/skill-configs` — Skill configuration management
-- `/api/songs` — Song-related features
+- `/api/songs` — Music Ear skill tool data
 - `/api/llm` — Provider CRUD, model discovery, chat, translation
 - `/api/_test/reset` — Wipes all tables (used in e2e `beforeEach`, blocked in production)
 
@@ -103,7 +118,7 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 
 - **State:** Pinia stores in `stores/` using Composition API style (`defineStore('id', () => { ... })`)
 - **Routing:** `pages/index.vue` redirects to first tool; `pages/[...slug].vue` renders the matched tool component; `pages/login.vue` for auth
-- **Layout:** `layouts/default.vue` with collapsible sidebar (`AppSidebar.vue`)
+- **Layout:** `layouts/default.vue` with collapsible sidebar (`AppSidebar.vue`) + mobile bottom nav (`MobileBottomNav.vue`)
 - **Styling:** CSS variables in `assets/css/variables.css`, all components use `<style scoped>`
 - **Auth:** `composables/useAuth.ts` manages JWT in localStorage; `plugins/auth.client.ts` attaches token to all `$fetch` requests and redirects to `/login` on 401
 
@@ -113,17 +128,21 @@ A reusable structured learning engine extracted from Startup Map. Any skill tool
 - `useLlm` — LLM provider management, chat, translation
 - `useTts` — Web Speech API wrapper (French voice preference)
 - `useIsMobile` — Responsive breakpoint detection (768px)
+- `useModulePermissions` — Module access control for current user
+- `useMarkdown` — Markdown rendering utility
+- `useAbilitySkillOptions` — Ability Profile skill option helpers
 
-**Pinia stores** (`stores/`): `habit`, `vocab`, `planner`, `article-reader`, `study`, `ability`, `project-tracker`, `xiaoshuang` (global AI assistant state)
+**Pinia stores** (`stores/`): `dashboard`, `habit`, `vocab`, `planner`, `article-reader`, `study`, `ability`, `project-tracker`, `xiaoshuang` (global AI assistant state)
 
 ### LLM Integration
 
 Providers are pluggable via `server/lib/llm/`:
-- **Claude:** Invokes `claude` CLI via `child_process.spawn` (must be installed and authenticated)
+- **Claude CLI:** Invokes `claude` CLI via `child_process.spawn` (must be installed and authenticated)
+- **Claude API:** REST API via Anthropic API (requires API key, encrypted in DB)
+- **Gemini:** REST API (free tier, supports gemini-2.5-flash / flash-lite)
 - **Ollama:** REST API at `http://localhost:11434` (must be running locally)
-- **OpenAI:** Schema and UI exist but factory throws — not implemented yet
 
-Supports streaming via SSE (used in article translation). Vocab definitions are cached in the `definitions` table (never invalidated).
+Supports streaming via SSE (used in article translation, AI teaching). Vocab definitions are cached in the `definitions` table (never invalidated).
 
 ### Deployment
 
@@ -131,14 +150,15 @@ PM2-based production setup. Config in `ecosystem.config.cjs`, deploy script in `
 - Build output: `.output/server/index.mjs`
 - DB backups: `./data/backups/` (keeps latest 5)
 - Logs: `./logs/pm2-*.log`
-- Env: `.env.production.local` for production secrets (`JWT_SECRET`, `DATABASE_PATH`)
+- Env: `.env.production.local` for production secrets (`JWT_SECRET`, `DATA_DIR`)
+- Deploy script handles: build → legacy migration check → backup → migrate admin DB → migrate user DBs → PM2 restart
 
 ## Key Conventions
 
 - **DB access:** Always call `useDB(event)` inside the handler function, never at module level. Use `useAdminDB()` only for auth/admin operations. Lib functions receive `db` as parameter from caller.
 - **API error pattern:** Validate input → check existence (throw 404) → then mutate. Use `createError({ statusCode, message })`
 - **Timestamps:** Unix milliseconds (integer) for timestamps, `YYYY-MM-DD` strings for dates
-- **IDs:** UUID strings for habits/checkins, auto-increment integers for vocab/SRS/planner/articles/startup-map
+- **IDs:** UUID strings for habits/checkins, auto-increment integers for all other modules
 - **Optimistic updates:** Habit checkin toggling updates UI immediately, then syncs with server
 - **Reactivity:** `Set<number>` state (e.g. `selectedWordIds`) must be replaced, not mutated, to trigger Vue reactivity
 - **Batch DB operations:** Use synchronous transactions with 500-row chunks
