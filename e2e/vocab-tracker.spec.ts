@@ -18,7 +18,7 @@ async function waitForAppReady(page: Page) {
       const body = document.body.textContent || '';
       return (
         body.includes('工具箱') ||
-        body.includes('法语词汇') ||
+        body.includes('词汇学习') ||
         body.includes('日历打卡')
       );
     },
@@ -99,19 +99,19 @@ async function setupUserAndWords(page: Page) {
 // ─── 1. 侧边栏导航测试 ───
 
 test.describe('侧边栏导航', () => {
-  test('侧边栏显示法语词汇入口', async ({ page }) => {
+  test('侧边栏显示词汇学习入口', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
 
-    const vocabLink = page.locator('.sidebar-nav').getByText('法语词汇');
+    const vocabLink = page.locator('.sidebar-nav').getByText('词汇学习');
     await expect(vocabLink).toBeVisible();
   });
 
-  test('点击法语词汇进入对应页面', async ({ page }) => {
+  test('点击词汇学习进入对应页面', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
 
-    await page.locator('.sidebar-nav').getByText('法语词汇').click();
+    await page.locator('.sidebar-nav').getByText('词汇学习').click();
     await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/vocab-tracker/);
   });
@@ -121,7 +121,7 @@ test.describe('侧边栏导航', () => {
     await waitForAppReady(page);
 
     const activeItem = page.locator('.nav-item.active');
-    await expect(activeItem).toContainText('法语词汇');
+    await expect(activeItem).toContainText('词汇学习');
   });
 });
 
@@ -662,7 +662,7 @@ test.describe('工具切换', () => {
     );
 
     // 切回 vocab-tracker
-    await page.locator('.sidebar-nav').getByText('法语词汇').click();
+    await page.locator('.sidebar-nav').getByText('词汇学习').click();
     await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/vocab-tracker/);
 
@@ -697,7 +697,7 @@ test.describe('工具切换', () => {
     await expect(page.getByText('连续打卡天数')).toBeVisible({ timeout: 10000 });
 
     // 切到 vocab-tracker
-    await page.locator('.sidebar-nav').getByText('法语词汇').click();
+    await page.locator('.sidebar-nav').getByText('词汇学习').click();
     await page.waitForTimeout(500);
 
     // 切回 habit-tracker

@@ -18,7 +18,7 @@ async function waitForAppReady(page: Page) {
       const body = document.body.textContent || '';
       return (
         body.includes('工具箱') ||
-        body.includes('法语词汇') ||
+        body.includes('词汇学习') ||
         body.includes('日历打卡')
       );
     },

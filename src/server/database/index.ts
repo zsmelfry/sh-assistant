@@ -100,6 +100,11 @@ export function useDB(event?: any): UserDB {
   return _legacyDb;
 }
 
+/** Clear user DB cache (close all connections). Used by _test/reset. */
+export function clearUserDbCache() {
+  userDbCache.clear(); // triggers dispose callbacks
+}
+
 // ── 进程退出时清理所有连接 ──
 
 function cleanupConnections() {
