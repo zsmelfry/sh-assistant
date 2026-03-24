@@ -25,7 +25,9 @@ export const vocabWords = sqliteTable('vocab_words', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   rank: integer('rank').notNull(),
   word: text('word').notNull(),
-  wordbookId: integer('wordbook_id').default(1)
+  // Cascade deletion handled at application level (Phase 2 delete endpoint),
+  // not DB level — progress/SRS rows reference words, not wordbooks directly.
+  wordbookId: integer('wordbook_id').notNull().default(1)
     .references(() => wordbooks.id),
 }, (table) => [
   index('idx_vocab_words_rank').on(table.rank),

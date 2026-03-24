@@ -3,6 +3,7 @@
  * Each supported language defines its display info, TTS locale,
  * LLM prompt builders, and CSV column alias for word import.
  */
+import { createError } from 'h3';
 
 export interface LanguageConfig {
   /** Display name in Chinese, e.g. '法语' */
@@ -126,7 +127,7 @@ export const LANGUAGES = new Map<string, LanguageConfig>([
 export function getLanguageConfig(code: string): LanguageConfig {
   const config = LANGUAGES.get(code);
   if (!config) {
-    throw new Error(`Unsupported language code: "${code}". Supported: ${[...LANGUAGES.keys()].join(', ')}`);
+    throw createError({ statusCode: 400, message: `Unsupported language code: "${code}". Supported: ${[...LANGUAGES.keys()].join(', ')}` });
   }
   return config;
 }
