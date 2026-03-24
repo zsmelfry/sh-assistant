@@ -387,9 +387,11 @@ async function collectPlannerContext(db: BetterSQLite3Database<any>): Promise<Pl
 async function collectVocabContext(db: BetterSQLite3Database<any>): Promise<VocabSummary> {
   // Determine language label from active wordbook
   let languageLabel = '法语'; // fallback
+  let activeWordbookId: number | null = null;
   try {
     const activeWb = db.select().from(wordbooks).where(eq(wordbooks.isActive, true)).limit(1).get();
     if (activeWb) {
+      activeWordbookId = activeWb.id;
       const config = getLanguageConfig(activeWb.language);
       languageLabel = config.displayName;
     }
@@ -397,20 +399,30 @@ async function collectVocabContext(db: BetterSQLite3Database<any>): Promise<Voca
     // wordbooks table may not exist yet or no active wordbook
   }
 
-  const [totalResult] = await db.select({ count: count() }).from(vocabWords);
+  // Scope all queries to active wordbook
+  const wordbookFilter = activeWordbookId != null
+    ? eq(vocabWords.wordbookId, activeWordbookId)
+    : undefined;
+
+  const [totalResult] = await db.select({ count: count() }).from(vocabWords)
+    .where(wordbookFilter);
   const total = totalResult?.count || 0;
 
   if (total === 0) {
     return { totalWords: 0, mastered: 0, learning: 0, unread: total, pendingReviews: 0, languageLabel };
   }
 
-  // Status counts
+  // Status counts — scoped to active wordbook
+  const wbCondition = activeWordbookId != null
+    ? sql`WHERE w.wordbook_id = ${activeWordbookId}`
+    : sql``;
   const statusRows: Array<{ status: string; count: number }> = await db.all(sql`
     SELECT
       COALESCE(p.learning_status, ${LEARNING_STATUS.UNREAD}) as status,
       COUNT(*) as count
     FROM vocab_words w
     LEFT JOIN vocab_progress p ON w.id = p.word_id
+    ${wbCondition}
     GROUP BY COALESCE(p.learning_status, ${LEARNING_STATUS.UNREAD})
   `) as any;
 
@@ -420,19 +432,24 @@ async function collectVocabContext(db: BetterSQLite3Database<any>): Promise<Voca
   }
 
   // Pending SRS reviews (match daily-plan logic: repetitions > 0, exclude mastered)
+  // Scoped to active wordbook by joining vocab_words
   const now = Date.now();
-  const masteredWordIds = (await db.select({ wordId: vocabProgress.wordId })
+  const masteredQuery = db.select({ wordId: vocabProgress.wordId })
     .from(vocabProgress)
-    .where(eq(vocabProgress.learningStatus, LEARNING_STATUS.MASTERED)))
-    .map(r => r.wordId);
+    .innerJoin(vocabWords, eq(vocabProgress.wordId, vocabWords.id))
+    .where(wordbookFilter
+      ? and(eq(vocabProgress.learningStatus, LEARNING_STATUS.MASTERED), wordbookFilter)
+      : eq(vocabProgress.learningStatus, LEARNING_STATUS.MASTERED));
+  const masteredWordIds = (await masteredQuery).map(r => r.wordId);
   const masteredSet = new Set(masteredWordIds);
 
-  const allDueCards = await db.select({ wordId: srsCards.wordId })
+  const dueQuery = db.select({ wordId: srsCards.wordId })
     .from(srsCards)
-    .where(and(
-      lte(srsCards.nextReviewAt, now),
-      sql`${srsCards.repetitions} > 0`,
-    ));
+    .innerJoin(vocabWords, eq(srsCards.wordId, vocabWords.id))
+    .where(wordbookFilter
+      ? and(lte(srsCards.nextReviewAt, now), sql`${srsCards.repetitions} > 0`, wordbookFilter)
+      : and(lte(srsCards.nextReviewAt, now), sql`${srsCards.repetitions} > 0`));
+  const allDueCards = await dueQuery;
   const pendingCount = allDueCards.filter(c => !masteredSet.has(c.wordId)).length;
 
   return {

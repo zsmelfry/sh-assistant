@@ -2,7 +2,7 @@ import { useDB } from '~/server/database';
 import { vocabSettings } from '../../database/schemas/vocab';
 import { eq } from 'drizzle-orm';
 
-const ALLOWED_KEYS = ['example_interest_context'] as const;
+const ALLOWED_KEYS = ['example_interest_context', 'multi_wordbook_enabled'] as const;
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

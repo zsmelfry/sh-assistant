@@ -15,7 +15,7 @@ export const wordbooks = sqliteTable('wordbooks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   language: text('language').notNull(),
-  isActive: integer('is_active', { mode: 'boolean' }).default(false),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
   wordCount: integer('word_count').default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 });
