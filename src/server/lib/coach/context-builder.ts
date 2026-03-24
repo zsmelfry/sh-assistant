@@ -4,11 +4,12 @@ import {
   habits, checkins,
   plannerDomains, plannerGoals, plannerCheckitems,
   vocabWords, vocabProgress, LEARNING_STATUS,
-  srsCards,
+  srsCards, wordbooks,
   skills, milestones, milestoneCompletions, abilityCategories, skillCurrentState, activityLogs,
   articles, articleBookmarks,
   ptProjects, ptChecklistItems,
 } from '~/server/database/schema';
+import { getLanguageConfig } from '~/server/lib/vocab/languages';
 
 // ── Summary types ──
 
@@ -36,6 +37,8 @@ export interface VocabSummary {
   learning: number;
   unread: number;
   pendingReviews: number;
+  /** Chinese display name of the active wordbook language, e.g. '法语' */
+  languageLabel: string;
 }
 
 export interface SkillLearningSummary {
@@ -83,7 +86,7 @@ const TIER_NAMES: Record<number, string> = {
 const CONTEXT_RULES: Array<{ pattern: RegExp; sources: (keyof GlobalContext)[] }> = [
   { pattern: /习惯|打卡|坚持|连续|streak|日常/, sources: ['habits'] },
   { pattern: /计划|目标|进度|完成率|年度/, sources: ['planner'] },
-  { pattern: /法语|词汇|单词|复习|SRS|背单词|vocab/, sources: ['vocab'] },
+  { pattern: /法语|英语|词汇|单词|复习|SRS|背单词|vocab/, sources: ['vocab'] },
   { pattern: /学习|知识|课程|教程|skill.?learn/, sources: ['skillLearning'] },
   { pattern: /能力|技能|等级|段位|雷达|里程碑|成长|tier/, sources: ['ability'] },
   { pattern: /文章|阅读|书签|article/, sources: ['articles'] },
@@ -198,7 +201,7 @@ export function formatContextForPrompt(ctx: Partial<GlobalContext>): string {
 
   if (ctx.vocab) {
     const v = ctx.vocab;
-    parts.push(`### 法语词汇`);
+    parts.push(`### ${v.languageLabel}词汇`);
     parts.push(`词库收录 ${v.totalWords} 词, 词汇量(已掌握+学习中) ${v.mastered + v.learning}, 其中已掌握 ${v.mastered}, 学习中 ${v.learning}, 未学 ${v.unread}`);
     if (v.pendingReviews > 0) parts.push(`待复习: ${v.pendingReviews} 个`);
   }
@@ -382,11 +385,23 @@ async function collectPlannerContext(db: BetterSQLite3Database<any>): Promise<Pl
 }
 
 async function collectVocabContext(db: BetterSQLite3Database<any>): Promise<VocabSummary> {
+  // Determine language label from active wordbook
+  let languageLabel = '法语'; // fallback
+  try {
+    const activeWb = db.select().from(wordbooks).where(eq(wordbooks.isActive, true)).limit(1).get();
+    if (activeWb) {
+      const config = getLanguageConfig(activeWb.language);
+      languageLabel = config.displayName;
+    }
+  } catch {
+    // wordbooks table may not exist yet or no active wordbook
+  }
+
   const [totalResult] = await db.select({ count: count() }).from(vocabWords);
   const total = totalResult?.count || 0;
 
   if (total === 0) {
-    return { totalWords: 0, mastered: 0, learning: 0, unread: total, pendingReviews: 0 };
+    return { totalWords: 0, mastered: 0, learning: 0, unread: total, pendingReviews: 0, languageLabel };
   }
 
   // Status counts
@@ -426,6 +441,7 @@ async function collectVocabContext(db: BetterSQLite3Database<any>): Promise<Voca
     learning: (statusMap[LEARNING_STATUS.LEARNING] || 0) + (statusMap[LEARNING_STATUS.TO_LEARN] || 0),
     unread: statusMap[LEARNING_STATUS.UNREAD] || 0,
     pendingReviews: pendingCount,
+    languageLabel,
   };
 }
 

@@ -22,10 +22,18 @@
 
 <script setup lang="ts">
 import type { DashboardSummary } from '../types';
+import { useVocabStore } from '~/stores/vocab';
 
 const props = defineProps<{
   summary: DashboardSummary | null;
 }>();
+
+const vocabStore = useVocabStore();
+
+// Ensure wordbooks are loaded so activeLanguageDisplay is accurate
+if (vocabStore.wordbooks.length === 0) {
+  vocabStore.loadWordbooks().catch(() => {});
+}
 
 interface AgendaItem {
   key: string;
@@ -65,7 +73,7 @@ const items = computed<AgendaItem[]>(() => {
   if (props.summary.vocab && props.summary.vocab.pendingReviews > 0) {
     result.push({
       key: 'vocab',
-      label: '法语词汇复习',
+      label: `${vocabStore.activeLanguageDisplay}词汇复习`,
       done: false,
       link: '/vocab-tracker',
       count: `${props.summary.vocab.pendingReviews}个待复习`,

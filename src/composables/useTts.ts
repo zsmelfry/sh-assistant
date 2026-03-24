@@ -2,16 +2,28 @@
 // 使用 Web Speech API，优先选择本地语音引擎
 // 参考: french-words/src/services/ttsService.ts
 
-const PREFERRED_FRENCH_VOICES = [
-  'Google français',
-  'Thomas',
-  'Amelie',
-  'Amélie',
-  'Thomas (Enhanced)',
-  'Amélie (Enhanced)',
-  'Microsoft Denise Online',
-  'Microsoft Sylvie Online',
-];
+const PREFERRED_VOICES: Record<string, string[]> = {
+  fr: [
+    'Google français',
+    'Thomas',
+    'Amelie',
+    'Amélie',
+    'Thomas (Enhanced)',
+    'Amélie (Enhanced)',
+    'Microsoft Denise Online',
+    'Microsoft Sylvie Online',
+  ],
+  en: [
+    'Alex',
+    'Samantha',
+    'Daniel',
+    'Google US English',
+    'Google UK English Female',
+    'Google UK English Male',
+    'Microsoft Aria Online',
+    'Microsoft Guy Online',
+  ],
+};
 
 let voiceCache = { voice: null as SpeechSynthesisVoice | null, lang: '', checkedAt: 0 };
 
@@ -23,9 +35,10 @@ function findBestVoice(lang: string): SpeechSynthesisVoice | null {
   const localVoices = langVoices.filter(v => v.localService);
   const onlineVoices = langVoices.filter(v => !v.localService);
 
-  // French-specific preferred voice matching
-  if (langPrefix === 'fr') {
-    for (const name of PREFERRED_FRENCH_VOICES) {
+  // Preferred voice matching by language
+  const preferred = PREFERRED_VOICES[langPrefix];
+  if (preferred) {
+    for (const name of preferred) {
       const match = localVoices.find(v => v.name.includes(name));
       if (match) return match;
     }
@@ -33,8 +46,8 @@ function findBestVoice(lang: string): SpeechSynthesisVoice | null {
 
   if (localVoices.length > 0) return localVoices[0];
 
-  if (langPrefix === 'fr') {
-    for (const name of PREFERRED_FRENCH_VOICES) {
+  if (preferred) {
+    for (const name of preferred) {
       const match = onlineVoices.find(v => v.name.includes(name));
       if (match) return match;
     }
