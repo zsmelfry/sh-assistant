@@ -65,6 +65,7 @@ export default defineEventHandler((event) => {
   // Whitelist: skip auth for these paths
   if (
     !pathname.startsWith('/api/') ||
+    pathname === '/api/health' ||
     pathname.startsWith('/api/_test/') ||
     (pathname === '/api/auth/login' && event.method === 'POST')
   ) {
