@@ -3,8 +3,6 @@
  * Each supported language defines its display info, TTS locale,
  * LLM prompt builders, and CSV column alias for word import.
  */
-import { createError } from 'h3';
-
 export interface LanguageConfig {
   /** Display name in Chinese, e.g. '法语' */
   displayName: string;
