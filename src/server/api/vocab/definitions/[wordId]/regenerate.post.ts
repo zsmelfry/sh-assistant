@@ -1,7 +1,7 @@
 import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { definitions } from '../../../../database/schemas/srs';
-import { vocabWords, vocabSettings } from '../../../../database/schemas/vocab';
+import { vocabWords, vocabSettings, wordbooks } from '../../../../database/schemas/vocab';
 import { translateWord, cacheDefinition } from '../../../../utils/translate-word';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
@@ -19,6 +19,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: '单词不存在' });
   }
 
+  // Look up wordbook language for this word
+  const wordbook = getWordbookById(db, wordResult[0].wordbookId);
+  const language = wordbook.language;
+
   const word = wordResult[0].word;
 
   // 直接调用翻译逻辑（不走 HTTP）
@@ -31,6 +35,7 @@ export default defineEventHandler(async (event) => {
     const translateResult = await translateWord(db, word, {
       providerId: providerId ? Number(providerId) : undefined,
       interestContext,
+      language,
     });
 
     // 删除旧缓存

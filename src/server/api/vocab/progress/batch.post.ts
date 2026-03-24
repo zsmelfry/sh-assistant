@@ -1,6 +1,6 @@
 import { useDB } from '~/server/database';
-import { inArray } from 'drizzle-orm';
-import { vocabProgress, vocabStatusHistory, LEARNING_STATUS } from '../../../database/schemas/vocab';
+import { inArray, and, eq } from 'drizzle-orm';
+import { vocabProgress, vocabWords, vocabStatusHistory, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import type { LearningStatus } from '../../../database/schemas/vocab';
 import { transitionStatus, deriveFlags, isFirstInteraction, isValidAction } from '../../../utils/vocab-state-machine';
 import { ensureVocabUser } from '../../../utils/ensure-vocab-user';
@@ -28,11 +28,25 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
   const numWordIds = wordIds.map(Number);
 
+  // Scope to active wordbook — validate all wordIds belong to it
+  const activeWordbook = getActiveWordbook(db);
+  const validWords = await db.select({ id: vocabWords.id })
+    .from(vocabWords)
+    .where(and(
+      inArray(vocabWords.id, numWordIds),
+      eq(vocabWords.wordbookId, activeWordbook.id),
+    ));
+  const validWordIdSet = new Set(validWords.map(w => w.id));
+  const filteredWordIds = numWordIds.filter(id => validWordIdSet.has(id));
+  if (filteredWordIds.length === 0) {
+    return { updated: 0, total: wordIds.length };
+  }
+
   // 获取现有 progress
   const existingProgress = await db.select()
     .from(vocabProgress)
     .where(
-      inArray(vocabProgress.wordId, numWordIds),
+      inArray(vocabProgress.wordId, filteredWordIds),
     );
 
   const progressMap = new Map(existingProgress.map(p => [p.wordId, p]));
@@ -42,7 +56,7 @@ export default defineEventHandler(async (event) => {
   const toUpdate: { id: number; newStatus: LearningStatus; setFirstInteract: boolean; setMastered: boolean }[] = [];
   const historyEntries: any[] = [];
 
-  for (const wordId of numWordIds) {
+  for (const wordId of filteredWordIds) {
     const existing = progressMap.get(wordId);
     const currentStatus = (existing?.learningStatus || LEARNING_STATUS.UNREAD) as LearningStatus;
     const newStatus = transitionStatus(currentStatus, action);

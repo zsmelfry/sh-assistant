@@ -1,12 +1,16 @@
 import { useDB } from '~/server/database';
-import { sql, count } from 'drizzle-orm';
+import { sql, count, eq } from 'drizzle-orm';
 import { vocabWords, vocabProgress, LEARNING_STATUS } from '../../database/schemas/vocab';
 
 export default defineEventHandler(async (event) => {
   const db = useDB(event);
 
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
   // 总词数
-  const totalResult = await db.select({ count: count() }).from(vocabWords);
+  const totalResult = await db.select({ count: count() }).from(vocabWords)
+    .where(eq(vocabWords.wordbookId, activeWordbook.id));
   const total = totalResult[0]?.count || 0;
 
   // 各状态统计
@@ -16,6 +20,7 @@ export default defineEventHandler(async (event) => {
       COUNT(*) as count
     FROM vocab_words w
     LEFT JOIN vocab_progress p ON w.id = p.word_id
+    WHERE w.wordbook_id = ${activeWordbook.id}
     GROUP BY COALESCE(p.learning_status, ${LEARNING_STATUS.UNREAD})
   `);
 

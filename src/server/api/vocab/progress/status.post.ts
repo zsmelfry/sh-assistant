@@ -23,9 +23,15 @@ export default defineEventHandler(async (event) => {
   const vocabUserId = ensureVocabUser(db, username);
   const now = Date.now();
 
-  // 验证单词存在
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
+  // 验证单词存在且属于活跃词汇本
   const word = await db.select().from(vocabWords).where(eq(vocabWords.id, Number(wordId))).limit(1);
   if (word.length === 0) throw createError({ statusCode: 404, message: 'Word not found' });
+  if (word[0].wordbookId !== activeWordbook.id) {
+    throw createError({ statusCode: 400, message: '该单词不属于当前活跃词汇本' });
+  }
 
   // 查找当前 progress
   const existing = await db.select()

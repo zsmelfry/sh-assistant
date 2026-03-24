@@ -9,16 +9,21 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
   const today = formatDate(new Date());
 
-  // 1. SRS 卡片总览 — 分类逻辑与 cards.get.ts 保持一致
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
+  // 1. SRS 卡片总览 — 分类逻辑与 cards.get.ts 保持一致（限定活跃词汇本）
   const stageRows = await db.all(sql`
     SELECT stage, COUNT(*) as cnt FROM (
       SELECT CASE
-        WHEN interval >= 21 THEN 'mastered'
-        WHEN next_review_at <= ${now} AND repetitions > 0 THEN 'due'
-        WHEN interval <= 6 THEN 'beginner'
+        WHEN s.interval >= 21 THEN 'mastered'
+        WHEN s.next_review_at <= ${now} AND s.repetitions > 0 THEN 'due'
+        WHEN s.interval <= 6 THEN 'beginner'
         ELSE 'consolidating'
       END as stage
-      FROM srs_cards
+      FROM srs_cards s
+      INNER JOIN vocab_words w ON s.word_id = w.id
+      WHERE w.wordbook_id = ${activeWordbook.id}
     ) GROUP BY stage
   `) as Array<{ stage: string; cnt: number }>;
   const stageCounts: Record<string, number> = { due: 0, beginner: 0, consolidating: 0, mastered: 0 };
@@ -61,21 +66,25 @@ export default defineEventHandler(async (event) => {
     .from(studySessions)
     .where(gte(studySessions.startedAt, sevenDaysAgo));
 
-  // 5. 可学新词总数（LEARNING 状态但还没有 SRS 卡片的词）
+  // 5. 可学新词总数（LEARNING 状态但还没有 SRS 卡片的词，限定活跃词汇本）
   const availableCountResult = await db.all(sql`
     SELECT COUNT(*) as count
     FROM vocab_progress p
+    INNER JOIN vocab_words w ON p.word_id = w.id
     LEFT JOIN srs_cards s ON p.word_id = s.word_id
     WHERE p.learning_status = ${LEARNING_STATUS.LEARNING}
       AND s.id IS NULL
+      AND w.wordbook_id = ${activeWordbook.id}
   `) as Array<{ count: number }>;
   const availableLearningCount = availableCountResult[0]?.count || 0;
 
-  // 6. 各学习状态统计
+  // 6. 各学习状态统计（限定活跃词汇本）
   const statusCounts = await db.all(sql`
-    SELECT learning_status as status, COUNT(*) as count
-    FROM vocab_progress
-    GROUP BY learning_status
+    SELECT p.learning_status as status, COUNT(*) as count
+    FROM vocab_progress p
+    INNER JOIN vocab_words w ON p.word_id = w.id
+    WHERE w.wordbook_id = ${activeWordbook.id}
+    GROUP BY p.learning_status
   `) as Array<{ status: string; count: number }>;
 
   const statusStats: Record<string, number> = {

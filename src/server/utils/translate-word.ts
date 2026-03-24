@@ -3,38 +3,7 @@ import { resolveProvider } from './llm-provider';
 import { parseLlmJsonObject } from './parse-llm-json';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { definitions } from '../database/schemas/srs';
-
-/** 构建翻译系统提示词 */
-function buildTranslateSystemPrompt(interestContext?: string): string {
-  const context = interestContext || '足球';
-  return `你是法语学习助手。用户会给你一个法语单词，请提供详细的中文学习资料。
-
-要求：
-1. 返回严格的 JSON 格式，不要其他内容
-2. 字段说明：
-   - definition: 简洁的中文释义（一句话）
-   - partOfSpeech: 词性（如 "n." / "v." / "adj." 等）
-   - examples: 数组格式，包含 3 个实用例句（每个例句包含 sentence 和 translation。难度从简单到复杂递进。第3个例句如果这个词能自然地用在${context}语境中，就用${context}相关的句子；如果不自然就用其他场景）
-   - synonyms: 同义词（如有）
-   - antonyms: 反义词（如有）
-   - wordFamily: 词族/派生词（如有）
-   - collocations: 常用搭配（如有）
-
-JSON 格式：
-{
-  "definition": "中文释义",
-  "partOfSpeech": "词性",
-  "examples": [
-    { "sentence": "法语例句1", "translation": "中文翻译1" },
-    { "sentence": "法语例句2", "translation": "中文翻译2" },
-    { "sentence": "法语例句3", "translation": "中文翻译3" }
-  ],
-  "synonyms": "同义词",
-  "antonyms": "反义词",
-  "wordFamily": "词族",
-  "collocations": "常用搭配"
-}`;
-}
+import { getLanguageConfig } from '~/server/lib/vocab/languages';
 
 /** 解析翻译 JSON 响应 */
 function parseTranslationJson(text: string) {
@@ -73,10 +42,12 @@ interface TranslateWordOptions {
   maxTokens?: number;
   timeout?: number;
   interestContext?: string;
+  language?: string;
 }
 
 /**
- * Translate a French word using the configured LLM provider.
+ * Translate a word using the configured LLM provider.
+ * Language is determined by options.language (default: 'fr').
  * Call this directly from server code — no HTTP round-trip needed.
  */
 export async function translateWord(
@@ -86,9 +57,13 @@ export async function translateWord(
 ): Promise<TranslateResult> {
   const { provider, config: providerConfig } = await resolveProvider(db, options?.providerId);
 
+  const language = options?.language || 'fr';
+  const langConfig = getLanguageConfig(language);
+  const systemPrompt = langConfig.translatePromptBuilder(options?.interestContext);
+
   const messages: ChatMessage[] = [
-    { role: 'system', content: buildTranslateSystemPrompt(options?.interestContext) },
-    { role: 'user', content: `请为法语单词 "${word.trim()}" 生成学习资料（仅返回 JSON）：` },
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `请为${langConfig.displayName}单词 "${word.trim()}" 生成学习资料（仅返回 JSON）：` },
   ];
 
   const rawContent = await provider.chat(messages, {

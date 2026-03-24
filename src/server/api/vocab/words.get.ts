@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
   const { page, limit: pageSize, offset } = parsePagination(query, { defaultLimit: 50, pageSizeKey: 'pageSize' });
   const search = (query.search as string) || '';
 
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
   const targetStatus = filter !== 'all' ? STATUS_MAP[filter] : null;
 
   // JOIN 类型：UNREAD 或无过滤用 LEFT JOIN，其他状态用 INNER JOIN
@@ -24,6 +27,7 @@ export default defineEventHandler(async (event) => {
 
   // WHERE 条件片段
   const conditions: ReturnType<typeof sql>[] = [];
+  conditions.push(sql`w.wordbook_id = ${activeWordbook.id}`);
   if (targetStatus === LEARNING_STATUS.UNREAD) {
     conditions.push(sql`(p.learning_status IS NULL OR p.learning_status = ${targetStatus})`);
   } else if (targetStatus) {

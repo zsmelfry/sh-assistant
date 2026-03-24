@@ -8,6 +8,7 @@ import type { StudyQuality } from '../../../utils/srs-algorithm';
 import { formatDate } from '../../../utils/date';
 import { logActivity } from '~/server/lib/ability/log-activity';
 import { ensureVocabUser } from '../../../utils/ensure-vocab-user';
+import { getLanguageConfig } from '~/server/lib/vocab/languages';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -30,10 +31,16 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
   const today = formatDate(new Date());
 
-  // 验证单词存在
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
+  // 验证单词存在且属于活跃词汇本
   const wordResult = await db.select().from(vocabWords).where(eq(vocabWords.id, wid)).limit(1);
   if (wordResult.length === 0) {
     throw createError({ statusCode: 404, message: '单词不存在' });
+  }
+  if (wordResult[0].wordbookId !== activeWordbook.id) {
+    throw createError({ statusCode: 400, message: '该单词不属于当前活跃词汇本' });
   }
 
   let card;
@@ -159,9 +166,10 @@ export default defineEventHandler(async (event) => {
   }
 
   // Log activity for ability system (daily dedup via logActivity)
+  const langConfig = getLanguageConfig(activeWordbook.language);
   logActivity(db, {
     source: 'vocab',
-    description: '法语词汇复习',
+    description: `${langConfig.displayName}词汇复习`,
   }).catch(() => {});
 
   return {

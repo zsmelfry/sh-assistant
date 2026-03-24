@@ -7,18 +7,23 @@ export default defineEventHandler(async (event) => {
 
   const db = useDB(event);
 
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
   const now = Date.now();
   const startTime = now - days * 24 * 60 * 60 * 1000;
 
   // 获取时间范围内的状态变更历史，按天聚合（使用 localtime 转为服务器本地时区）
   const history = await db.all(sql`
     SELECT
-      date(changed_at / 1000, 'unixepoch', 'localtime') as date,
-      new_status,
+      date(h.changed_at / 1000, 'unixepoch', 'localtime') as date,
+      h.new_status,
       COUNT(*) as count
-    FROM vocab_status_history
-    WHERE changed_at >= ${startTime}
-    GROUP BY date(changed_at / 1000, 'unixepoch', 'localtime'), new_status
+    FROM vocab_status_history h
+    INNER JOIN vocab_words w ON h.word_id = w.id
+    WHERE h.changed_at >= ${startTime}
+      AND w.wordbook_id = ${activeWordbook.id}
+    GROUP BY date(h.changed_at / 1000, 'unixepoch', 'localtime'), h.new_status
     ORDER BY date ASC
   `);
 
@@ -26,22 +31,26 @@ export default defineEventHandler(async (event) => {
   // 以 masteredAt 时间为基准，按天累计
   const masteredCurve = await db.all(sql`
     SELECT
-      date(mastered_at / 1000, 'unixepoch', 'localtime') as date,
+      date(p.mastered_at / 1000, 'unixepoch', 'localtime') as date,
       COUNT(*) as count
-    FROM vocab_progress
-    WHERE mastered_at IS NOT NULL AND mastered_at >= ${startTime}
-    GROUP BY date(mastered_at / 1000, 'unixepoch', 'localtime')
+    FROM vocab_progress p
+    INNER JOIN vocab_words w ON p.word_id = w.id
+    WHERE p.mastered_at IS NOT NULL AND p.mastered_at >= ${startTime}
+      AND w.wordbook_id = ${activeWordbook.id}
+    GROUP BY date(p.mastered_at / 1000, 'unixepoch', 'localtime')
     ORDER BY date ASC
   `);
 
   // 获取首次互动的累计曲线
   const interactedCurve = await db.all(sql`
     SELECT
-      date(first_interacted_at / 1000, 'unixepoch', 'localtime') as date,
+      date(p.first_interacted_at / 1000, 'unixepoch', 'localtime') as date,
       COUNT(*) as count
-    FROM vocab_progress
-    WHERE first_interacted_at IS NOT NULL AND first_interacted_at >= ${startTime}
-    GROUP BY date(first_interacted_at / 1000, 'unixepoch', 'localtime')
+    FROM vocab_progress p
+    INNER JOIN vocab_words w ON p.word_id = w.id
+    WHERE p.first_interacted_at IS NOT NULL AND p.first_interacted_at >= ${startTime}
+      AND w.wordbook_id = ${activeWordbook.id}
+    GROUP BY date(p.first_interacted_at / 1000, 'unixepoch', 'localtime')
     ORDER BY date ASC
   `);
 
