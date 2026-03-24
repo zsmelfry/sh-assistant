@@ -5,7 +5,8 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { definitions } from '../database/schemas/srs';
 
 /** 构建翻译系统提示词 */
-function buildTranslateSystemPrompt(): string {
+function buildTranslateSystemPrompt(interestContext?: string): string {
+  const context = interestContext || '足球';
   return `你是法语学习助手。用户会给你一个法语单词，请提供详细的中文学习资料。
 
 要求：
@@ -13,7 +14,7 @@ function buildTranslateSystemPrompt(): string {
 2. 字段说明：
    - definition: 简洁的中文释义（一句话）
    - partOfSpeech: 词性（如 "n." / "v." / "adj." 等）
-   - examples: 数组格式，包含 3 个实用例句（每个例句包含 sentence 和 translation。难度从简单到复杂递进。第3个例句如果这个词能自然地用在足球语境中，就用足球相关的句子；如果不自然就用其他场景）
+   - examples: 数组格式，包含 3 个实用例句（每个例句包含 sentence 和 translation。难度从简单到复杂递进。第3个例句如果这个词能自然地用在${context}语境中，就用${context}相关的句子；如果不自然就用其他场景）
    - synonyms: 同义词（如有）
    - antonyms: 反义词（如有）
    - wordFamily: 词族/派生词（如有）
@@ -71,6 +72,7 @@ interface TranslateWordOptions {
   temperature?: number;
   maxTokens?: number;
   timeout?: number;
+  interestContext?: string;
 }
 
 /**
@@ -85,7 +87,7 @@ export async function translateWord(
   const { provider, config: providerConfig } = await resolveProvider(db, options?.providerId);
 
   const messages: ChatMessage[] = [
-    { role: 'system', content: buildTranslateSystemPrompt() },
+    { role: 'system', content: buildTranslateSystemPrompt(options?.interestContext) },
     { role: 'user', content: `请为法语单词 "${word.trim()}" 生成学习资料（仅返回 JSON）：` },
   ];
 

@@ -1,7 +1,7 @@
 import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { definitions } from '../../../database/schemas/srs';
-import { vocabWords } from '../../../database/schemas/vocab';
+import { vocabWords, vocabSettings } from '../../../database/schemas/vocab';
 import { translateWord, cacheDefinition } from '../../../utils/translate-word';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 
@@ -35,7 +35,12 @@ export default defineEventHandler(async (event) => {
   const word = wordResult[0].word;
 
   try {
-    const translateResult = await translateWord(db, word);
+    // Read interest context setting
+    const settingRow = await db.select().from(vocabSettings)
+      .where(eq(vocabSettings.key, 'example_interest_context')).limit(1);
+    const interestContext = settingRow[0]?.value || undefined;
+
+    const translateResult = await translateWord(db, word, { interestContext });
     const row = await cacheDefinition(db, wordId, translateResult);
 
     return {
