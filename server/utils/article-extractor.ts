@@ -10,7 +10,44 @@ export interface ExtractedArticle {
   publishedAt: number | null;  // Unix ms
 }
 
-/** SSRF 防护：阻止私有 IP 和非 http(s) 协议 */
+/** Check if an IP address is private/reserved */
+function isPrivateIP(ip: string): boolean {
+  // IPv4 private ranges
+  const ipv4Patterns = [
+    /^127\./,                          // loopback
+    /^10\./,                           // 10.0.0.0/8
+    /^172\.(1[6-9]|2\d|3[01])\./,      // 172.16.0.0/12
+    /^192\.168\./,                      // 192.168.0.0/16
+    /^169\.254\./,                      // link-local
+    /^0\./,                             // 0.0.0.0/8
+  ];
+  for (const pattern of ipv4Patterns) {
+    if (pattern.test(ip)) return true;
+  }
+
+  // IPv6 private/reserved
+  const ipLower = ip.toLowerCase();
+  if (
+    ipLower === '::1' ||                  // loopback
+    ipLower === '::' ||                   // unspecified
+    ipLower.startsWith('fe80') ||          // link-local
+    ipLower.startsWith('fc') ||            // unique local (fc00::/7)
+    ipLower.startsWith('fd') ||            // unique local (fc00::/7)
+    ipLower.startsWith('::ffff:127.') ||   // IPv4-mapped loopback
+    ipLower.startsWith('::ffff:10.') ||    // IPv4-mapped private
+    ipLower.startsWith('::ffff:192.168.') // IPv4-mapped private
+  ) {
+    return true;
+  }
+
+  // IPv4-mapped 172.16-31.x.x
+  const mappedMatch = ipLower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mappedMatch && isPrivateIP(mappedMatch[1])) return true;
+
+  return false;
+}
+
+/** SSRF 防护：阻止私有 IP 和非 http(s) 协议，含 DNS rebinding 防护 */
 function validateUrl(url: string): URL {
   let parsed: URL;
   try {
@@ -25,27 +62,35 @@ function validateUrl(url: string): URL {
 
   const hostname = parsed.hostname;
 
-  // 阻止 localhost
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+  // Reject hostnames that look like IPs and are private
+  if (hostname === 'localhost' || hostname === '0.0.0.0') {
     throw createError({ statusCode: 400, message: '不允许访问本地地址' });
   }
 
-  // 阻止私有 IP 段
-  const privatePatterns = [
-    /^10\./,                          // 10.0.0.0/8
-    /^172\.(1[6-9]|2\d|3[01])\./,     // 172.16.0.0/12
-    /^192\.168\./,                     // 192.168.0.0/16
-    /^169\.254\./,                     // link-local
-    /^0\./,                            // 0.0.0.0/8
-  ];
-
-  for (const pattern of privatePatterns) {
-    if (pattern.test(hostname)) {
-      throw createError({ statusCode: 400, message: '不允许访问内网地址' });
-    }
+  if (isPrivateIP(hostname)) {
+    throw createError({ statusCode: 400, message: '不允许访问内网地址' });
   }
 
   return parsed;
+}
+
+/** DNS resolve + validate resolved IPs against private ranges (anti-DNS-rebinding) */
+async function validateResolvedIPs(hostname: string): Promise<void> {
+  const { resolve4, resolve6 } = await import('dns').then(m => m.promises);
+
+  const ips: string[] = [];
+  try { ips.push(...await resolve4(hostname)); } catch { /* no A records */ }
+  try { ips.push(...await resolve6(hostname)); } catch { /* no AAAA records */ }
+
+  if (ips.length === 0) {
+    throw createError({ statusCode: 400, message: '无法解析域名' });
+  }
+
+  for (const ip of ips) {
+    if (isPrivateIP(ip)) {
+      throw createError({ statusCode: 400, message: '不允许访问内网地址' });
+    }
+  }
 }
 
 const MAX_REDIRECTS = 3;
@@ -55,6 +100,9 @@ async function safeFetch(url: URL, remainingRedirects: number = MAX_REDIRECTS): 
   if (remainingRedirects <= 0) {
     throw createError({ statusCode: 502, message: '重定向次数过多' });
   }
+
+  // DNS rebinding protection: resolve and validate IPs before connecting
+  await validateResolvedIPs(url.hostname);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);

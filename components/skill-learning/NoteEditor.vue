@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { ChevronRight } from 'lucide-vue-next';
-import { marked } from 'marked';
+import { renderMarkdownSafe } from '~/composables/useMarkdown';
 import { SKILL_STORE_KEY } from '~/composables/skill-learning';
 
 const props = defineProps<{
@@ -60,7 +60,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const draft = ref('');
 const mode = ref<'edit' | 'preview'>('edit');
 
-const renderedMarkdown = computed(() => marked.parse(draft.value || '') as string);
+const renderedMarkdown = computed(() => renderMarkdownSafe(draft.value || ''));
 
 const lastSavedText = computed(() => {
   if (!store.noteLastSaved) return null;

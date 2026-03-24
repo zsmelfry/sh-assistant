@@ -8,6 +8,7 @@ import { users, userModules } from '~/server/database/admin-schema';
 interface AuthCacheEntry {
   role: string;
   enabledModules: string[];
+  tokenVersion: number;
   timestamp: number;
 }
 
@@ -32,7 +33,7 @@ function getCachedAuth(username: string): AuthCacheEntry | null {
 function fetchAndCacheAuth(username: string): AuthCacheEntry {
   const adminDb = useAdminDB();
 
-  const user = adminDb.select({ role: users.role, id: users.id })
+  const user = adminDb.select({ role: users.role, id: users.id, tokenVersion: users.tokenVersion })
     .from(users)
     .where(eq(users.username, username))
     .get();
@@ -50,6 +51,7 @@ function fetchAndCacheAuth(username: string): AuthCacheEntry {
   const entry: AuthCacheEntry = {
     role: user.role,
     enabledModules: modules,
+    tokenVersion: user.tokenVersion ?? 0,
     timestamp: Date.now(),
   };
 
@@ -83,7 +85,7 @@ export default defineEventHandler((event) => {
   }
 
   try {
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
     if (typeof decoded === 'string' || typeof decoded.userId !== 'number' || typeof decoded.username !== 'string') {
       throw createError({ statusCode: 401, message: 'Invalid token payload' });
     }
@@ -91,6 +93,12 @@ export default defineEventHandler((event) => {
     // Look up role & enabled modules from admin DB (with 60s cache)
     const cached = getCachedAuth(decoded.username);
     const authData = cached || fetchAndCacheAuth(decoded.username);
+
+    // Verify token version — reject tokens issued before a version bump
+    const tokenVersion = typeof decoded.tokenVersion === 'number' ? decoded.tokenVersion : 0;
+    if (tokenVersion < authData.tokenVersion) {
+      throw createError({ statusCode: 401, message: 'Token已失效，请重新登录' });
+    }
 
     event.context.auth = {
       userId: decoded.userId,

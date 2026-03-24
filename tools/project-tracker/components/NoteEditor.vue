@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { marked } from 'marked';
+import { renderMarkdownSafe } from '~/composables/useMarkdown';
 import type { Note, Attachment } from '../types';
 
 const props = defineProps<{
@@ -91,12 +91,12 @@ const fileInput = ref<HTMLInputElement | null>(null);
 
 const renderedSummary = computed(() => {
   if (!props.note?.aiSummary) return '';
-  return marked.parse(props.note.aiSummary, { breaks: true }) as string;
+  return renderMarkdownSafe(props.note.aiSummary);
 });
 
 const renderedContent = computed(() => {
   if (!props.content) return '<p style="color: var(--color-text-disabled)">无内容</p>';
-  return marked.parse(props.content, { breaks: true }) as string;
+  return renderMarkdownSafe(props.content);
 });
 
 function handleAddUrl() {

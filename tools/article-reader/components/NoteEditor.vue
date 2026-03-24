@@ -44,14 +44,14 @@
 </template>
 
 <script setup lang="ts">
-import { marked } from 'marked';
+import { renderMarkdownSafe } from '~/composables/useMarkdown';
 
 const store = useArticleReaderStore();
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const draft = ref(store.notes);
 const mode = ref<'edit' | 'preview'>('edit');
 
-const renderedMarkdown = computed(() => marked.parse(draft.value || '') as string);
+const renderedMarkdown = computed(() => renderMarkdownSafe(draft.value || ''));
 const saved = ref(false);
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let savedTimer: ReturnType<typeof setTimeout> | null = null;

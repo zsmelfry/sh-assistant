@@ -18,6 +18,9 @@ export default defineEventHandler((event) => {
   }
 
   // Prevent path traversal
+  if (!/^\d+$/.test(projectId)) {
+    throw createError({ statusCode: 400, message: '无效的 projectId' });
+  }
   if (filename.includes('..') || filename.includes('/')) {
     throw createError({ statusCode: 400, message: '无效的文件名' });
   }

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
 import { requireNumericParam, requireEntity } from '~/server/utils/handler-helpers';
 import { VALID_PROVIDERS } from '~/server/lib/llm/types';
+import { encryptApiKey } from '~/server/utils/crypto';
 
 export default defineEventHandler(async (event) => {
   const id = requireNumericParam(event, 'id', 'Provider');
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
   if (name !== undefined) updates.name = name.trim();
   if (modelName !== undefined) updates.modelName = modelName.trim();
   if (endpoint !== undefined) updates.endpoint = endpoint?.trim() || null;
-  if (apiKey !== undefined) updates.apiKey = apiKey || null;
+  if (apiKey !== undefined) updates.apiKey = apiKey ? encryptApiKey(apiKey) : null;
   if (isEnabled !== undefined) updates.isEnabled = !!isEnabled;
   if (params !== undefined) updates.params = params || '{}';
 
@@ -49,10 +50,13 @@ export default defineEventHandler(async (event) => {
     .where(eq(llmProviders.id, id))
     .returning();
 
-  // 脱敏
+  // 脱敏: if apiKey was updated, use original plaintext for masking
   const updated = result[0];
+  const maskedKey = apiKey !== undefined
+    ? (apiKey ? `****${apiKey.slice(-4)}` : null)
+    : (updated.apiKey ? '****' : null);
   return {
     ...updated,
-    apiKey: updated.apiKey ? `****${updated.apiKey.slice(-4)}` : null,
+    apiKey: maskedKey,
   };
 });

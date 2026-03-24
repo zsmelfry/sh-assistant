@@ -31,6 +31,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.0",
     "date-fns": "^4.0",
+    "dompurify": "^3.3.3",
     "drizzle-orm": "^0.40",
     "jsdom": "^28.1.0",
     "jsonwebtoken": "^9.0.3",

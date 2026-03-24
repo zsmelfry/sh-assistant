@@ -99,7 +99,7 @@
 
 <script setup lang="ts">
 import { ChevronRight } from 'lucide-vue-next';
-import { marked } from 'marked';
+import { renderMarkdownSafe } from '~/composables/useMarkdown';
 import {
   TEACHING_SECTIONS,
   TEACHING_SECTION_LABELS,
@@ -161,7 +161,7 @@ watch(() => props.teaching?.pointId, () => {
 });
 
 function renderMarkdown(content: string): string {
-  return marked.parse(content) as string;
+  return renderMarkdownSafe(content);
 }
 
 function confirmRegenerate() {

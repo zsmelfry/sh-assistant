@@ -29,9 +29,9 @@ export default defineEventHandler(async (event) => {
 
   // Get projectId from query
   const query = getQuery(event);
-  const projectId = query.projectId;
-  if (!projectId) {
-    throw createError({ statusCode: 400, message: '缺少 projectId 参数' });
+  const projectId = String(query.projectId || '');
+  if (!projectId || !/^\d+$/.test(projectId)) {
+    throw createError({ statusCode: 400, message: 'projectId 必须是正整数' });
   }
 
   // Determine extension from mime type

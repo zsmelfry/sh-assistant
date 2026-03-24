@@ -18,7 +18,7 @@ async function loginAndGotoReader(page: Page, request: APIRequestContext) {
   await page.fill('#username', TEST_USER.username);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
-  await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+  await page.waitForURL('**/dashboard', { timeout: 10000 });
   await page.goto('/article-reader');
   await page.waitForFunction(
     () => {
@@ -36,7 +36,7 @@ async function loginAndGotoHome(page: Page) {
   await page.fill('#username', TEST_USER.username);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
-  await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+  await page.waitForURL('**/dashboard', { timeout: 10000 });
 }
 
 /** 通过 API 种入一篇测试文章 */

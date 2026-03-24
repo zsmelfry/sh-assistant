@@ -56,7 +56,7 @@ async function loginAndGoToStartupMap(page: Page) {
   await page.fill('#username', TEST_USER.username);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
-  await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+  await page.waitForURL('**/dashboard', { timeout: 10000 });
   await page.goto('/startup-map');
   await page.waitForFunction(
     () => {
@@ -671,7 +671,7 @@ test.describe('创业地图 - 导航', () => {
     await page.fill('#username', TEST_USER.username);
     await page.fill('#password', TEST_USER.password);
     await page.click('.submit-btn');
-    await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+    await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     await expect(page.getByRole('link', { name: '创业地图' })).toBeVisible();
   });

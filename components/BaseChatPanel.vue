@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { marked } from 'marked';
+import { renderMarkdownSafe } from '~/composables/useMarkdown';
 
 interface ChatMsg {
   id: number;
@@ -113,7 +113,7 @@ function scrollToBottom(): void {
 watch([() => props.messages.length, () => props.loading], () => scrollToBottom());
 
 function renderMessage(content: string): string {
-  return marked.parse(content, { breaks: true }) as string;
+  return renderMarkdownSafe(content);
 }
 
 function handleSend(): void {

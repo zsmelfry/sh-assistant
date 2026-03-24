@@ -1,6 +1,7 @@
 import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
+import { decryptApiKey } from '~/server/utils/crypto';
 
 /** 默认 Provider 种子数据 */
 const DEFAULT_PROVIDERS = [
@@ -40,9 +41,17 @@ export default defineEventHandler(async (event) => {
     providers = await db.select().from(llmProviders);
   }
 
-  // 脱敏: apiKey 只返回末 4 位
-  return providers.map(p => ({
-    ...p,
-    apiKey: p.apiKey ? `****${p.apiKey.slice(-4)}` : null,
-  }));
+  // 脱敏: decrypt then mask to show last 4 of original key
+  return providers.map(p => {
+    let maskedKey: string | null = null;
+    if (p.apiKey) {
+      try {
+        const plain = decryptApiKey(p.apiKey);
+        maskedKey = `****${plain.slice(-4)}`;
+      } catch {
+        maskedKey = '****';
+      }
+    }
+    return { ...p, apiKey: maskedKey };
+  });
 });

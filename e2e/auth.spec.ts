@@ -38,9 +38,9 @@ async function loginAndGoto(page: Page, request: APIRequestContext, path: string
   await page.fill('#username', TEST_USER.username);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
-  // Wait for redirect to home
-  await page.waitForURL('**/habit-tracker', { timeout: 10000 });
-  if (path !== '/habit-tracker' && path !== '/') {
+  // Wait for redirect to home (first tool = dashboard)
+  await page.waitForURL('**/dashboard', { timeout: 10000 });
+  if (path !== '/dashboard' && path !== '/') {
     await page.goto(path);
   }
 }
@@ -64,8 +64,8 @@ test.describe('Authentication', () => {
 
   test('login with correct credentials succeeds', async ({ page }) => {
     await loginViaUI(page, TEST_USER.username, TEST_USER.password);
-    // Should redirect to home/first tool
-    await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+    // Should redirect to home/first tool (dashboard)
+    await page.waitForURL('**/dashboard', { timeout: 10000 });
     // Verify app content loaded (sidebar visible on desktop viewport)
     await expect(page.locator('.sidebar')).toBeVisible({ timeout: 5000 });
   });
@@ -88,7 +88,7 @@ test.describe('Authentication', () => {
   test('token persists after page reload', async ({ page }) => {
     // Login first
     await loginViaUI(page, TEST_USER.username, TEST_USER.password);
-    await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+    await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // Reload the page
     await page.reload();
@@ -131,7 +131,7 @@ test.describe('Authentication', () => {
   test('authenticated user visiting /login is redirected to home', async ({ page }) => {
     // Login first
     await loginViaUI(page, TEST_USER.username, TEST_USER.password);
-    await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+    await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // Try to visit login page
     await page.goto('/login');
@@ -144,7 +144,7 @@ test.describe('Authentication', () => {
   test('logout clears token and redirects to login', async ({ page }) => {
     // Login
     await loginViaUI(page, TEST_USER.username, TEST_USER.password);
-    await page.waitForURL('**/habit-tracker', { timeout: 10000 });
+    await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // Click logout in sidebar
     const logoutBtn = page.locator('.logout-btn').or(page.getByTitle('登出'));

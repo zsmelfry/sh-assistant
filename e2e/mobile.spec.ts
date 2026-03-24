@@ -22,8 +22,8 @@ async function loginAndGoto(page: Page, path: string) {
   await page.fill('#username', TEST_USER.username);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
-  await page.waitForURL('**/habit-tracker', { timeout: 10000 });
-  if (path !== '/habit-tracker' && path !== '/') {
+  await page.waitForURL('**/dashboard', { timeout: 10000 });
+  if (path !== '/dashboard' && path !== '/') {
     await page.goto(path);
     await page.waitForTimeout(1000);
   }

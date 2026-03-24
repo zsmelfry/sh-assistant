@@ -1,6 +1,7 @@
 import { useDB } from '~/server/database';
 import { llmProviders } from '../../../database/schemas/llm';
 import { VALID_PROVIDERS } from '~/server/lib/llm/types';
+import { encryptApiKey } from '~/server/utils/crypto';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -46,7 +47,7 @@ export default defineEventHandler(async (event) => {
     name: name.trim(),
     modelName: modelName.trim(),
     endpoint: endpoint?.trim() || null,
-    apiKey: apiKey || null,
+    apiKey: apiKey ? encryptApiKey(apiKey) : null,
     isDefault: false,
     isEnabled: true,
     params: params || '{}',
@@ -56,10 +57,10 @@ export default defineEventHandler(async (event) => {
 
   setResponseStatus(event, 201);
 
-  // 脱敏
+  // 脱敏: use original plaintext key for masking (not encrypted value)
   const created = result[0];
   return {
     ...created,
-    apiKey: created.apiKey ? `****${created.apiKey.slice(-4)}` : null,
+    apiKey: apiKey ? `****${apiKey.slice(-4)}` : null,
   };
 });
