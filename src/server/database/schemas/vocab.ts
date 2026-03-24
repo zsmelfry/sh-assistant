@@ -10,13 +10,26 @@ export const LEARNING_STATUS = {
 
 export type LearningStatus = typeof LEARNING_STATUS[keyof typeof LEARNING_STATUS];
 
+// ===== 词汇本 =====
+export const wordbooks = sqliteTable('wordbooks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  language: text('language').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).default(false),
+  wordCount: integer('word_count').default(0),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+});
+
 // ===== 词汇表 =====
 export const vocabWords = sqliteTable('vocab_words', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   rank: integer('rank').notNull(),
   word: text('word').notNull(),
+  wordbookId: integer('wordbook_id').default(1)
+    .references(() => wordbooks.id),
 }, (table) => [
   index('idx_vocab_words_rank').on(table.rank),
+  index('idx_vocab_words_wordbook_rank').on(table.wordbookId, table.rank),
 ]);
 
 // ===== 用户表 =====
