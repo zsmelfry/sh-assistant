@@ -32,7 +32,7 @@ export function initUserDB(username: string): void {
   const db = drizzle(sqlite, { schema });
 
   // Apply all user schema migrations
-  const migrationsFolder = resolve('./server/database/migrations');
+  const migrationsFolder = resolve('./src/server/database/migrations');
   if (existsSync(migrationsFolder)) {
     migrate(db, { migrationsFolder });
   }

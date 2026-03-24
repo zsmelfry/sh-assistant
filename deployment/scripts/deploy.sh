@@ -14,8 +14,8 @@ LEGACY_DB="$DATA_DIR/assistant.db"
 USERS_DIR="$DATA_DIR/users"
 BACKUP_DIR="$DATA_DIR/backups"
 MIGRATION_STATE="$DATA_DIR/.migration-state"
-JOURNAL="./server/database/migrations/meta/_journal.json"
-ADMIN_JOURNAL="./server/database/admin-migrations/meta/_journal.json"
+JOURNAL="./src/server/database/migrations/meta/_journal.json"
+ADMIN_JOURNAL="./src/server/database/admin-migrations/meta/_journal.json"
 
 echo "=== 1/7 Stopping dev server ==="
 DEV_PIDS=$(lsof -ti :3000 2>/dev/null || true)
@@ -43,7 +43,7 @@ echo "=== 3/7 First-time migration (if needed) ==="
 if [ -f "$LEGACY_DB" ] && [ ! -f "$MIGRATION_STATE" ]; then
   echo "Found legacy assistant.db without migration state."
   echo "Running one-time migration to multi-user architecture..."
-  npx tsx scripts/migrate-to-multi-user.ts
+  npx tsx deployment/scripts/migrate-to-multi-user.ts
   echo "Migration complete."
 elif [ ! -f "$ADMIN_DB" ] && [ ! -f "$LEGACY_DB" ]; then
   echo "Fresh installation — no existing data to migrate."
@@ -97,7 +97,7 @@ fi
 echo ""
 echo "=== 6/7 Migrating user DBs ==="
 if [ -d "$USERS_DIR" ] && [ -f "$JOURNAL" ]; then
-  npx tsx scripts/migrate-user-dbs.ts
+  npx tsx deployment/scripts/migrate-user-dbs.ts
 else
   echo "No user DBs or migrations found — skipping."
 fi
@@ -110,10 +110,10 @@ else
   echo "Local mode: binding to 127.0.0.1 (use --lan to expose to network)"
 fi
 if pm2 describe personal-assistant > /dev/null 2>&1; then
-  pm2 restart ecosystem.config.cjs
+  pm2 restart deployment/ecosystem.config.cjs
   echo "PM2 process restarted."
 else
-  pm2 start ecosystem.config.cjs
+  pm2 start deployment/ecosystem.config.cjs
   echo "PM2 process started."
 fi
 

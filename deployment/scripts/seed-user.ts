@@ -12,7 +12,7 @@ import bcrypt from 'bcryptjs';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
-import { users, userModules } from '../server/database/admin-schema';
+import { users, userModules } from '../../src/server/database/admin-schema';
 
 const SALT_ROUNDS = 10;
 const USERNAME_REGEX = /^[a-z0-9_-]{3,30}$/;

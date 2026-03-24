@@ -24,17 +24,17 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.output ./.output
 
 # Drizzle 迁移 SQL + config（启动时执行迁移）
-COPY --from=builder /app/server/database/migrations ./server/database/migrations
-COPY --from=builder /app/server/database/admin-migrations ./server/database/admin-migrations
-COPY --from=builder /app/server/database/schema.ts ./server/database/schema.ts
-COPY --from=builder /app/server/database/schemas ./server/database/schemas
-COPY --from=builder /app/server/database/admin-schema.ts ./server/database/admin-schema.ts
+COPY --from=builder /app/src/server/database/migrations ./src/server/database/migrations
+COPY --from=builder /app/src/server/database/admin-migrations ./src/server/database/admin-migrations
+COPY --from=builder /app/src/server/database/schema.ts ./src/server/database/schema.ts
+COPY --from=builder /app/src/server/database/schemas ./src/server/database/schemas
+COPY --from=builder /app/src/server/database/admin-schema.ts ./src/server/database/admin-schema.ts
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/drizzle-admin.config.ts ./drizzle-admin.config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # 迁移 + seed 脚本
-COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/deployment/scripts ./deployment/scripts
 
 # 启动脚本
 COPY deployment/entrypoint.sh ./entrypoint.sh

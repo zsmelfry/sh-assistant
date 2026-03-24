@@ -158,7 +158,7 @@ test.describe('技能管理 - 导航', () => {
     await seedSkillConfig(request, token);
 
     // seed 知识树让页面有内容
-    const { SEED_DOMAINS: domains, SEED_STAGES: stages } = await import('../server/database/seeds/startup-map');
+    const { SEED_DOMAINS: domains, SEED_STAGES: stages } = await import('../src/server/database/seeds/startup-map');
     await authFetch(request, token, 'POST', '/api/skills/startup-map/seed', {
       domains: domains.slice(0, 1), // 只取第一个领域以加速
       stages: [stages[0]],

@@ -7,11 +7,11 @@ import { resolve } from 'node:path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import * as schema from '../server/database/schema';
+import * as schema from '../../src/server/database/schema';
 
 const DATA_DIR = process.env.DATA_DIR || './data';
 const USERS_DIR = resolve(DATA_DIR, 'users');
-const MIGRATIONS_DIR = resolve('./server/database/migrations');
+const MIGRATIONS_DIR = resolve('./src/server/database/migrations');
 
 if (!existsSync(USERS_DIR)) {
   console.log('[migrate-users] No data/users/ directory found. Skipping.');

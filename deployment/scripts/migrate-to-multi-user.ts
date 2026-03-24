@@ -9,8 +9,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { mkdirSync, copyFileSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import * as adminSchema from '../server/database/admin-schema';
-import * as userSchema from '../server/database/schema';
+import * as adminSchema from '../../src/server/database/admin-schema';
+import * as userSchema from '../../src/server/database/schema';
 
 const DATA_DIR = process.env.DATA_DIR || './data';
 const STATE_FILE = resolve(DATA_DIR, '.migration-state');
@@ -98,7 +98,7 @@ function main() {
     );
   `);
   // Read the admin migration journal to get the tag/hash
-  const journalPath = resolve('./server/database/admin-migrations/meta/_journal.json');
+  const journalPath = resolve('./src/server/database/admin-migrations/meta/_journal.json');
   if (existsSync(journalPath)) {
     const journal = JSON.parse(readFileSync(journalPath, 'utf-8'));
     const insertMigration = adminSqlite.prepare(

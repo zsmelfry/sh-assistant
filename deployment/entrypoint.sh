@@ -15,7 +15,7 @@ ADMIN_DB_PATH="$ADMIN_DB" npx drizzle-kit migrate --config drizzle-admin.config.
 # ── 2. Migrate all User DBs ──
 echo "=== [entrypoint] Migrating user DBs ==="
 if [ -d "$USERS_DIR" ] && [ "$(ls -A "$USERS_DIR"/*.db 2>/dev/null)" ]; then
-  npx tsx scripts/migrate-user-dbs.ts
+  npx tsx deployment/scripts/migrate-user-dbs.ts
 else
   echo "No user DBs found — skipping user migration."
 fi
@@ -23,7 +23,7 @@ fi
 # ── 3. Seed admin user (first deploy only) ──
 if [ -n "${SEED_USERNAME:-}" ] && [ -n "${SEED_PASSWORD:-}" ]; then
   echo "=== [entrypoint] Seeding admin user ==="
-  npx tsx scripts/seed-user.ts "$SEED_USERNAME" "$SEED_PASSWORD"
+  npx tsx deployment/scripts/seed-user.ts "$SEED_USERNAME" "$SEED_PASSWORD"
 fi
 
 # ── 4. Start Nuxt server ──

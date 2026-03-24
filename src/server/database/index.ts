@@ -69,7 +69,7 @@ export function useUserDB(username: string): UserDB {
   const sqlite = createSqliteDb(dbPath);
 
   // Auto-migrate: ensure all tables exist on first connect
-  const migrationsFolder = resolve('./server/database/migrations');
+  const migrationsFolder = resolve('./src/server/database/migrations');
   if (existsSync(migrationsFolder)) {
     migrate(drizzle(sqlite), { migrationsFolder });
   }

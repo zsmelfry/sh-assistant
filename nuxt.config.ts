@@ -8,6 +8,9 @@ let _savedManifest: string | null = null;
 let _savedPrecomputed: string | null = null;
 
 export default defineNuxtConfig({
+  // 源码目录
+  srcDir: 'src',
+
   // SPA 模式（个人工具无 SEO 需求）
   ssr: false,
 
