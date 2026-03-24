@@ -29,6 +29,9 @@
 
     <!-- 主内容（有用户有词汇） -->
     <template v-else>
+      <!-- 词汇本切换 -->
+      <WordbookSelector />
+
       <!-- Tab 切换 + 设置 -->
       <div class="tabRow">
         <div class="mainTabs">
@@ -113,6 +116,7 @@ import VocabList from './components/VocabList.vue';
 import ImportModal from './components/ImportModal.vue';
 import StudyView from './components/StudyView.vue';
 import CategorizeView from './components/CategorizeView.vue';
+import WordbookSelector from './components/WordbookSelector.vue';
 
 const store = useVocabStore();
 

@@ -8,7 +8,9 @@ import type {
   WordListResponse,
   ChartRawResponse,
   ImportResponse,
+  Wordbook,
 } from '~/tools/vocab-tracker/types';
+import { LANGUAGE_TTS_MAP, LANGUAGE_DISPLAY_MAP } from '~/tools/vocab-tracker/types';
 
 export const useVocabStore = defineStore('vocab', () => {
   // ===== 词汇状态 =====
@@ -27,6 +29,27 @@ export const useVocabStore = defineStore('vocab', () => {
   const selectedWordIds = ref<Set<number>>(new Set());
   const selectedCount = computed(() => selectedWordIds.value.size);
   const someSelected = computed(() => selectedWordIds.value.size > 0);
+
+  // ===== 词汇本 =====
+  const wordbooks = ref<Wordbook[]>([]);
+  const activeWordbookId = ref<number | null>(null);
+  const multiWordbookEnabled = ref(false);
+
+  const activeWordbook = computed(() =>
+    wordbooks.value.find(wb => wb.id === activeWordbookId.value) ?? null,
+  );
+
+  /** TTS locale for the active wordbook's language (e.g. 'fr-FR') */
+  const activeLanguageTts = computed(() => {
+    const lang = activeWordbook.value?.language ?? 'fr';
+    return LANGUAGE_TTS_MAP[lang] ?? 'fr-FR';
+  });
+
+  /** Chinese display name for the active wordbook's language (e.g. '法语') */
+  const activeLanguageDisplay = computed(() => {
+    const lang = activeWordbook.value?.language ?? 'fr';
+    return LANGUAGE_DISPLAY_MAP[lang] ?? '法语';
+  });
 
   // ===== 设置 =====
   const interestContext = ref('');
@@ -105,7 +128,53 @@ export const useVocabStore = defineStore('vocab', () => {
     interestContext.value = value;
   }
 
+  // ===== 词汇本操作 =====
+  async function loadWordbooks() {
+    const result = await $fetch<{
+      wordbooks: Array<Wordbook & { isActive: number | boolean }>;
+      activeWordbookId: number | null;
+      multiWordbookEnabled: boolean;
+    }>('/api/vocab/wordbooks');
+
+    // API returns isActive as 0/1 integer; convert to boolean
+    wordbooks.value = result.wordbooks.map(wb => ({
+      ...wb,
+      isActive: !!wb.isActive,
+    }));
+    activeWordbookId.value = result.activeWordbookId;
+    multiWordbookEnabled.value = result.multiWordbookEnabled;
+  }
+
+  async function switchWordbook(id: number) {
+    await $fetch(`/api/vocab/wordbooks/${id}/activate`, { method: 'POST' });
+    activeWordbookId.value = id;
+    wordbooks.value = wordbooks.value.map(wb => ({
+      ...wb,
+      isActive: wb.id === id,
+    }));
+    // Reload all data for the new active wordbook
+    page.value = 1;
+    filter.value = 'all';
+    searchQuery.value = '';
+    clearSelection();
+    await Promise.all([loadStats(), loadWords(), loadChartData()]);
+  }
+
+  async function createWordbook(name: string, language: string) {
+    await $fetch('/api/vocab/wordbooks', {
+      method: 'POST',
+      body: { name, language },
+    });
+    await loadWordbooks();
+  }
+
+  async function deleteWordbook(id: number) {
+    await $fetch(`/api/vocab/wordbooks/${id}`, { method: 'DELETE' });
+    await loadWordbooks();
+  }
+
   async function initialize() {
+    await loadWordbooks();
     await Promise.all([loadStats(), loadWords(), loadChartData(), loadSettings()]);
   }
 
@@ -163,12 +232,14 @@ export const useVocabStore = defineStore('vocab', () => {
   }
 
   // ===== CSV 导入 =====
-  async function importWords(csv: string) {
+  async function importWords(csv: string, wordbookName?: string, language?: string) {
     const result = await $fetch<ImportResponse>('/api/vocab/words-import', {
       method: 'POST',
-      body: { csv },
+      body: { csv, wordbookName, language },
     });
 
+    // Reload wordbooks since import may create a new one
+    await loadWordbooks();
     await refreshAll();
 
     return result;
@@ -206,12 +277,17 @@ export const useVocabStore = defineStore('vocab', () => {
     // 词汇
     words, totalWords, filter, searchQuery, page, pageSize,
     isLoading, hasWords, totalPages,
+    // 词汇本
+    wordbooks, activeWordbookId, multiWordbookEnabled,
+    activeWordbook, activeLanguageTts, activeLanguageDisplay,
     // 选择
     selectedWordIds, selectedCount, someSelected,
     // 设置
     interestContext,
     // 统计
     stats, chartData,
+    // 词汇本操作
+    loadWordbooks, switchWordbook, createWordbook, deleteWordbook,
     // 词汇操作
     initialize, refreshAll, loadWords, loadStats, loadChartData,
     setFilter, setSearch, setPage,

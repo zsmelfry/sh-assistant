@@ -71,6 +71,40 @@ export interface ImportResponse {
   imported: number;
 }
 
+// ===== 词汇本 =====
+
+export interface Wordbook {
+  id: number;
+  name: string;
+  language: string;
+  isActive: boolean;
+  wordCount: number;
+  createdAt: number;
+}
+
+export interface LanguageOption {
+  code: string;
+  displayName: string;
+}
+
+/** Language code → TTS locale mapping (mirrors server LANGUAGES registry) */
+export const LANGUAGE_TTS_MAP: Record<string, string> = {
+  fr: 'fr-FR',
+  en: 'en-US',
+};
+
+/** Language code → Chinese display name */
+export const LANGUAGE_DISPLAY_MAP: Record<string, string> = {
+  fr: '法语',
+  en: '英语',
+};
+
+/** Available languages for wordbook creation */
+export const AVAILABLE_LANGUAGES: LanguageOption[] = [
+  { code: 'fr', displayName: '法语' },
+  { code: 'en', displayName: '英语' },
+];
+
 // ===== UI 常量 =====
 
 export const FILTER_LABELS: Record<FilterType, string> = {

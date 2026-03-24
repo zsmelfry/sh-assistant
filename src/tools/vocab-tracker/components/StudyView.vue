@@ -101,6 +101,7 @@
     <WordChat
       :word="chatWord"
       :show="showChat"
+      :language="vocabStore.activeLanguageDisplay"
       @close="showChat = false"
     />
   </div>
@@ -115,6 +116,7 @@ import StudyHistory from './StudyHistory.vue';
 import WordChat from './WordChat.vue';
 
 const studyStore = useStudyStore();
+const vocabStore = useVocabStore();
 
 const subTab = ref<'today' | 'history'>('today');
 const showChat = ref(false);

@@ -7,7 +7,7 @@
           <span class="wordText">{{ word.word }}</span>
           <span class="wordRank">#{{ word.rank }}</span>
         </div>
-        <SpeakButton :text="word.word" size="md" />
+        <SpeakButton :text="word.word" size="md" :lang="vocabStore.activeLanguageTts" />
       </div>
 
       <div v-if="isLoading" class="loadingState">加载中...</div>
@@ -52,7 +52,7 @@
             <div v-for="(ex, idx) in parsedExamples" :key="idx" class="exampleItem">
               <div class="exampleLine">
                 <span class="exampleSentence">{{ ex.sentence }}</span>
-                <SpeakButton :text="ex.sentence" size="sm" />
+                <SpeakButton :text="ex.sentence" size="sm" :lang="vocabStore.activeLanguageTts" />
               </div>
               <p v-if="ex.translation" class="exampleTranslation">{{ ex.translation }}</p>
             </div>
@@ -88,6 +88,8 @@
 <script setup lang="ts">
 import SpeakButton from './SpeakButton.vue';
 import type { Definition } from '~/stores/study';
+
+const vocabStore = useVocabStore();
 
 const props = defineProps<{
   open: boolean;

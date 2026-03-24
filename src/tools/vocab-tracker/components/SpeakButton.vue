@@ -16,8 +16,10 @@ import { Volume2 } from 'lucide-vue-next';
 const props = withDefaults(defineProps<{
   text: string;
   size?: 'sm' | 'md';
+  lang?: string;
 }>(), {
   size: 'md',
+  lang: 'fr-FR',
 });
 
 const tts = useTts();
@@ -30,7 +32,7 @@ async function handleClick() {
     tts.stop();
     return;
   }
-  await tts.speak(props.text);
+  await tts.speak(props.text, props.lang);
 }
 </script>
 

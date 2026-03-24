@@ -20,7 +20,7 @@
           <div class="frontContent">
             <div class="wordRow">
               <span class="wordLarge">{{ card.word }}</span>
-              <SpeakButton :text="card.word" size="md" />
+              <SpeakButton :text="card.word" size="md" :lang="vocabStore.activeLanguageTts" />
             </div>
             <p class="flipHint">点击翻转查看释义</p>
           </div>
@@ -31,7 +31,7 @@
           <div class="backContent">
             <div class="wordRow">
               <span class="wordMedium">{{ card.word }}</span>
-              <SpeakButton :text="card.word" size="md" />
+              <SpeakButton :text="card.word" size="md" :lang="vocabStore.activeLanguageTts" />
             </div>
 
             <template v-if="!card.definition">
@@ -52,7 +52,7 @@
                 <div v-for="(ex, idx) in parsedExamples" :key="idx" class="exItem">
                   <div class="exLine">
                     <span class="exSentence">{{ ex.sentence }}</span>
-                    <SpeakButton :text="ex.sentence" size="sm" />
+                    <SpeakButton :text="ex.sentence" size="sm" :lang="vocabStore.activeLanguageTts" />
                   </div>
                   <p v-if="ex.translation" class="exTrans">{{ ex.translation }}</p>
                 </div>
@@ -103,6 +103,8 @@
 import SpeakButton from './SpeakButton.vue';
 import { useStudyStore } from '~/stores/study';
 import type { StudyCard } from '~/stores/study';
+
+const vocabStore = useVocabStore();
 
 const props = defineProps<{
   card: StudyCard;

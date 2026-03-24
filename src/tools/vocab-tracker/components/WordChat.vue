@@ -63,10 +63,13 @@
 <script setup lang="ts">
 import type { ChatMessage } from '~/composables/useLlm';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   word: string;
   show: boolean;
-}>();
+  language?: string;
+}>(), {
+  language: '法语',
+});
 
 defineEmits<{
   close: [];
@@ -105,7 +108,7 @@ async function handleSend() {
     const chatMessages: ChatMessage[] = [
       {
         role: 'system',
-        content: `你是法语教学助手。用户正在学习法语单词 "${props.word}"。用中文简洁回答用户的问题。`,
+        content: `你是${props.language}教学助手。用户正在学习${props.language}单词 "${props.word}"。用中文简洁回答用户的问题。`,
       },
       ...messages.value.map(m => ({ role: m.role, content: m.content })),
     ];

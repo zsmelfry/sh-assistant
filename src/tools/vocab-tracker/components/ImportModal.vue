@@ -2,8 +2,30 @@
   <BaseModal :open="open" title="导入词汇 (CSV)" max-width="520px" @close="handleClose">
     <!-- Step 1: 选择文件 -->
     <div v-if="step === 1" class="step">
+      <!-- Multi-wordbook fields -->
+      <div v-if="store.multiWordbookEnabled" class="importFields">
+        <div class="fieldRow">
+          <label class="fieldLabel">词汇本名称</label>
+          <input
+            v-model="wordbookName"
+            class="fieldInput"
+            type="text"
+            placeholder="例如：法语频率词"
+            maxlength="100"
+          />
+        </div>
+        <div class="fieldRow">
+          <label class="fieldLabel">语言</label>
+          <select v-model="importLanguage" class="fieldSelect">
+            <option v-for="lang in AVAILABLE_LANGUAGES" :key="lang.code" :value="lang.code">
+              {{ lang.displayName }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <p class="stepHint">
-        请选择 CSV 文件，格式要求：包含 <code>rank</code> 和 <code>french_word</code> 列。
+        请选择 CSV 文件，格式要求：包含 <code>rank</code> 和 <code>word</code>（或 <code>french_word</code>）列。
       </p>
       <input
         ref="fileInput"
@@ -62,6 +84,8 @@
 </template>
 
 <script setup lang="ts">
+import { AVAILABLE_LANGUAGES } from '../types';
+
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
@@ -75,6 +99,10 @@ const importing = ref(false);
 const importedCount = ref(0);
 const error = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
+
+// Multi-wordbook fields
+const wordbookName = ref('');
+const importLanguage = ref('fr');
 
 function handleFileSelect(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
@@ -96,10 +124,12 @@ function handleFileSelect(e: Event) {
 
       const header = lines[0].split(',').map(h => h.trim().toLowerCase());
       const rankIdx = header.indexOf('rank');
-      const wordIdx = header.indexOf('french_word');
+      let wordIdx = header.indexOf('word');
+      if (wordIdx === -1) wordIdx = header.indexOf('french_word');
+      if (wordIdx === -1) wordIdx = header.indexOf('english_word');
 
       if (rankIdx === -1 || wordIdx === -1) {
-        error.value = 'CSV 需要包含 "rank" 和 "french_word" 列。';
+        error.value = 'CSV 需要包含 "rank" 和 "word"（或 "french_word"）列。';
         return;
       }
 
@@ -131,7 +161,11 @@ async function handleImport() {
   if (importing.value) return;
   importing.value = true;
   try {
-    const result = await store.importWords(rawCsv.value);
+    const result = await store.importWords(
+      rawCsv.value,
+      store.multiWordbookEnabled ? wordbookName.value.trim() || undefined : undefined,
+      store.multiWordbookEnabled ? importLanguage.value : undefined,
+    );
     importedCount.value = result.imported;
     step.value = 3;
   } catch {
@@ -150,6 +184,8 @@ function handleClose() {
   error.value = '';
   importedCount.value = 0;
   importing.value = false;
+  wordbookName.value = '';
+  importLanguage.value = 'fr';
   if (fileInput.value) fileInput.value.value = '';
   emit('close');
 }
@@ -158,6 +194,64 @@ function handleClose() {
 <style scoped>
 .step {
   min-height: 80px;
+}
+
+.importFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.fieldInput {
+  flex: 1;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.fieldInput:focus {
+  border-color: var(--color-accent);
+}
+
+.fieldInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.fieldSelect {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.fieldSelect:focus {
+  outline: none;
+  border-color: var(--color-accent);
 }
 
 .stepHint {
