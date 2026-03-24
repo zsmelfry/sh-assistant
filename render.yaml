@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: personal-assistant
+    name: sh-assistant
     runtime: docker
     dockerfilePath: ./deployment/Dockerfile
     dockerContext: .
