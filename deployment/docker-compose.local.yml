@@ -1,0 +1,22 @@
+# 本地验证 Docker 构建，不用于生产
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/data
+      - HOST=0.0.0.0
+      - JWT_SECRET=local-test-secret-change-me
+      - SEED_USERNAME=admin
+      - SEED_PASSWORD=admin123
+    volumes:
+      - app-data:/data
+
+volumes:
+  app-data:
