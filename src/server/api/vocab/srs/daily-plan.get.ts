@@ -1,7 +1,7 @@
 import { useDB } from '~/server/database';
 import { eq, lte, sql, inArray, and } from 'drizzle-orm';
 import { srsCards, studySessions } from '../../../database/schemas/srs';
-import { vocabProgress, vocabWords, LEARNING_STATUS } from '../../../database/schemas/vocab';
+import { vocabWords, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { NEW_WORDS_PER_SESSION, MAX_REVIEWS_PER_SESSION } from '../../../utils/srs-algorithm';
 import { formatDate } from '../../../utils/date';
 
@@ -22,10 +22,14 @@ export default defineEventHandler(async (event) => {
     .innerJoin(vocabWords, eq(srsCards.wordId, vocabWords.id))
     .where(and(lte(srsCards.nextReviewAt, now), eq(vocabWords.wordbookId, activeWordbook.id)));
 
-  // 获取已掌握单词 ID 集合
-  const masteredProgress = await db.select({ wordId: vocabProgress.wordId })
-    .from(vocabProgress)
-    .where(eq(vocabProgress.learningStatus, LEARNING_STATUS.MASTERED));
+  // 获取已掌握单词 ID 集合（限定活跃词汇本）
+  const masteredProgress = await db.all(sql`
+    SELECT p.word_id as wordId
+    FROM vocab_progress p
+    INNER JOIN vocab_words w ON p.word_id = w.id
+    WHERE p.learning_status = ${LEARNING_STATUS.MASTERED}
+      AND w.wordbook_id = ${activeWordbook.id}
+  `) as Array<{ wordId: number }>;
   const masteredWordIds = new Set(masteredProgress.map(p => p.wordId));
 
   // 过滤：已到复习时间 + 已学过（repetitions > 0）+ 未掌握
@@ -49,9 +53,13 @@ export default defineEventHandler(async (event) => {
   // 3. 获取新词（从 LEARNING 状态中取还没有 SRS 卡片的，限定活跃词汇本）
   let newWords: Array<{ id: number; rank: number; word: string }> = [];
   if (remainingNewWords > 0) {
-    // 已有 SRS 卡片的 wordId
-    const existingCardWords = await db.select({ wordId: srsCards.wordId })
-      .from(srsCards);
+    // 已有 SRS 卡片的 wordId（限定活跃词汇本）
+    const existingCardWords = await db.all(sql`
+      SELECT s.word_id as wordId
+      FROM srs_cards s
+      INNER JOIN vocab_words w ON s.word_id = w.id
+      WHERE w.wordbook_id = ${activeWordbook.id}
+    `) as Array<{ wordId: number }>;
     const existingWordIds = new Set(existingCardWords.map(c => c.wordId));
 
     // LEARNING 状态的 wordId（限定活跃词汇本）

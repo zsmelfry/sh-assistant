@@ -1,7 +1,7 @@
 import { useDB } from '~/server/database';
 import { eq, sql, gte } from 'drizzle-orm';
-import { reviewLogs, studySessions } from '../../../database/schemas/srs';
-import { vocabProgress, LEARNING_STATUS } from '../../../database/schemas/vocab';
+import { studySessions } from '../../../database/schemas/srs';
+import { LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { formatDate } from '../../../utils/date';
 
 export default defineEventHandler(async (event) => {
@@ -40,11 +40,15 @@ export default defineEventHandler(async (event) => {
     .limit(1);
   const todaySession = sessionResult[0] || null;
 
-  // 3. 最近 7 天复习日志
+  // 3. 最近 7 天复习日志（限定活跃词汇本）
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const recentLogs = await db.select()
-    .from(reviewLogs)
-    .where(gte(reviewLogs.reviewedAt, sevenDaysAgo));
+  const recentLogs = await db.all(sql`
+    SELECT r.*
+    FROM review_logs r
+    INNER JOIN vocab_words w ON r.word_id = w.id
+    WHERE r.reviewed_at >= ${sevenDaysAgo}
+      AND w.wordbook_id = ${activeWordbook.id}
+  `) as Array<{ reviewedAt: number; quality: number }>;
 
   // 按天分组统计
   const dailyStats: Record<string, { reviews: number; avgQuality: number }> = {};
@@ -62,6 +66,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // 4. 最近 7 天会话
+  // TODO: studySessions cannot be scoped by wordbook without a schema change
+  // (study_sessions table has no wordbook_id column). Known limitation.
   const recentSessions = await db.select()
     .from(studySessions)
     .where(gte(studySessions.startedAt, sevenDaysAgo));

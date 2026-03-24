@@ -1,7 +1,7 @@
 import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { definitions } from '../../../database/schemas/srs';
-import { vocabWords, vocabSettings, wordbooks } from '../../../database/schemas/vocab';
+import { vocabWords, vocabSettings } from '../../../database/schemas/vocab';
 import { translateWord, cacheDefinition } from '../../../utils/translate-word';
 import { requireNumericParam } from '~/server/utils/handler-helpers';
 

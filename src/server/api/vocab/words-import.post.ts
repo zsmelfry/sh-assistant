@@ -111,6 +111,7 @@ export default defineEventHandler(async (event) => {
 
         // Update wordbook metadata
         tx.update(wordbooks).set({
+          ...(wordbookName ? { name: wordbookName } : {}),
           language,
           wordCount: words.length,
           isActive: true,
