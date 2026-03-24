@@ -6,6 +6,9 @@
         <button class="toolbarBtn" @click="showImportModal = true">
           导入 CSV
         </button>
+        <button class="toolbarBtn" @click="showSettings = !showSettings" :class="{ active: showSettings }">
+          设置
+        </button>
       </div>
     </div>
 
@@ -26,29 +29,58 @@
 
     <!-- 主内容（有用户有词汇） -->
     <template v-else>
-      <!-- Tab 切换 -->
-      <div class="mainTabs">
-        <button
-          class="mainTab"
-          :class="{ active: activeTab === 'vocab' }"
-          @click="activeTab = 'vocab'"
-        >
-          词汇列表
+      <!-- Tab 切换 + 设置 -->
+      <div class="tabRow">
+        <div class="mainTabs">
+          <button
+            class="mainTab"
+            :class="{ active: activeTab === 'vocab' }"
+            @click="activeTab = 'vocab'"
+          >
+            词汇列表
+          </button>
+          <button
+            class="mainTab"
+            :class="{ active: activeTab === 'study' }"
+            @click="activeTab = 'study'"
+          >
+            学习模式
+          </button>
+          <button
+            class="mainTab"
+            :class="{ active: activeTab === 'categorize' }"
+            @click="activeTab = 'categorize'"
+          >
+            快速分类
+          </button>
+        </div>
+        <button class="toolbarBtn" :class="{ active: showSettings }" @click="showSettings = !showSettings">
+          设置
         </button>
-        <button
-          class="mainTab"
-          :class="{ active: activeTab === 'study' }"
-          @click="activeTab = 'study'"
-        >
-          学习模式
-        </button>
-        <button
-          class="mainTab"
-          :class="{ active: activeTab === 'categorize' }"
-          @click="activeTab = 'categorize'"
-        >
-          快速分类
-        </button>
+      </div>
+
+      <!-- 设置面板 -->
+      <div v-if="showSettings" class="settingsPanel">
+        <div class="settingsField">
+          <label class="settingsLabel">例句兴趣语境</label>
+          <div class="settingsInputRow">
+            <input
+              v-model="interestContextInput"
+              class="settingsInput"
+              type="text"
+              maxlength="20"
+              placeholder="例如：足球、烹饪、音乐、旅行"
+            />
+            <button
+              class="settingsSaveBtn"
+              :disabled="isSavingSettings"
+              @click="saveInterestContext"
+            >
+              {{ isSavingSettings ? '保存中...' : '保存' }}
+            </button>
+          </div>
+          <p class="settingsHint">设置后新生成的例句会尝试使用该语境，已有释义需手动刷新</p>
+        </div>
       </div>
 
       <!-- 词汇列表 Tab -->
@@ -86,7 +118,28 @@ const store = useVocabStore();
 
 const activeTab = ref<'vocab' | 'study' | 'categorize'>('vocab');
 const showImportModal = ref(false);
+const showSettings = ref(false);
 const initError = ref('');
+
+// Settings state
+const interestContextInput = ref('');
+const isSavingSettings = ref(false);
+
+// Sync input with store when settings panel opens
+watch(showSettings, (val) => {
+  if (val) {
+    interestContextInput.value = store.interestContext;
+  }
+});
+
+async function saveInterestContext() {
+  isSavingSettings.value = true;
+  try {
+    await store.updateInterestContext(interestContextInput.value);
+  } finally {
+    isSavingSettings.value = false;
+  }
+}
 
 function handleReload() {
   globalThis.location.reload();
@@ -147,6 +200,88 @@ onMounted(async () => {
 
 .toolbarBtn:hover {
   background-color: var(--color-bg-hover);
+}
+
+.toolbarBtn.active {
+  background-color: var(--color-accent);
+  color: var(--color-accent-inverse);
+}
+
+.tabRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.settingsPanel {
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+}
+
+.settingsField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.settingsLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.settingsInputRow {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.settingsInput {
+  flex: 1;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.settingsInput:focus {
+  border-color: var(--color-accent);
+}
+
+.settingsInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.settingsSaveBtn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-accent);
+  color: var(--color-accent-inverse);
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+  white-space: nowrap;
+}
+
+.settingsSaveBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.settingsSaveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settingsHint {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
 }
 
 .mainTabs {
@@ -230,6 +365,10 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .vocabTracker {
   }
+  .tabRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .mainTabs {
     display: flex;
     width: 100%;
@@ -246,6 +385,12 @@ onMounted(async () => {
   .primaryBtn {
     min-height: var(--touch-target-min);
     width: 100%;
+  }
+  .settingsInputRow {
+    flex-direction: column;
+  }
+  .settingsSaveBtn {
+    min-height: var(--touch-target-min);
   }
 }
 </style>

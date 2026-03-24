@@ -28,6 +28,9 @@ export const useVocabStore = defineStore('vocab', () => {
   const selectedCount = computed(() => selectedWordIds.value.size);
   const someSelected = computed(() => selectedWordIds.value.size > 0);
 
+  // ===== 设置 =====
+  const interestContext = ref('');
+
   // ===== 统计 & 图表 =====
   const stats = ref<Stats>({ total: 0, unread: 0, toLearn: 0, learning: 0, mastered: 0 });
   const chartData = ref<ChartDataPoint[]>([]);
@@ -85,8 +88,25 @@ export const useVocabStore = defineStore('vocab', () => {
     chartData.value = Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  async function loadSettings() {
+    try {
+      const result = await $fetch<Record<string, string>>('/api/vocab/settings');
+      interestContext.value = result.example_interest_context ?? '';
+    } catch {
+      // Settings are non-critical, don't block initialization
+    }
+  }
+
+  async function updateInterestContext(value: string) {
+    await $fetch('/api/vocab/settings', {
+      method: 'PUT',
+      body: { key: 'example_interest_context', value },
+    });
+    interestContext.value = value;
+  }
+
   async function initialize() {
-    await Promise.all([loadStats(), loadWords(), loadChartData()]);
+    await Promise.all([loadStats(), loadWords(), loadChartData(), loadSettings()]);
   }
 
   async function refreshAll() {
@@ -188,12 +208,16 @@ export const useVocabStore = defineStore('vocab', () => {
     isLoading, hasWords, totalPages,
     // 选择
     selectedWordIds, selectedCount, someSelected,
+    // 设置
+    interestContext,
     // 统计
     stats, chartData,
     // 词汇操作
     initialize, refreshAll, loadWords, loadStats, loadChartData,
     setFilter, setSearch, setPage,
     updateWordStatus, batchUpdateStatus, importWords,
+    // 设置操作
+    loadSettings, updateInterestContext,
     // 选择操作
     toggleSelection, clearSelection, isSelected,
   };
