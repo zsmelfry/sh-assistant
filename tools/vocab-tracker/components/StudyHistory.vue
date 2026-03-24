@@ -24,11 +24,11 @@
       </button>
     </div>
 
-    <!-- Loading -->
-    <div v-if="isLoading" class="loadingState">加载中...</div>
+    <!-- Loading (only show when no data yet) -->
+    <div v-if="isLoading && wordList.length === 0" class="loadingState">加载中...</div>
 
     <!-- Word list -->
-    <div v-else-if="filteredList.length > 0" class="wordList">
+    <div v-else-if="filteredList.length > 0" class="wordList" :class="{ dimmed: isLoading }">
       <div
         v-for="item in paginatedList"
         :key="item.cardId"
@@ -65,7 +65,7 @@
     </div>
 
     <!-- Empty state -->
-    <div v-else class="emptyState">
+    <div v-else-if="!isLoading" class="emptyState">
       <p>{{ searchQuery ? '未找到匹配的单词' : '暂无学习记录，请先开始背单词' }}</p>
     </div>
 
@@ -171,12 +171,9 @@ function openDetail(item: CardItem) {
 }
 
 async function loadCards() {
-  if (!vocabStore.currentUserId) return;
   isLoading.value = true;
   try {
-    const cards = await $fetch<CardItem[]>('/api/vocab/srs/cards', {
-      params: { userId: vocabStore.currentUserId },
-    });
+    const cards = await $fetch<CardItem[]>('/api/vocab/srs/cards');
     wordList.value = cards;
   } catch {
     wordList.value = [];
@@ -251,6 +248,11 @@ onMounted(loadCards);
   padding: var(--spacing-xl) 0;
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.wordList.dimmed {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .wordList {

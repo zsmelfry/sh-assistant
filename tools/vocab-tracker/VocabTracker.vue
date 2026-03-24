@@ -52,21 +52,21 @@
       </div>
 
       <!-- 词汇列表 Tab -->
-      <template v-if="activeTab === 'vocab'">
+      <div v-show="activeTab === 'vocab'" class="tabContent">
         <StatsPanel />
         <ProgressChart />
         <VocabList />
-      </template>
+      </div>
 
       <!-- 学习模式 Tab -->
-      <template v-else-if="activeTab === 'study'">
+      <div v-show="activeTab === 'study'" class="tabContent">
         <StudyView />
-      </template>
+      </div>
 
       <!-- 快速分类 Tab -->
-      <template v-else-if="activeTab === 'categorize'">
+      <div v-show="activeTab === 'categorize'" class="tabContent">
         <CategorizeView />
-      </template>
+      </div>
     </template>
 
     <!-- 模态框 -->
@@ -178,6 +178,12 @@ onMounted(async () => {
 
 .mainTab:hover:not(.active) {
   background-color: var(--color-bg-hover);
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .emptyState {

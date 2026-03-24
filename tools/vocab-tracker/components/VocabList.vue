@@ -2,16 +2,16 @@
   <div class="vocabList">
     <FilterBar />
 
-    <div v-if="store.isLoading" class="loading">
+    <div v-if="store.isLoading && store.words.length === 0" class="loading">
       加载中...
     </div>
 
-    <div v-else-if="store.words.length === 0" class="empty">
+    <div v-else-if="!store.isLoading && store.words.length === 0" class="empty">
       {{ store.searchQuery ? '没有找到匹配的词汇' : '暂无词汇数据' }}
     </div>
 
     <template v-else>
-      <div class="wordList">
+      <div class="wordList" :class="{ loading: store.isLoading }">
         <VocabItem
           v-for="word in store.words"
           :key="word.id"
@@ -39,6 +39,7 @@ const store = useVocabStore();
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  min-height: 200px;
 }
 
 .wordList {
@@ -47,11 +48,22 @@ const store = useVocabStore();
   gap: var(--spacing-xs);
 }
 
-.loading,
+.loading {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
 .empty {
   text-align: center;
   padding: var(--spacing-xl) 0;
   color: var(--color-text-secondary);
   font-size: 14px;
+}
+
+.wordList.loading {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>

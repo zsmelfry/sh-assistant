@@ -19,12 +19,12 @@
     </div>
 
     <!-- History tab -->
-    <template v-if="subTab === 'history'">
+    <div v-show="subTab === 'history'">
       <StudyHistory />
-    </template>
+    </div>
 
     <!-- Today tab -->
-    <template v-else>
+    <div v-show="subTab === 'today'" class="todayContent">
       <!-- Loading -->
       <div v-if="studyStore.isLoading" class="loadingState">
         <div class="spinner"></div>
@@ -95,7 +95,7 @@
           </button>
         </div>
       </template>
-    </template>
+    </div>
 
     <!-- Word chat drawer -->
     <WordChat
@@ -171,6 +171,12 @@ async function handleStartSession() {
 
 .subTab:hover:not(.active) {
   background-color: var(--color-bg-hover);
+}
+
+.todayContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .loadingState {

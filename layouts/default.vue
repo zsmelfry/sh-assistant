@@ -32,7 +32,8 @@ onMounted(() => {
 }
 .main {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   padding: var(--spacing-lg);
 }
 

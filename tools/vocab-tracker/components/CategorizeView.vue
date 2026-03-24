@@ -11,7 +11,7 @@
       加载中...
     </div>
 
-    <div v-else-if="localWords.length === 0" class="catEmpty">
+    <div v-else-if="!loading && localWords.length === 0" class="catEmpty">
       <template v-if="unreadTotal > 0">
         当前页已分类完成
         <button class="refreshBtn" @click="reload">加载下一批</button>
@@ -105,12 +105,10 @@ const allSelected = computed(() =>
 );
 
 async function loadWords() {
-  if (!store.currentUserId) return;
   loading.value = true;
   try {
     const result = await $fetch<WordListResponse>('/api/vocab/words', {
       params: {
-        userId: store.currentUserId,
         filter: 'unread',
         page: currentPage.value,
         pageSize,
@@ -153,7 +151,6 @@ function toggleSelectAll() {
 }
 
 async function categorizeOne(wordId: number, action: StatusAction) {
-  if (!store.currentUserId) return;
 
   // Save state for rollback
   const prevWords = localWords.value;
@@ -172,7 +169,7 @@ async function categorizeOne(wordId: number, action: StatusAction) {
   try {
     await $fetch('/api/vocab/progress/status', {
       method: 'POST',
-      body: { userId: store.currentUserId, wordId, action },
+      body: { wordId, action },
     });
 
     // Auto-reload when list is empty and there are more words
@@ -190,7 +187,7 @@ async function categorizeOne(wordId: number, action: StatusAction) {
 }
 
 async function batchAction(action: StatusAction) {
-  if (!store.currentUserId || selectedIds.value.size === 0) return;
+  if (selectedIds.value.size === 0) return;
 
   const ids = Array.from(selectedIds.value);
 
@@ -209,7 +206,7 @@ async function batchAction(action: StatusAction) {
   try {
     await $fetch('/api/vocab/progress/batch', {
       method: 'POST',
-      body: { userId: store.currentUserId, wordIds: ids, action },
+      body: { wordIds: ids, action },
     });
 
     // Auto-reload when list is empty and there are more words

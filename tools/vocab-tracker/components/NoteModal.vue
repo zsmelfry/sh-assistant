@@ -48,7 +48,6 @@ async function handleSave() {
     await $fetch('/api/vocab/progress/status', {
       method: 'POST',
       body: {
-        userId: useVocabStore().currentUserId,
         wordId: props.wordId,
         action: 'UPDATE_NOTE',
         note: noteText.value,
