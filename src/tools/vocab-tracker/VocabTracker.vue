@@ -367,8 +367,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .vocabTracker {
-  }
   .tabRow {
     flex-direction: column;
     align-items: stretch;

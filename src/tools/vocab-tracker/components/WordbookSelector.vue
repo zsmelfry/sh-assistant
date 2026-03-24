@@ -100,7 +100,11 @@ async function handleCreate() {
 
 async function handleDelete(wb: { id: number; name: string }) {
   if (!confirm(`确定删除词汇本「${wb.name}」？该操作不可恢复。`)) return;
-  await store.deleteWordbook(wb.id);
+  try {
+    await store.deleteWordbook(wb.id);
+  } catch {
+    alert('删除词汇本失败，请稍后重试。');
+  }
 }
 </script>
 
