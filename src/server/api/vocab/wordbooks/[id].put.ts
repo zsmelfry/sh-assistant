@@ -6,8 +6,8 @@ export default defineEventHandler(async (event) => {
   const db = useDB(event);
   const id = Number(getRouterParam(event, 'id'));
 
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: 'Invalid wordbook id' });
+  if (!Number.isInteger(id) || id <= 0) {
+    throw createError({ statusCode: 400, message: '无效的词汇本ID' });
   }
 
   // Validate wordbook exists
@@ -18,6 +18,9 @@ export default defineEventHandler(async (event) => {
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     throw createError({ statusCode: 400, message: 'name is required' });
+  }
+  if (name.trim().length > 100) {
+    throw createError({ statusCode: 400, message: '词汇本名称不能超过100个字符' });
   }
 
   const updated = db.update(wordbooks)

@@ -7,26 +7,26 @@ export default defineEventHandler(async (event) => {
   const db = useDB(event);
   const id = Number(getRouterParam(event, 'id'));
 
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, message: 'Invalid wordbook id' });
-  }
-
-  // Validate wordbook exists
-  const wordbook = getWordbookById(db, id);
-
-  // Cannot delete the active wordbook
-  if (wordbook.isActive) {
-    throw createError({ statusCode: 400, message: '不能删除当前活跃的词汇本' });
-  }
-
-  // Cannot delete if it's the only wordbook
-  const allWordbooks = db.select().from(wordbooks).all();
-  if (allWordbooks.length <= 1) {
-    throw createError({ statusCode: 400, message: '不能删除唯一的词汇本' });
+  if (!Number.isInteger(id) || id <= 0) {
+    throw createError({ statusCode: 400, message: '无效的词汇本ID' });
   }
 
   // Delete in transaction: cascade delete related data for words in this wordbook
   db.transaction((tx) => {
+    // Validate wordbook exists (inside transaction to prevent race conditions)
+    const wordbook = getWordbookById(tx, id);
+
+    // Cannot delete the active wordbook
+    if (wordbook.isActive) {
+      throw createError({ statusCode: 400, message: '不能删除当前活跃的词汇本' });
+    }
+
+    // Cannot delete if it's the only wordbook
+    const allWordbooks = tx.select().from(wordbooks).all();
+    if (allWordbooks.length <= 1) {
+      throw createError({ statusCode: 400, message: '不能删除唯一的词汇本' });
+    }
+
     // Get all word IDs in this wordbook
     const wordRows = tx.select({ id: vocabWords.id })
       .from(vocabWords)
