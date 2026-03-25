@@ -279,13 +279,16 @@ test.describe('Wordbooks API - DELETE /api/vocab/wordbooks/[id]', () => {
     const token = await getAuthToken(request);
     await enableMultiWordbook(request);
 
-    // Import English words (creates a new English wordbook, becomes active)
+    // First fill the default French wordbook so it's not empty
+    await importFrenchWords(request, token);
+
+    // Import English words (default French wb now has words, so this creates a new English wordbook)
     await importEnglishWords(request, token, 'English Words');
 
     const listRes = await authFetch(request, token, 'GET', '/api/vocab/wordbooks');
     const { wordbooks: wbs } = await listRes.json();
 
-    // The default French wordbook from migration is not active now
+    // The French wordbook is not active now (English is active)
     const frenchWb = wbs.find((wb: any) => wb.language === 'fr' && !wb.isActive);
     expect(frenchWb).toBeDefined();
 
