@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 
 // ── Admin DB: 仅认证 + 模块权限 ──
 
@@ -32,7 +32,9 @@ export const loginLogs = sqliteTable('login_logs', {
   method: text('method', { enum: ['password', 'token'] }).notNull(),
   ip: text('ip'),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
-});
+}, (table) => [
+  index('idx_login_logs_user_created').on(table.userId, table.createdAt),
+]);
 
 // Type exports
 export type User = typeof users.$inferSelect;

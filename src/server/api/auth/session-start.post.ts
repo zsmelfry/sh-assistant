@@ -10,13 +10,17 @@ export default defineEventHandler((event) => {
   const db = useAdminDB();
   const ip = getRequestIP(event, { xForwardedFor: true }) || getHeader(event, 'x-forwarded-for') || 'unknown';
 
-  db.insert(loginLogs).values({
-    userId: auth.userId,
-    username: auth.username,
-    method: 'token',
-    ip,
-    createdAt: Date.now(),
-  }).run();
+  try {
+    db.insert(loginLogs).values({
+      userId: auth.userId,
+      username: auth.username,
+      method: 'token',
+      ip,
+      createdAt: Date.now(),
+    }).run();
+  } catch (e) {
+    console.error('Failed to log session start:', e);
+  }
 
   return { success: true };
 });

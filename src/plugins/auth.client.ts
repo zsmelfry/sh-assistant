@@ -4,11 +4,6 @@ export default defineNuxtPlugin(() => {
   // Initialize auth state from localStorage
   init();
 
-  // Log session start (fire-and-forget)
-  if (getToken()) {
-    $fetch('/api/auth/session-start', { method: 'POST' }).catch(() => {});
-  }
-
   // Intercept all $fetch requests: attach token + handle 401
   globalThis.$fetch = globalThis.$fetch.create({
     onRequest({ options }) {
@@ -31,4 +26,9 @@ export default defineNuxtPlugin(() => {
       }
     },
   });
+
+  // Log session start after interceptor is set up (fire-and-forget)
+  if (getToken()) {
+    $fetch('/api/auth/session-start', { method: 'POST' }).catch(() => {});
+  }
 });

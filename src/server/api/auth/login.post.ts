@@ -94,14 +94,18 @@ export default defineEventHandler(async (event) => {
     .map((m) => m.moduleId);
 
   // Log login (fire-and-forget)
-  const ip = getRequestIP(event, { xForwardedFor: true }) || getHeader(event, 'x-forwarded-for') || 'unknown';
-  db.insert(loginLogs).values({
-    userId: user.id,
-    username: user.username,
-    method: 'password',
-    ip,
-    createdAt: Date.now(),
-  }).run();
+  try {
+    const ip = getRequestIP(event, { xForwardedFor: true }) || getHeader(event, 'x-forwarded-for') || 'unknown';
+    db.insert(loginLogs).values({
+      userId: user.id,
+      username: user.username,
+      method: 'password',
+      ip,
+      createdAt: Date.now(),
+    }).run();
+  } catch (e) {
+    console.error('Failed to log login:', e);
+  }
 
   return { token, role: user.role, enabledModules };
 });
