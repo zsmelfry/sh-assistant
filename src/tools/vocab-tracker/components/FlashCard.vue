@@ -34,7 +34,13 @@
               <SpeakButton :text="card.word" size="md" :lang="vocabStore.activeLanguageTts" />
             </div>
 
-            <template v-if="!card.definition">
+            <template v-if="card.definitionError">
+              <div class="loadingDef">
+                <p>加载失败</p>
+                <button class="retryBtn" @click.stop="studyStore.retryDefinition()">重试</button>
+              </div>
+            </template>
+            <template v-else-if="!card.definition">
               <div class="loadingDef">
                 <div class="spinner"></div>
                 <p>释义加载中...</p>
@@ -261,6 +267,21 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
   padding: var(--spacing-md) 0;
   color: var(--color-text-secondary);
   font-size: 13px;
+}
+
+.retryBtn {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.retryBtn:hover {
+  background-color: var(--color-bg-hover);
 }
 
 .spinner {

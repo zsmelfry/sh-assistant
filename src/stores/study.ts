@@ -27,6 +27,7 @@ export interface StudyCard {
   cardId?: number;
   isNew: boolean;
   definition: Definition | null;
+  definitionError?: boolean;
 }
 
 export interface Definition {
@@ -103,6 +104,14 @@ export const useStudyStore = defineStore('study', () => {
     overview.value = await $fetch<StudyOverview>('/api/vocab/srs/overview');
   }
 
+  // Retry loading definition for the current card
+  async function retryDefinition(): Promise<void> {
+    const card = cardQueue.value[currentIndex.value];
+    if (!card) return;
+    cardQueue.value[currentIndex.value] = { ...card, definition: null, definitionError: false };
+    await loadDefinitionForCard(currentIndex.value);
+  }
+
   // Load definition for a card (with caching)
   async function loadDefinitionForCard(index: number): Promise<void> {
     const card = cardQueue.value[index];
@@ -112,7 +121,7 @@ export const useStudyStore = defineStore('study', () => {
       const def = await $fetch<Definition>(`/api/vocab/definitions/${card.wordId}`);
       cardQueue.value[index] = { ...card, definition: def };
     } catch {
-      // Silent: definition load failure is non-critical
+      cardQueue.value[index] = { ...card, definitionError: true };
     }
   }
 
@@ -245,11 +254,10 @@ export const useStudyStore = defineStore('study', () => {
     error.value = null;
   }
 
-  // Reload overview when active wordbook changes
+  // Reset session and reload overview when active wordbook changes
   watch(() => vocabStore.activeWordbookId, () => {
-    if (overview.value) {
-      loadOverview();
-    }
+    resetSession();
+    overview.value = null;
   });
 
   return {
@@ -271,5 +279,6 @@ export const useStudyStore = defineStore('study', () => {
     rateCard,
     nextCard,
     resetSession,
+    retryDefinition,
   };
 });
