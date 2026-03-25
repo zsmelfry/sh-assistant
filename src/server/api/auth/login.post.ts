@@ -3,46 +3,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { useAdminDB } from '~/server/database';
 import { users, userModules, loginLogs } from '~/server/database/admin-schema';
+import { createRateLimiter } from '~/server/utils/rate-limiter';
 
-// ── Rate limiting: per-username, 5 attempts per 15 minutes ──
-const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
-function checkRateLimit(username: string): void {
-  const now = Date.now();
-  const record = loginAttempts.get(username);
-
-  if (record) {
-    // Reset window if expired
-    if (now - record.firstAttempt > WINDOW_MS) {
-      loginAttempts.delete(username);
-      return;
-    }
-    if (record.count >= MAX_ATTEMPTS) {
-      const remainingSec = Math.ceil((WINDOW_MS - (now - record.firstAttempt)) / 1000);
-      throw createError({
-        statusCode: 429,
-        message: `登录尝试次数过多，请 ${Math.ceil(remainingSec / 60)} 分钟后再试`,
-      });
-    }
-  }
-}
-
-function recordFailedAttempt(username: string): void {
-  const now = Date.now();
-  const record = loginAttempts.get(username);
-
-  if (!record || now - record.firstAttempt > WINDOW_MS) {
-    loginAttempts.set(username, { count: 1, firstAttempt: now });
-  } else {
-    record.count++;
-  }
-}
-
-function clearAttempts(username: string): void {
-  loginAttempts.delete(username);
-}
+// ── Rate limiting: 5 attempts per 15 minutes per username ──
+const loginRateLimiter = createRateLimiter({
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+});
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -52,7 +19,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const username = body.username.trim();
-  checkRateLimit(username);
+  loginRateLimiter.check(username);
 
   const db = useAdminDB();
   const [user] = await db.select()
@@ -61,17 +28,17 @@ export default defineEventHandler(async (event) => {
     .limit(1);
 
   if (!user) {
-    recordFailedAttempt(username);
+    loginRateLimiter.record(username);
     throw createError({ statusCode: 401, message: '用户名或密码错误' });
   }
 
   const valid = await bcrypt.compare(body.password, user.passwordHash);
   if (!valid) {
-    recordFailedAttempt(username);
+    loginRateLimiter.record(username);
     throw createError({ statusCode: 401, message: '用户名或密码错误' });
   }
 
-  clearAttempts(username);
+  loginRateLimiter.clear(username);
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {
