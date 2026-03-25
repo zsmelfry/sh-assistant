@@ -8,7 +8,7 @@
           </div>
           <div>
             <h2>控制台</h2>
-            <p class="header-subtitle">用户管理 / 系统设置</p>
+            <p class="header-subtitle">用户管理</p>
           </div>
         </div>
         <button class="btn-add-user" @click="showCreateForm = true">
@@ -20,8 +20,6 @@
     </header>
 
     <div class="admin-body">
-      <SystemSettings class="admin-section" />
-
       <section class="admin-section">
         <div class="section-card">
           <div class="section-card-header">
@@ -49,6 +47,7 @@
               @delete="confirmDelete"
               @reset-password="openResetPassword"
               @module-change="handleModuleChange"
+              @vocab-setting-change="handleVocabSettingChange"
             />
           </div>
         </div>
@@ -75,8 +74,6 @@
 import { Shield, Users, UserPlus } from 'lucide-vue-next';
 import UserList from './components/UserList.vue';
 import UserForm from './components/UserForm.vue';
-import SystemSettings from './components/SystemSettings.vue';
-
 interface AdminUser {
   id: number;
   username: string;
@@ -84,6 +81,7 @@ interface AdminUser {
   createdAt: number;
   dbSize: number | null;
   modules: Array<{ moduleId: string; enabled: boolean }>;
+  multiWordbookEnabled: boolean;
 }
 
 const userList = ref<AdminUser[]>([]);
@@ -132,6 +130,18 @@ async function handleModuleChange(userId: number, moduleId: string, enabled: boo
     await fetchUsers();
   } catch (e: any) {
     alert(e?.data?.message || '更新权限失败');
+  }
+}
+
+async function handleVocabSettingChange(userId: number, key: string, value: string) {
+  try {
+    await $fetch(`/api/admin/users/${userId}/vocab-settings`, {
+      method: 'PUT',
+      body: { key, value },
+    });
+    await fetchUsers();
+  } catch (e: any) {
+    alert(e?.data?.message || '更新设置失败');
   }
 }
 

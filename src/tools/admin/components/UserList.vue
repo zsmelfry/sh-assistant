@@ -54,6 +54,27 @@
             :modules="user.modules"
             @change="(moduleId: string, enabled: boolean) => $emit('moduleChange', user.id, moduleId, enabled)"
           />
+          <div class="feature-toggles">
+            <div class="toggles-label">功能设置</div>
+            <div class="toggle-grid">
+              <div
+                class="toggle-item"
+                :class="{ enabled: user.multiWordbookEnabled }"
+                @click="$emit('vocabSettingChange', user.id, 'multi_wordbook_enabled', user.multiWordbookEnabled ? 'false' : 'true')"
+              >
+                <span class="toggle-name">多词汇本模式</span>
+                <button
+                  class="toggle-switch"
+                  :class="{ active: user.multiWordbookEnabled }"
+                  role="switch"
+                  :aria-checked="user.multiWordbookEnabled"
+                  @click.stop="$emit('vocabSettingChange', user.id, 'multi_wordbook_enabled', user.multiWordbookEnabled ? 'false' : 'true')"
+                >
+                  <span class="toggle-knob" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </Transition>
     </div>
@@ -77,6 +98,7 @@ defineProps<{
     createdAt: number;
     dbSize: number | null;
     modules: Array<{ moduleId: string; enabled: boolean }>;
+    multiWordbookEnabled: boolean;
   }>;
   expandedId: number | null;
 }>();
@@ -86,6 +108,7 @@ defineEmits<{
   delete: [user: any];
   resetPassword: [user: any];
   moduleChange: [userId: number, moduleId: string, enabled: boolean];
+  vocabSettingChange: [userId: number, key: string, value: string];
 }>();
 
 function formatDate(ts: number): string {
@@ -278,6 +301,89 @@ function formatSize(bytes: number | null): string {
     transparent
   );
   margin-bottom: var(--spacing-md);
+}
+
+/* Feature toggles */
+.feature-toggles {
+  margin-top: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.toggles-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--color-bg-primary);
+}
+
+.toggle-item:hover {
+  border-color: var(--color-text-tertiary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.toggle-item.enabled {
+  border-color: var(--color-accent);
+  background: var(--color-bg-primary);
+}
+
+.toggle-name {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--color-border);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.toggle-switch.active {
+  background: var(--color-accent);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--color-bg-primary);
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-switch.active .toggle-knob {
+  transform: translateX(16px);
 }
 
 /* Modules transition */

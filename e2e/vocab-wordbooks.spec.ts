@@ -657,3 +657,89 @@ test.describe('Wordbooks UI - Create Wordbook', () => {
     await expect(page.locator('.createForm')).not.toBeVisible();
   });
 });
+
+// ─── 10. Admin API Tests: Per-user vocab settings ───
+
+test.describe('Admin API - Per-user vocab settings', () => {
+  test('PUT /api/admin/users/[id]/vocab-settings sets value and GET reads it back', async ({ request }) => {
+    const token = await getAuthToken(request);
+
+    // Get user list to find testuser's ID
+    const usersRes = await authFetch(request, token, 'GET', '/api/admin/users');
+    expect(usersRes.ok()).toBeTruthy();
+    const userList = await usersRes.json();
+    const testUser = userList.find((u: any) => u.username === TEST_USER.username);
+    expect(testUser).toBeDefined();
+
+    // Initially multiWordbookEnabled should be false
+    const getRes1 = await authFetch(request, token, 'GET', `/api/admin/users/${testUser.id}/vocab-settings`);
+    expect(getRes1.ok()).toBeTruthy();
+    const settings1 = await getRes1.json();
+    expect(settings1.multiWordbookEnabled).toBe(false);
+
+    // Enable via PUT
+    const putRes = await authFetch(request, token, 'PUT', `/api/admin/users/${testUser.id}/vocab-settings`, {
+      key: 'multi_wordbook_enabled',
+      value: 'true',
+    });
+    expect(putRes.ok()).toBeTruthy();
+    const putBody = await putRes.json();
+    expect(putBody.ok).toBe(true);
+
+    // Read back via GET
+    const getRes2 = await authFetch(request, token, 'GET', `/api/admin/users/${testUser.id}/vocab-settings`);
+    const settings2 = await getRes2.json();
+    expect(settings2.multiWordbookEnabled).toBe(true);
+
+    // Disable via PUT
+    const putRes2 = await authFetch(request, token, 'PUT', `/api/admin/users/${testUser.id}/vocab-settings`, {
+      key: 'multi_wordbook_enabled',
+      value: 'false',
+    });
+    expect(putRes2.ok()).toBeTruthy();
+
+    // Read back — should be false
+    const getRes3 = await authFetch(request, token, 'GET', `/api/admin/users/${testUser.id}/vocab-settings`);
+    const settings3 = await getRes3.json();
+    expect(settings3.multiWordbookEnabled).toBe(false);
+  });
+
+  test('PUT /api/admin/users/[id]/vocab-settings rejects unsupported key', async ({ request }) => {
+    const token = await getAuthToken(request);
+
+    const usersRes = await authFetch(request, token, 'GET', '/api/admin/users');
+    const userList = await usersRes.json();
+    const testUser = userList.find((u: any) => u.username === TEST_USER.username);
+
+    const res = await authFetch(request, token, 'PUT', `/api/admin/users/${testUser.id}/vocab-settings`, {
+      key: 'unsupported_key',
+      value: 'whatever',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('GET /api/admin/users includes multiWordbookEnabled field', async ({ request }) => {
+    const token = await getAuthToken(request);
+
+    // Enable multi-wordbook for testuser via test endpoint
+    await enableMultiWordbook(request);
+
+    // Fetch users list
+    const usersRes = await authFetch(request, token, 'GET', '/api/admin/users');
+    expect(usersRes.ok()).toBeTruthy();
+    const userList = await usersRes.json();
+    const testUser = userList.find((u: any) => u.username === TEST_USER.username);
+    expect(testUser).toBeDefined();
+    expect(testUser.multiWordbookEnabled).toBe(true);
+  });
+
+  test('PUT /api/admin/users/[id]/vocab-settings returns 404 for non-existent user', async ({ request }) => {
+    const token = await getAuthToken(request);
+
+    const res = await authFetch(request, token, 'PUT', '/api/admin/users/99999/vocab-settings', {
+      key: 'multi_wordbook_enabled',
+      value: 'true',
+    });
+    expect(res.status()).toBe(404);
+  });
+});

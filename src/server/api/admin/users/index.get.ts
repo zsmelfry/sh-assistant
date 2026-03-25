@@ -1,7 +1,9 @@
 import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { useAdminDB } from '~/server/database';
+import { eq } from 'drizzle-orm';
+import { useAdminDB, useUserDB } from '~/server/database';
 import { users, userModules } from '~/server/database/admin-schema';
+import { vocabSettings } from '~/server/database/schemas/vocab';
 import { getDataDir } from '~/server/utils/data-dir';
 
 export default defineEventHandler(async () => {
@@ -23,6 +25,14 @@ export default defineEventHandler(async () => {
       dbSize = stat.size;
     } catch { /* file may not exist */ }
 
+    // Read multi_wordbook_enabled from user's personal DB
+    let multiWordbookEnabled = false;
+    try {
+      const userDb = useUserDB(u.username);
+      const rows = await userDb.select().from(vocabSettings).where(eq(vocabSettings.key, 'multi_wordbook_enabled')).limit(1);
+      multiWordbookEnabled = rows.length > 0 && rows[0].value === 'true';
+    } catch { /* user DB may not exist yet */ }
+
     return {
       id: u.id,
       username: u.username,
@@ -30,6 +40,7 @@ export default defineEventHandler(async () => {
       createdAt: u.createdAt,
       modules,
       dbSize,
+      multiWordbookEnabled,
     };
   });
 });
