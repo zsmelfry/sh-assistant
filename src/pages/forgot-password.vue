@@ -1,78 +1,73 @@
 <template>
   <div class="login-card">
     <h1 class="login-title">个人助手</h1>
-    <p class="login-subtitle">请登录以继续</p>
+    <p class="login-subtitle">重置密码</p>
 
-    <form class="login-form" @submit.prevent="handleSubmit">
-      <div class="field">
-        <label class="field-label" for="email">邮箱</label>
-        <input
-          id="email"
-          v-model="email"
-          type="email"
-          class="field-input"
-          autocomplete="email"
-          :disabled="loading"
-          @input="error = ''"
-        />
-      </div>
+    <!-- Success state -->
+    <div v-if="submitted" class="success-state">
+      <p class="success-msg">如果该邮箱已注册，我们已发送重置链接到您的邮箱。</p>
+      <p class="success-hint">请检查您的收件箱（包括垃圾邮件文件夹）。</p>
+      <NuxtLink to="/login" class="back-link">返回登录</NuxtLink>
+    </div>
 
-      <div class="field">
-        <label class="field-label" for="password">密码</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          class="field-input"
-          autocomplete="current-password"
-          :disabled="loading"
-          @input="error = ''"
-        />
-      </div>
+    <!-- Form state -->
+    <template v-else>
+      <form class="login-form" @submit.prevent="handleSubmit">
+        <div class="field">
+          <label class="field-label" for="email">邮箱</label>
+          <input
+            id="email"
+            v-model="email"
+            type="email"
+            class="field-input"
+            autocomplete="email"
+            placeholder="请输入注册邮箱"
+            :disabled="loading"
+            @input="error = ''"
+          />
+        </div>
 
-      <p v-if="error" class="error-msg">{{ error }}</p>
+        <p v-if="error" class="error-msg">{{ error }}</p>
 
-      <button
-        type="submit"
-        class="submit-btn"
-        :disabled="loading || !email || !password"
-      >
-        {{ loading ? '登录中...' : '登录' }}
-      </button>
+        <button
+          type="submit"
+          class="submit-btn"
+          :disabled="loading || !email"
+        >
+          {{ loading ? '发送中...' : '发送重置链接' }}
+        </button>
 
-      <div class="form-footer">
-        <NuxtLink to="/forgot-password" class="forgot-link">忘记密码？</NuxtLink>
-      </div>
-    </form>
+        <div class="form-footer">
+          <NuxtLink to="/login" class="back-link">返回登录</NuxtLink>
+        </div>
+      </form>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { registerSkillTools } from '~/plugins/tools.client';
-
 definePageMeta({
   layout: 'auth',
 });
 
-const { login } = useAuth();
+const { forgotPassword } = useAuth();
 
 const email = ref('');
-const password = ref('');
 const error = ref('');
 const loading = ref(false);
+const submitted = ref(false);
 
 async function handleSubmit() {
-  if (!email.value || !password.value) return;
+  if (!email.value) return;
 
   loading.value = true;
   error.value = '';
 
   try {
-    await login(email.value, password.value);
-    await registerSkillTools();
-    await navigateTo('/');
+    await forgotPassword(email.value);
+    submitted.value = true;
   } catch (e: unknown) {
-    error.value = extractErrorMessage(e, '登录失败，请重试');
+    error.value = extractErrorMessage(e, '发送失败，请重试');
   } finally {
     loading.value = false;
   }
@@ -144,6 +139,22 @@ async function handleSubmit() {
   color: var(--color-danger);
 }
 
+.success-state {
+  text-align: center;
+}
+
+.success-msg {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.success-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
 .submit-btn {
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-accent);
@@ -170,13 +181,15 @@ async function handleSubmit() {
   text-align: center;
 }
 
-.forgot-link {
+.back-link {
+  display: inline-block;
+  margin-top: var(--spacing-md);
   font-size: 13px;
   color: var(--color-text-secondary);
   text-decoration: underline;
 }
 
-.forgot-link:hover {
+.back-link:hover {
   color: var(--color-text-primary);
 }
 </style>

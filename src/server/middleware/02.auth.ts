@@ -69,7 +69,9 @@ export default defineEventHandler((event) => {
     pathname.startsWith('/api/_test/') ||
     (pathname === '/api/auth/login' && event.method === 'POST') ||
     (pathname === '/api/auth/accept-invite' && event.method === 'POST') ||
-    (pathname === '/api/auth/verify-token' && event.method === 'POST')
+    (pathname === '/api/auth/verify-token' && event.method === 'POST') ||
+    (pathname === '/api/auth/forgot-password' && event.method === 'POST') ||
+    (pathname === '/api/auth/reset-password' && event.method === 'POST')
   ) {
     return;
   }
@@ -106,6 +108,7 @@ export default defineEventHandler((event) => {
     event.context.auth = {
       userId: decoded.userId,
       username: decoded.username,
+      email: decoded.email || null,
       role: authData.role,
       enabledModules: authData.enabledModules,
     };

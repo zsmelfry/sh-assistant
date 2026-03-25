@@ -5,7 +5,7 @@ import { useAdminDB } from '~/server/database';
 import { users, userModules, loginLogs } from '~/server/database/admin-schema';
 import { createRateLimiter } from '~/server/utils/rate-limiter';
 
-// ── Rate limiting: 5 attempts per 15 minutes per username ──
+// ── Rate limiting: 5 attempts per 15 minutes per email ──
 const loginRateLimiter = createRateLimiter({
   maxAttempts: 5,
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -15,31 +15,31 @@ const loginRateLimiter = createRateLimiter({
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  if (!body.username?.trim() || !body.password) {
-    throw createError({ statusCode: 400, message: '用户名和密码不能为空' });
+  if (!body.email?.trim() || !body.password) {
+    throw createError({ statusCode: 400, message: '邮箱和密码不能为空' });
   }
 
-  const username = body.username.trim();
-  loginRateLimiter.check(username);
+  const email = body.email.trim().toLowerCase();
+  loginRateLimiter.check(email);
 
   const db = useAdminDB();
   const [user] = await db.select()
     .from(users)
-    .where(eq(users.username, username))
+    .where(eq(users.email, email))
     .limit(1);
 
   if (!user) {
-    loginRateLimiter.record(username);
-    throw createError({ statusCode: 401, message: '用户名或密码错误' });
+    loginRateLimiter.record(email);
+    throw createError({ statusCode: 401, message: '邮箱或密码错误' });
   }
 
   const valid = await bcrypt.compare(body.password, user.passwordHash);
   if (!valid) {
-    loginRateLimiter.record(username);
-    throw createError({ statusCode: 401, message: '用户名或密码错误' });
+    loginRateLimiter.record(email);
+    throw createError({ statusCode: 401, message: '邮箱或密码错误' });
   }
 
-  loginRateLimiter.clear(username);
+  loginRateLimiter.clear(email);
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const token = jwt.sign(
-    { userId: user.id, username: user.username, role: user.role, tokenVersion: user.tokenVersion ?? 0 },
+    { userId: user.id, username: user.username, email: user.email, role: user.role, tokenVersion: user.tokenVersion ?? 0 },
     secret,
     { expiresIn: '30d' },
   );

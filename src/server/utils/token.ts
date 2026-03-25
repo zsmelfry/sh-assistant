@@ -3,6 +3,9 @@ import { randomBytes, createHash } from 'node:crypto';
 /** How long invite tokens remain valid (hours) */
 export const INVITE_EXPIRES_HOURS = 72;
 
+/** How long reset tokens remain valid (minutes) */
+export const RESET_EXPIRES_MINUTES = 30;
+
 /**
  * Hash a token string using SHA-256.
  * Used for storing and looking up verification tokens without storing plaintext.

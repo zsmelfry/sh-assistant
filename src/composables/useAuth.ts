@@ -25,14 +25,22 @@ export function useAuth() {
   const isAuthenticated = computed(() => !!authState.token);
 
   /** Login: call API then store token + permissions */
-  async function login(username: string, password: string) {
+  async function login(email: string, password: string) {
     const res = await $fetch<{ token: string; role: string; enabledModules: string[] }>('/api/auth/login', {
       method: 'POST',
-      body: { username, password },
+      body: { email, password },
     });
     authState.token = res.token;
     localStorage.setItem(TOKEN_KEY, res.token);
     setPermissions(res.enabledModules || [], res.role || 'user');
+  }
+
+  /** Forgot password: send reset email */
+  async function forgotPassword(email: string) {
+    await $fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
   }
 
   /** Logout: clear token, permissions, and redirect to login */
@@ -61,5 +69,5 @@ export function useAuth() {
     clearPermissions();
   }
 
-  return { init, isAuthenticated, login, logout, getToken, getAuthHeaders, clearToken };
+  return { init, isAuthenticated, login, forgotPassword, logout, getToken, getAuthHeaders, clearToken };
 }
