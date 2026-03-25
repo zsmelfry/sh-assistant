@@ -1,0 +1,1 @@
+CREATE INDEX `idx_login_logs_user_created` ON `login_logs` (`user_id`,`created_at`);
