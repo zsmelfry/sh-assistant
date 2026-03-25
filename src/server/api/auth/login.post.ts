@@ -1,11 +1,11 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { useAdminDB } from '~/server/database';
 import { users, userModules, loginLogs } from '~/server/database/admin-schema';
 import { createRateLimiter } from '~/server/utils/rate-limiter';
 
-// ── Rate limiting: 5 attempts per 15 minutes per email ──
+// ── Rate limiting: 5 attempts per 15 minutes per identifier ──
 const loginRateLimiter = createRateLimiter({
   maxAttempts: 5,
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -15,31 +15,33 @@ const loginRateLimiter = createRateLimiter({
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  if (!body.email?.trim() || !body.password) {
-    throw createError({ statusCode: 400, message: '邮箱和密码不能为空' });
+  const rawIdentifier = (body.identifier || body.email || '').trim();
+  if (!rawIdentifier || !body.password) {
+    throw createError({ statusCode: 400, message: '用户名/邮箱和密码不能为空' });
   }
 
-  const email = body.email.trim().toLowerCase();
-  loginRateLimiter.check(email);
+  const identifier = rawIdentifier.toLowerCase();
+  loginRateLimiter.check(identifier);
 
   const db = useAdminDB();
+  const isEmail = identifier.includes('@');
   const [user] = await db.select()
     .from(users)
-    .where(eq(users.email, email))
+    .where(isEmail ? eq(users.email, identifier) : eq(users.username, identifier))
     .limit(1);
 
   if (!user) {
-    loginRateLimiter.record(email);
-    throw createError({ statusCode: 401, message: '邮箱或密码错误' });
+    loginRateLimiter.record(identifier);
+    throw createError({ statusCode: 401, message: '用户名/邮箱或密码错误' });
   }
 
   const valid = await bcrypt.compare(body.password, user.passwordHash);
   if (!valid) {
-    loginRateLimiter.record(email);
-    throw createError({ statusCode: 401, message: '邮箱或密码错误' });
+    loginRateLimiter.record(identifier);
+    throw createError({ statusCode: 401, message: '用户名/邮箱或密码错误' });
   }
 
-  loginRateLimiter.clear(email);
+  loginRateLimiter.clear(identifier);
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {

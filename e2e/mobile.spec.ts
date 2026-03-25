@@ -19,7 +19,7 @@ async function resetAndSeedUser(request: APIRequestContext) {
 async function loginAndGoto(page: Page, path: string) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#email', `${TEST_USER.username}@test.local`);
+  await page.fill('#identifier', `${TEST_USER.username}@test.local`);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   await page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -331,7 +331,7 @@ test.describe('Mobile: Login Page', () => {
     }
 
     // Form elements should be visible
-    await expect(page.locator('#email')).toBeVisible();
+    await expect(page.locator('#identifier')).toBeVisible();
     await expect(page.locator('#password')).toBeVisible();
     await expect(page.locator('.submit-btn')).toBeVisible();
   });

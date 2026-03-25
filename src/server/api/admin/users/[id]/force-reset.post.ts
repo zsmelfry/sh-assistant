@@ -61,6 +61,9 @@ export default defineEventHandler(async (event) => {
 
   // Construct reset URL
   const baseUrl = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
+  if (!baseUrl) {
+    throw createError({ statusCode: 500, message: '服务器未配置 APP_BASE_URL 环境变量' });
+  }
   const resetUrl = `${baseUrl}/reset-password/${token}`;
 
   // Try send email

@@ -414,7 +414,7 @@ test.describe('Sidebar User Menu UI', () => {
     // Login via the UI
     await page.goto('/login');
     await page.waitForSelector('.login-form', { timeout: 10000 });
-    await page.fill('#email', ADMIN_EMAIL);
+    await page.fill('#identifier', ADMIN_EMAIL);
     await page.fill('#password', ADMIN_USER.password);
     await page.click('.submit-btn');
 
@@ -429,7 +429,7 @@ test.describe('Sidebar User Menu UI', () => {
     // Login via UI
     await page.goto('/login');
     await page.waitForSelector('.login-form', { timeout: 10000 });
-    await page.fill('#email', ADMIN_EMAIL);
+    await page.fill('#identifier', ADMIN_EMAIL);
     await page.fill('#password', ADMIN_USER.password);
     await page.click('.submit-btn');
 
@@ -458,7 +458,7 @@ test.describe('Admin Panel Invite Form UI', () => {
     // Login via UI
     await page.goto('/login');
     await page.waitForSelector('.login-form', { timeout: 10000 });
-    await page.fill('#email', ADMIN_EMAIL);
+    await page.fill('#identifier', ADMIN_EMAIL);
     await page.fill('#password', ADMIN_USER.password);
     await page.click('.submit-btn');
 

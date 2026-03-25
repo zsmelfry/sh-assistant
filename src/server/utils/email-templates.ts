@@ -21,7 +21,7 @@ function baseTemplate(content: string): string {
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
     .container { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 32px; }
-    .btn { display: inline-block; background: #000; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; margin: 16px 0; }
+    .btn { display: inline-block; background: #000000; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; margin: 16px 0; }
     .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 13px; color: #999; }
     .link { word-break: break-all; color: #666; font-size: 13px; }
   </style>
@@ -44,7 +44,7 @@ export function inviteEmailHtml(inviteUrl: string, expiresHours: number): string
   return baseTemplate(`
     <h2 style="margin-top:0;">您收到了一份邀请</h2>
     <p>管理员邀请您加入「个人助手」。请点击下方按钮设置您的账户：</p>
-    <p><a href="${safeUrl}" class="btn">设置账户</a></p>
+    <p><a href="${safeUrl}" class="btn" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:16px;">设置账户</a></p>
     <p class="link">如果按钮无法点击，请复制此链接到浏览器：<br>${safeUrl}</p>
     <div class="footer">
       <p>此邀请链接将在 ${expiresHours} 小时后过期。</p>
@@ -63,7 +63,7 @@ export function resetEmailHtml(resetUrl: string, expiresMinutes: number): string
   return baseTemplate(`
     <h2 style="margin-top:0;">重置密码</h2>
     <p>我们收到了重置您密码的请求。请点击下方按钮设置新密码：</p>
-    <p><a href="${safeUrl}" class="btn">重置密码</a></p>
+    <p><a href="${safeUrl}" class="btn" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:16px;">重置密码</a></p>
     <p class="link">如果按钮无法点击，请复制此链接到浏览器：<br>${safeUrl}</p>
     <div class="footer">
       <p>此链接将在 ${expiresMinutes} 分钟后过期。</p>

@@ -326,7 +326,7 @@ test.describe('Login Page UI', () => {
     await page.waitForSelector('.login-form', { timeout: 10000 });
 
     // Should have email field
-    await expect(page.locator('#email')).toBeVisible();
+    await expect(page.locator('#identifier')).toBeVisible();
     // Should NOT have username field
     await expect(page.locator('#username')).not.toBeAttached();
     // Should have password field
@@ -346,7 +346,7 @@ test.describe('Login Page UI', () => {
     await page.goto('/forgot-password');
     await page.waitForSelector('.login-form', { timeout: 10000 });
 
-    await page.fill('#email', ADMIN_EMAIL);
+    await page.fill('#identifier', ADMIN_EMAIL);
     await page.click('.submit-btn');
 
     // Wait for success state

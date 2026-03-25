@@ -25,10 +25,10 @@ export function useAuth() {
   const isAuthenticated = computed(() => !!authState.token);
 
   /** Login: call API then store token + permissions */
-  async function login(email: string, password: string) {
+  async function login(identifier: string, password: string) {
     const res = await $fetch<{ token: string; role: string; enabledModules: string[] }>('/api/auth/login', {
       method: 'POST',
-      body: { email, password },
+      body: { identifier, password },
     });
     authState.token = res.token;
     localStorage.setItem(TOKEN_KEY, res.token);

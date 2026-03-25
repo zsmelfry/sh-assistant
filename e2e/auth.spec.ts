@@ -25,7 +25,7 @@ async function resetAndSeedUser(request: APIRequestContext) {
 async function loginViaUI(page: Page, email: string, password: string) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#email', email);
+  await page.fill('#identifier', email);
   await page.fill('#password', password);
   await page.click('.submit-btn');
 }
@@ -35,7 +35,7 @@ async function loginAndGoto(page: Page, request: APIRequestContext, path: string
   await resetAndSeedUser(request);
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#email', TEST_USER.email);
+  await page.fill('#identifier', TEST_USER.email);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   // Wait for redirect to home (first tool = dashboard)

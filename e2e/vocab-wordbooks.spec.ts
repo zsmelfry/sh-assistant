@@ -70,7 +70,7 @@ async function importEnglishWords(request: APIRequestContext, token: string, wor
 async function loginAndGoToVocab(page: Page) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#email', `${TEST_USER.username}@test.local`);
+  await page.fill('#identifier', `${TEST_USER.username}@test.local`);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   await page.waitForURL('**/*', { timeout: 10000 });

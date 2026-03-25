@@ -5,13 +5,13 @@
 
     <form class="login-form" @submit.prevent="handleSubmit">
       <div class="field">
-        <label class="field-label" for="email">邮箱</label>
+        <label class="field-label" for="identifier">用户名或邮箱</label>
         <input
-          id="email"
-          v-model="email"
-          type="email"
+          id="identifier"
+          v-model="identifier"
+          type="text"
           class="field-input"
-          autocomplete="email"
+          autocomplete="username"
           :disabled="loading"
           @input="error = ''"
         />
@@ -35,7 +35,7 @@
       <button
         type="submit"
         class="submit-btn"
-        :disabled="loading || !email || !password"
+        :disabled="loading || !identifier || !password"
       >
         {{ loading ? '登录中...' : '登录' }}
       </button>
@@ -56,19 +56,19 @@ definePageMeta({
 
 const { login } = useAuth();
 
-const email = ref('');
+const identifier = ref('');
 const password = ref('');
 const error = ref('');
 const loading = ref(false);
 
 async function handleSubmit() {
-  if (!email.value || !password.value) return;
+  if (!identifier.value || !password.value) return;
 
   loading.value = true;
   error.value = '';
 
   try {
-    await login(email.value, password.value);
+    await login(identifier.value, password.value);
     await registerSkillTools();
     await navigateTo('/');
   } catch (e: unknown) {
