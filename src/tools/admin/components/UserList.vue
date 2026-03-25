@@ -520,6 +520,12 @@ function formatSize(bytes: number | null): string {
   border-color: var(--color-accent);
 }
 
+.action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .action-btn.danger:hover {
   color: var(--color-danger);
   border-color: var(--color-danger);
