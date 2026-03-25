@@ -7,10 +7,12 @@ export const users = sqliteTable('users', {
   username: text('username').notNull(),
   passwordHash: text('password_hash').notNull(),
   role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  email: text('email'),
   tokenVersion: integer('token_version').notNull().default(0),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
 }, (table) => [
   uniqueIndex('idx_users_username').on(table.username),
+  uniqueIndex('idx_users_email').on(table.email),
 ]);
 
 export const userModules = sqliteTable('user_modules', {

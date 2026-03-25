@@ -37,6 +37,7 @@ export default defineEventHandler(async () => {
       id: u.id,
       username: u.username,
       role: u.role,
+      email: u.email ?? null,
       createdAt: u.createdAt,
       modules,
       dbSize,

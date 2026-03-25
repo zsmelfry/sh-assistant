@@ -22,6 +22,18 @@
               <div class="field-line" />
             </div>
             <div class="field">
+              <label class="field-label">邮箱</label>
+              <input
+                v-model="form.email"
+                type="email"
+                class="field-input"
+                placeholder="user@example.com"
+                required
+                autocomplete="off"
+              />
+              <div class="field-line" />
+            </div>
+            <div class="field">
               <label class="field-label">角色</label>
               <select v-model="form.role" class="field-input">
                 <option value="user">普通用户</option>
@@ -74,6 +86,7 @@ const isResetPassword = computed(() => props.mode === 'reset-password');
 
 const form = reactive({
   username: '',
+  email: '',
   password: '',
   role: 'user',
 });
@@ -96,6 +109,7 @@ async function submit() {
         method: 'POST',
         body: {
           username: form.username,
+          email: form.email,
           password: form.password,
           role: form.role,
         },

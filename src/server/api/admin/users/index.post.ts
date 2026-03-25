@@ -19,10 +19,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '密码长度至少4位' });
   }
 
+  // Validate email (required)
+  if (!body.email) {
+    throw createError({ statusCode: 400, message: '邮箱不能为空' });
+  }
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!EMAIL_REGEX.test(body.email)) {
+    throw createError({ statusCode: 400, message: '邮箱格式不正确' });
+  }
+
   const role = body.role === 'admin' ? 'admin' : 'user';
   const db = useAdminDB();
 
-  // Check duplicate
+  // Check duplicate username
   const [existing] = await db.select({ id: users.id })
     .from(users)
     .where(eq(users.username, body.username))
@@ -32,6 +42,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 409, message: '用户名已存在' });
   }
 
+  // Check duplicate email
+  const [existingEmail] = await db.select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, body.email))
+    .limit(1);
+
+  if (existingEmail) {
+    throw createError({ statusCode: 409, message: '邮箱已被使用' });
+  }
+
   const passwordHash = await bcrypt.hash(body.password, 10);
   const now = Date.now();
 
@@ -39,6 +59,7 @@ export default defineEventHandler(async (event) => {
     username: body.username,
     passwordHash,
     role,
+    email: body.email,
     createdAt: now,
   }).returning();
 
@@ -65,6 +86,7 @@ export default defineEventHandler(async (event) => {
     id: user.id,
     username: user.username,
     role: user.role,
+    email: user.email,
     createdAt: user.createdAt,
     enabledModules: enabledModuleIds,
   };

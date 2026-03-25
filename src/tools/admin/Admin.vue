@@ -48,6 +48,7 @@
               @reset-password="openResetPassword"
               @module-change="handleModuleChange"
               @vocab-setting-change="handleVocabSettingChange"
+              @email-change="handleEmailChange"
             />
           </div>
         </div>
@@ -78,6 +79,7 @@ interface AdminUser {
   id: number;
   username: string;
   role: string;
+  email: string | null;
   createdAt: number;
   dbSize: number | null;
   modules: Array<{ moduleId: string; enabled: boolean }>;
@@ -130,6 +132,18 @@ async function handleModuleChange(userId: number, moduleId: string, enabled: boo
     await fetchUsers();
   } catch (e: any) {
     alert(e?.data?.message || '更新权限失败');
+  }
+}
+
+async function handleEmailChange(userId: number, email: string) {
+  try {
+    await $fetch(`/api/admin/users/${userId}/email`, {
+      method: 'PUT',
+      body: { email },
+    });
+    await fetchUsers();
+  } catch (e: any) {
+    alert(e?.data?.message || '更新邮箱失败');
   }
 }
 

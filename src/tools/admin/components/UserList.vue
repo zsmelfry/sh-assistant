@@ -19,6 +19,26 @@
         </div>
 
         <div class="user-stats">
+          <div class="stat stat-email">
+            <span class="stat-label">邮箱</span>
+            <span
+              v-if="editingEmailUserId !== user.id"
+              class="stat-value mono email-display"
+              :class="{ placeholder: !user.email }"
+              @click="startEditEmail(user)"
+            >{{ user.email || '未设置' }}</span>
+            <input
+              v-else
+              ref="emailInputRef"
+              v-model="editingEmailValue"
+              type="email"
+              class="email-input mono"
+              placeholder="user@example.com"
+              @blur="saveEmail(user.id)"
+              @keydown.enter="($event.target as HTMLInputElement).blur()"
+              @keydown.escape="cancelEditEmail"
+            />
+          </div>
           <div class="stat">
             <span class="stat-label">创建</span>
             <span class="stat-value mono">{{ formatDate(user.createdAt) }}</span>
@@ -95,6 +115,7 @@ defineProps<{
     id: number;
     username: string;
     role: string;
+    email: string | null;
     createdAt: number;
     dbSize: number | null;
     modules: Array<{ moduleId: string; enabled: boolean }>;
@@ -103,13 +124,40 @@ defineProps<{
   expandedId: number | null;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   toggleExpand: [id: number];
   delete: [user: any];
   resetPassword: [user: any];
   moduleChange: [userId: number, moduleId: string, enabled: boolean];
   vocabSettingChange: [userId: number, key: string, value: string];
+  emailChange: [userId: number, email: string];
 }>();
+
+const editingEmailUserId = ref<number | null>(null);
+const editingEmailValue = ref('');
+const emailInputRef = ref<HTMLInputElement | null>(null);
+
+function startEditEmail(user: { id: number; email: string | null }) {
+  editingEmailUserId.value = user.id;
+  editingEmailValue.value = user.email || '';
+  nextTick(() => {
+    emailInputRef.value?.focus();
+  });
+}
+
+function cancelEditEmail() {
+  editingEmailUserId.value = null;
+  editingEmailValue.value = '';
+}
+
+function saveEmail(userId: number) {
+  const email = editingEmailValue.value.trim();
+  if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    emit('emailChange', userId, email);
+  }
+  editingEmailUserId.value = null;
+  editingEmailValue.value = '';
+}
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('zh-CN');
@@ -235,6 +283,38 @@ function formatSize(bytes: number | null): string {
 }
 
 .mono {
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  letter-spacing: -0.2px;
+}
+
+/* Email */
+.stat-email {
+  min-width: 140px;
+}
+
+.email-display {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.email-display:hover {
+  color: var(--color-accent);
+}
+
+.email-display.placeholder {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.email-input {
+  font-size: 13px;
+  padding: 1px 4px;
+  border: none;
+  border-bottom: 1px solid var(--color-accent);
+  background: transparent;
+  color: var(--color-text-primary);
+  outline: none;
+  width: 160px;
   font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
   letter-spacing: -0.2px;
 }

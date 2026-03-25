@@ -38,9 +38,11 @@ function getAdminDB() {
       username TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
+      email TEXT,
       created_at INTEGER NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
     CREATE TABLE IF NOT EXISTS user_modules (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
