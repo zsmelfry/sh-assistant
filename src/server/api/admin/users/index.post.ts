@@ -5,6 +5,7 @@ import { users, userModules } from '~/server/database/admin-schema';
 import { validateUsername } from '~/server/utils/username-validation';
 import { initUserDB } from '~/server/utils/user-db-init';
 import { ALL_MODULE_IDS } from '~/server/utils/module-ids';
+import { validateEmail } from '~/server/utils/email-validation';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -19,15 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '密码长度至少4位' });
   }
 
-  // Validate email (required)
-  if (!body.email) {
-    throw createError({ statusCode: 400, message: '邮箱不能为空' });
-  }
-
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!EMAIL_REGEX.test(body.email)) {
-    throw createError({ statusCode: 400, message: '邮箱格式不正确' });
-  }
+  const email = validateEmail(body.email);
 
   const role = body.role === 'admin' ? 'admin' : 'user';
   const db = useAdminDB();
@@ -45,7 +38,7 @@ export default defineEventHandler(async (event) => {
   // Check duplicate email
   const [existingEmail] = await db.select({ id: users.id })
     .from(users)
-    .where(eq(users.email, body.email))
+    .where(eq(users.email, email))
     .limit(1);
 
   if (existingEmail) {
@@ -59,7 +52,7 @@ export default defineEventHandler(async (event) => {
     username: body.username,
     passwordHash,
     role,
-    email: body.email,
+    email,
     createdAt: now,
   }).returning();
 

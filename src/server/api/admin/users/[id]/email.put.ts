@@ -1,8 +1,7 @@
 import { eq, and, ne } from 'drizzle-orm';
 import { useAdminDB } from '~/server/database';
 import { users } from '~/server/database/admin-schema';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { validateEmail } from '~/server/utils/email-validation';
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'));
@@ -11,14 +10,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-
-  if (!body.email) {
-    throw createError({ statusCode: 400, message: '邮箱不能为空' });
-  }
-
-  if (!EMAIL_REGEX.test(body.email)) {
-    throw createError({ statusCode: 400, message: '邮箱格式不正确' });
-  }
+  const email = validateEmail(body.email);
 
   const db = useAdminDB();
 
@@ -35,7 +27,7 @@ export default defineEventHandler(async (event) => {
   // Check uniqueness excluding current user
   const [existing] = await db.select({ id: users.id })
     .from(users)
-    .where(and(eq(users.email, body.email), ne(users.id, id)))
+    .where(and(eq(users.email, email), ne(users.id, id)))
     .limit(1);
 
   if (existing) {
@@ -43,7 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.update(users)
-    .set({ email: body.email })
+    .set({ email })
     .where(eq(users.id, id));
 
   return { success: true };

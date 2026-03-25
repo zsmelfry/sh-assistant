@@ -29,7 +29,7 @@
             >{{ user.email || '未设置' }}</span>
             <input
               v-else
-              ref="emailInputRef"
+              :ref="(el) => { if (el) (el as HTMLInputElement).focus() }"
               v-model="editingEmailValue"
               type="email"
               class="email-input mono"
@@ -135,22 +135,25 @@ const emit = defineEmits<{
 
 const editingEmailUserId = ref<number | null>(null);
 const editingEmailValue = ref('');
-const emailInputRef = ref<HTMLInputElement | null>(null);
+const emailEditCancelled = ref(false);
 
 function startEditEmail(user: { id: number; email: string | null }) {
   editingEmailUserId.value = user.id;
   editingEmailValue.value = user.email || '';
-  nextTick(() => {
-    emailInputRef.value?.focus();
-  });
+  emailEditCancelled.value = false;
 }
 
 function cancelEditEmail() {
+  emailEditCancelled.value = true;
   editingEmailUserId.value = null;
   editingEmailValue.value = '';
 }
 
 function saveEmail(userId: number) {
+  if (emailEditCancelled.value) {
+    emailEditCancelled.value = false;
+    return;
+  }
   const email = editingEmailValue.value.trim();
   if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     emit('emailChange', userId, email);
