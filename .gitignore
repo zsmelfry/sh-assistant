@@ -36,3 +36,7 @@ french-words
 
 # PM2 logs
 logs/
+
+# Claude Code config
+.claude/
+.mcp.json

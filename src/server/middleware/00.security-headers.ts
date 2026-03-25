@@ -14,4 +14,13 @@ export default defineEventHandler((event) => {
       "frame-ancestors 'none'",
     ].join('; '),
   });
+
+  // Token pages: prevent caching and referrer leakage of token URLs
+  const pathname = getRequestURL(event).pathname;
+  if (pathname.startsWith('/invite/') || pathname.startsWith('/reset-password/')) {
+    setResponseHeaders(event, {
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+    });
+  }
 });

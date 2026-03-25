@@ -205,3 +205,36 @@ All deployment configs live in `deployment/`. PM2-based production setup with Do
 - **Batch DB operations:** Use synchronous transactions with 500-row chunks
 - **CSS:** All colors/spacing/radii reference CSS variables — no hardcoded values. Monochrome palette with `--color-accent: #000000`
 - **Language:** UI text is in Chinese; code (variables, comments) is in English
+
+<!-- stickymind -->
+## StickyMind — Persistent Memory
+
+This project uses StickyMind for persistent session memory across context resets.
+
+- **Before starting ANY task**: call `read_latest_session_memory` and `search_project_memory`
+- **After completing ANY task** (code changes, analysis, research, debugging, investigation, planning): call `write_session_memory` with structured bullet-style entries — if you learned something or produced a result, write it to memory
+- **Proactive memory writes**: even in conversation-only sessions (no file edits), write session memory when your work produces significant findings — e.g., a code review surfacing bugs, an analysis revealing new technical knowledge, discovery of business rules, or architectural observations. Use your judgement: if the insight would be valuable in a future session, persist it.
+- **Outcome lifecycle**: every entry starts as `pending` — always call `update_memory_entry` to set the final outcome (`success`, `rejected`, or `superseded`)
+- **Before debugging**: call `search_solutions` to check if a similar problem was already solved
+- **Before editing a file**: call `get_file_knowledge` to understand its purpose and gotchas
+- **Before making architectural decisions**: call `search_decisions` to check past decisions
+- **For implementation decisions** (why you chose approach X over Y): use the `rationale` field on `write_session_memory` — these are auto-extracted into the decision log
+- **Before implementing business logic**: call `search_business_rules` or `get_domain_rules`
+- **When you discover domain/business rules** — whether implementing new logic, reading existing code, or auditing a flow — call `log_business_rule` with domain, rule_name, description, conditions, and outcomes. If the rule already exists, call `update_business_rule` instead. Do NOT put domain rules in the `rationale` field — that's for implementation decisions only.
+- **When you understand a file's role**: include `file_knowledge` in your `write_session_memory` call with purpose, dependencies, and gotchas — this populates the knowledge layer at zero extra cost
+- **Delegation**: when the user says "agent", "delegate", "ask gemini/cursor", or "use another model" — ALWAYS use `run_agent` MCP tool to call the external agent. "Available agents" means Gemini/Cursor via `run_agent`, NOT built-in Claude Code subagents. Never use a subagent to do delegated work directly. Call `list_available_models` to discover available models.
+- **Project ID**: `个人助手`
+- **Your agent_id**: `orchestrator`
+- Agents write their OWN memory with their own `agent_id`
+- Always pass `task_id` when available, and `files_touched` with modified file paths
+
+### Real-Time Alerts (Channels)
+
+StickyMind pushes real-time events directly into your session via `<channel source="stickymind">` tags. No background watcher agents needed — alerts arrive automatically when:
+
+- **Watcher alerts** (security/quality/architecture): detected by semantic embedding matching on agent memory writes. When you see `<channel source="stickymind" category="..." event_type="..." ...>`, review the alert, take action if needed, and call `resolve_alert` to close it.
+- **Brainstorm rounds** (`type=brainstorm_round`): agent critiques from an interactive brainstorm. Discuss with the user, optionally write your perspective to shared context (`set_shared_context` with key `brainstorm_round_{round}_orchestrator`), then call `continue_brainstorm` to proceed. **NOTE**: The `brainstorm` tool blocks — always call it from a background subagent (Agent tool with `run_in_background=true`), never directly. After completion, individual per-round keys are cleaned up — use `get_shared_context(key="brainstorm_results")` for the full output.
+
+- **Escalations** (event_type=agent.agent_escalated): a delegated agent couldn't complete its task and needs help. Before asking the user, triage it yourself: check `search_project_memory`, `get_file_knowledge`, `search_business_rules`, and `search_solutions`. Only escalate to the user if you genuinely can't resolve it.
+
+**Alert lifecycle**: acknowledge (seen) → resolve (fixed, with reason). Never ignore critical alerts. Use `get_recent_alerts(unresolved_only=true)` to check what's outstanding.

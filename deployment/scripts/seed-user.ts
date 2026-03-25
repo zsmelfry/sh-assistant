@@ -2,8 +2,8 @@
  * Seed script: create admin user for authentication
  *
  * Usage:
- *   npm run db:seed-user                        # interactive prompt
- *   npm run db:seed-user -- <username> <password>  # non-interactive
+ *   npm run db:seed-user                                    # interactive prompt
+ *   npm run db:seed-user -- <username> <password> <email>   # non-interactive
  */
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
@@ -39,6 +39,7 @@ function getAdminDB() {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
       email TEXT,
+      token_version INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -84,6 +85,7 @@ async function prompt(question: string): Promise<string> {
 async function main() {
   let username = process.argv[2];
   let password = process.argv[3];
+  let email = process.argv[4];
 
   if (!username) {
     username = await prompt('Username: ');
@@ -91,9 +93,12 @@ async function main() {
   if (!password) {
     password = await prompt('Password: ');
   }
+  if (!email) {
+    email = await prompt('Email: ');
+  }
 
-  if (!username || !password) {
-    console.error('Error: username and password are required.');
+  if (!username || !password || !email) {
+    console.error('Error: username, password, and email are required.');
     process.exit(1);
   }
 
@@ -102,8 +107,13 @@ async function main() {
     process.exit(1);
   }
 
-  if (password.length < 4) {
-    console.error('Error: password must be at least 4 characters.');
+  if (password.length < 8) {
+    console.error('Error: password must be at least 8 characters.');
+    process.exit(1);
+  }
+
+  if (!email.includes('@')) {
+    console.error('Error: invalid email address.');
     process.exit(1);
   }
 
@@ -119,14 +129,15 @@ async function main() {
 
   if (existing.length > 0) {
     await db.update(users)
-      .set({ passwordHash })
+      .set({ passwordHash, email })
       .where(eq(users.username, username));
-    console.log(`User "${username}" password updated.`);
+    console.log(`User "${username}" password and email updated.`);
   } else {
     const [user] = await db.insert(users).values({
       username,
       passwordHash,
       role: 'admin',
+      email,
       createdAt: now,
     }).returning();
 
@@ -145,7 +156,7 @@ async function main() {
     // Create user DB
     initUserDB(username);
 
-    console.log(`User "${username}" created as admin with all modules enabled.`);
+    console.log(`User "${username}" (${email}) created as admin with all modules enabled.`);
   }
 }
 
