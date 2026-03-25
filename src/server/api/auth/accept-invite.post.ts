@@ -81,9 +81,8 @@ export default defineEventHandler(async (event) => {
   const modules: string[] = tokenRow.modules ? JSON.parse(tokenRow.modules) : [];
 
   // Transaction: create user + modules + mark token used
-  // Access underlying sqlite for transaction support
-  // @ts-expect-error - access underlying session for transaction
-  const sqlite = db._.session.client;
+  // Access underlying better-sqlite3 instance for transaction support
+  const sqlite = (db as any).$client;
 
   const transaction = sqlite.transaction(() => {
     // 1. Create user

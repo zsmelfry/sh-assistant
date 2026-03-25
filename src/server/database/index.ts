@@ -51,8 +51,7 @@ const userDbCache = new LRUCache<string, UserDB>({
   ttl: 5 * 60 * 1000, // 空闲 5 分钟自动回收
   dispose: (db) => {
     try {
-      // @ts-expect-error - access underlying session to close
-      db._.session.client.close();
+      (db as any).$client?.close();
     } catch { /* already closed */ }
   },
 });

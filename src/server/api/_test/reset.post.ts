@@ -1,13 +1,15 @@
 import { readdirSync, unlinkSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { useAdminDB, clearUserDbCache } from '~/server/database';
-import { users, userModules } from '~/server/database/admin-schema';
+import { users, userModules, verificationTokens, loginLogs } from '~/server/database/admin-schema';
 import { getDataDir } from '~/server/utils/data-dir';
 
 export default defineEventHandler(async () => {
   // 1. Clear admin.db
   const adminDb = useAdminDB();
   await adminDb.delete(userModules);
+  await adminDb.delete(loginLogs);
+  await adminDb.delete(verificationTokens);
   await adminDb.delete(users);
 
   // 2. Close all cached user DB connections before deleting files

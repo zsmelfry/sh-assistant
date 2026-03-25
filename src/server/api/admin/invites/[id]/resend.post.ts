@@ -34,8 +34,7 @@ export default defineEventHandler(async (event) => {
   const expiresAt = now + INVITE_EXPIRES_HOURS * 60 * 60 * 1000;
 
   // Transaction: mark old token as used + insert new token atomically
-  // @ts-expect-error - access underlying session for transaction
-  const sqlite = db._.session.client;
+  const sqlite = (db as any).$client;
   const txn = sqlite.transaction(() => {
     sqlite.prepare('UPDATE verification_tokens SET used_at = ? WHERE id = ?').run(now, id);
     const result = sqlite.prepare(
