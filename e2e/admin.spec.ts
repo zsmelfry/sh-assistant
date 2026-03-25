@@ -426,3 +426,170 @@ test.describe('Data Isolation', () => {
     expect(body.enabledModules.length).toBeGreaterThan(0);
   });
 });
+
+// ═══════════════════════════════════════
+// Login Logs API Tests
+// ═══════════════════════════════════════
+
+test.describe('Login Logs API', () => {
+  let adminToken: string;
+
+  test.beforeEach(async ({ request }) => {
+    await resetDB(request);
+    await seedUser(request, ADMIN_USER);
+    adminToken = await getAuthToken(request, ADMIN_USER);
+  });
+
+  test('password login creates a log entry', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // getAuthToken already called POST /api/auth/login for ADMIN_USER
+    // Fetch login logs for the admin user
+    const usersRes = await api.get('/api/admin/users');
+    const users = await usersRes.json();
+    const adminUser = users.find((u: any) => u.username === ADMIN_USER.username);
+
+    const logsRes = await api.get(`/api/admin/login-logs?userId=${adminUser.id}`);
+    expect(logsRes.status()).toBe(200);
+    const logs = await logsRes.json();
+
+    expect(logs.length).toBeGreaterThanOrEqual(1);
+    const passwordLog = logs.find((l: any) => l.method === 'password');
+    expect(passwordLog).toBeDefined();
+  });
+
+  test('login logs have expected fields', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    const logsRes = await api.get('/api/admin/login-logs');
+    expect(logsRes.status()).toBe(200);
+    const logs = await logsRes.json();
+
+    expect(logs.length).toBeGreaterThanOrEqual(1);
+    const log = logs[0];
+    expect(log).toHaveProperty('id');
+    expect(log).toHaveProperty('userId');
+    expect(log).toHaveProperty('username');
+    expect(log).toHaveProperty('method');
+    expect(log).toHaveProperty('ip');
+    expect(log).toHaveProperty('createdAt');
+  });
+
+  test('login logs filtered by userId', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a second user and login with them
+    await api.post('/api/admin/users', {
+      username: 'loguser2',
+      password: 'pass1234',
+      role: 'user',
+      email: 'loguser2@test.com',
+    });
+    await getAuthToken(request, { username: 'loguser2', password: 'pass1234' });
+
+    // Get user IDs
+    const usersRes = await api.get('/api/admin/users');
+    const users = await usersRes.json();
+    const adminUser = users.find((u: any) => u.username === ADMIN_USER.username);
+    const otherUser = users.find((u: any) => u.username === 'loguser2');
+
+    // Query logs for the second user only
+    const logsRes = await api.get(`/api/admin/login-logs?userId=${otherUser.id}`);
+    const logs = await logsRes.json();
+
+    expect(logs.length).toBeGreaterThanOrEqual(1);
+    // All returned logs should belong to the queried user
+    for (const log of logs) {
+      expect(log.userId).toBe(otherUser.id);
+    }
+
+    // Verify admin logs exist separately
+    const adminLogsRes = await api.get(`/api/admin/login-logs?userId=${adminUser.id}`);
+    const adminLogs = await adminLogsRes.json();
+    expect(adminLogs.length).toBeGreaterThanOrEqual(1);
+    for (const log of adminLogs) {
+      expect(log.userId).toBe(adminUser.id);
+    }
+  });
+
+  test('login logs ordered by time descending', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a second user and login to generate multiple log entries
+    await api.post('/api/admin/users', {
+      username: 'logorder',
+      password: 'pass1234',
+      role: 'user',
+      email: 'logorder@test.com',
+    });
+    await getAuthToken(request, { username: 'logorder', password: 'pass1234' });
+
+    // Fetch all logs (multiple logins happened: admin in beforeEach + logorder)
+    const logsRes = await api.get('/api/admin/login-logs');
+    const logs = await logsRes.json();
+
+    expect(logs.length).toBeGreaterThanOrEqual(2);
+    // First result should have the highest (most recent) createdAt
+    for (let i = 0; i < logs.length - 1; i++) {
+      expect(logs[i].createdAt).toBeGreaterThanOrEqual(logs[i + 1].createdAt);
+    }
+  });
+
+  test('login logs respect limit param', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create another user and login to ensure at least 2 log entries
+    await api.post('/api/admin/users', {
+      username: 'limituser',
+      password: 'pass1234',
+      role: 'user',
+      email: 'limituser@test.com',
+    });
+    await getAuthToken(request, { username: 'limituser', password: 'pass1234' });
+
+    const logsRes = await api.get('/api/admin/login-logs?limit=1');
+    expect(logsRes.status()).toBe(200);
+    const logs = await logsRes.json();
+    expect(logs).toHaveLength(1);
+  });
+
+  test('login logs reject invalid userId', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    const logsRes = await api.get('/api/admin/login-logs?userId=abc');
+    expect(logsRes.status()).toBe(400);
+  });
+
+  test('session-start creates token log', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Call session-start endpoint with admin token
+    const sessionRes = await api.post('/api/auth/session-start');
+    expect(sessionRes.status()).toBe(200);
+
+    // Fetch login logs and find a 'token' method entry
+    const logsRes = await api.get('/api/admin/login-logs');
+    const logs = await logsRes.json();
+    const tokenLog = logs.find((l: any) => l.method === 'token');
+    expect(tokenLog).toBeDefined();
+    expect(tokenLog.username).toBe(ADMIN_USER.username);
+  });
+
+  test('non-admin cannot access login logs', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a normal user
+    await api.post('/api/admin/users', {
+      username: 'nonadmin',
+      password: 'pass1234',
+      role: 'user',
+      email: 'nonadmin@test.com',
+    });
+
+    const userToken = await getAuthToken(request, { username: 'nonadmin', password: 'pass1234' });
+    const userApi = authFetch(request, userToken);
+
+    const logsRes = await userApi.get('/api/admin/login-logs');
+    expect(logsRes.status()).toBe(403);
+  });
+});
