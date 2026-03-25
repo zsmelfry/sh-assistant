@@ -166,6 +166,12 @@ export const useVocabStore = defineStore('vocab', () => {
       body: { name, language },
     });
     await loadWordbooks();
+    // Reload data for the newly active wordbook
+    page.value = 1;
+    filter.value = 'all';
+    searchQuery.value = '';
+    clearSelection();
+    await Promise.all([loadStats(), loadWords(), loadChartData()]);
   }
 
   async function deleteWordbook(id: number) {

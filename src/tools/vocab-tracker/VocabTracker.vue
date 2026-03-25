@@ -11,16 +11,6 @@
 
     <!-- 无词汇状态 -->
     <div v-else-if="!store.hasWords && store.filter === 'all' && !store.searchQuery && activeTab === 'vocab'" class="emptyState">
-      <div class="toolbar">
-        <div class="toolbarRight">
-          <button class="toolbarBtn" @click="showImportModal = true">
-            导入 CSV
-          </button>
-          <button class="toolbarBtn" @click="showSettings = !showSettings" :class="{ active: showSettings }">
-            设置
-          </button>
-        </div>
-      </div>
       <p class="emptyTitle">词库为空</p>
       <p class="emptyHint">请先导入 CSV 词汇文件</p>
       <button class="primaryBtn" @click="showImportModal = true">
