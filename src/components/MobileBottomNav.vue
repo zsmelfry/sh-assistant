@@ -33,6 +33,14 @@
         <Settings :size="16" :stroke-width="1.5" />
         <span>模型设置</span>
       </button>
+      <button class="menu-item" @click="handleChangePassword">
+        <KeyRound :size="16" :stroke-width="1.5" />
+        <span>修改密码</span>
+      </button>
+      <button class="menu-item" @click="handleLogoutAll">
+        <MonitorOff :size="16" :stroke-width="1.5" />
+        <span>登出所有设备</span>
+      </button>
       <button class="menu-item menu-item-danger" @click="handleLogout">
         <LogOut :size="16" :stroke-width="1.5" />
         <span>登出</span>
@@ -40,24 +48,42 @@
     </div>
 
     <LlmSettings :open="showLlmSettings" @close="showLlmSettings = false" />
+    <ChangePasswordModal v-if="showChangePassword" @close="showChangePassword = false" />
   </nav>
 </template>
 
 <script setup lang="ts">
-import { EllipsisVertical, Settings, LogOut, MessageCircle } from 'lucide-vue-next';
+import { EllipsisVertical, Settings, LogOut, MessageCircle, KeyRound, MonitorOff } from 'lucide-vue-next';
 import { useXiaoshuangStore } from '~/stores/xiaoshuang';
+import ChangePasswordModal from '~/components/ChangePasswordModal.vue';
 
 const { currentToolId, tools } = useCurrentTool();
-const { logout } = useAuth();
+const { logout, logoutAllDevices } = useAuth();
 
 const xiaoshuangStore = useXiaoshuangStore();
 const { isModuleEnabled } = useModulePermissions();
 const showMenu = ref(false);
 const showLlmSettings = ref(false);
+const showChangePassword = ref(false);
 
 function handleSettings() {
   showMenu.value = false;
   showLlmSettings.value = true;
+}
+
+function handleChangePassword() {
+  showMenu.value = false;
+  showChangePassword.value = true;
+}
+
+async function handleLogoutAll() {
+  showMenu.value = false;
+  if (!confirm('确定要登出所有设备？当前设备也会退出登录。')) return;
+  try {
+    await logoutAllDevices();
+  } catch {
+    // logoutAllDevices already navigates to /login
+  }
 }
 
 function handleLogout() {

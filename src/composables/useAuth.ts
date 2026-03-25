@@ -43,6 +43,25 @@ export function useAuth() {
     });
   }
 
+  /** Change password: update password and refresh token */
+  async function changePassword(currentPassword: string, newPassword: string) {
+    const res = await $fetch<{ token: string }>('/api/auth/change-password', {
+      method: 'POST',
+      body: { currentPassword, newPassword },
+    });
+    authState.token = res.token;
+    localStorage.setItem(TOKEN_KEY, res.token);
+  }
+
+  /** Logout all devices: bump tokenVersion then clear local session */
+  async function logoutAllDevices() {
+    await $fetch('/api/auth/logout-all', { method: 'POST' });
+    authState.token = null;
+    localStorage.removeItem(TOKEN_KEY);
+    clearPermissions();
+    navigateTo('/login');
+  }
+
   /** Logout: clear token, permissions, and redirect to login */
   function logout() {
     authState.token = null;
@@ -69,5 +88,5 @@ export function useAuth() {
     clearPermissions();
   }
 
-  return { init, isAuthenticated, login, forgotPassword, logout, getToken, getAuthHeaders, clearToken };
+  return { init, isAuthenticated, login, forgotPassword, changePassword, logoutAllDevices, logout, getToken, getAuthHeaders, clearToken };
 }

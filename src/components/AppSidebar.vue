@@ -51,23 +51,44 @@
         <Settings :size="18" :stroke-width="1.5" />
         <span v-if="!collapsed" class="nav-label">模型设置</span>
       </button>
-      <button
-        class="settings-btn logout-btn"
-        title="登出"
-        @click="logout"
-      >
-        <LogOut :size="18" :stroke-width="1.5" />
-        <span v-if="!collapsed" class="nav-label">登出</span>
-      </button>
+
+      <div class="user-section">
+        <button
+          class="settings-btn user-btn"
+          :title="username || '用户'"
+          @click="showUserMenu = !showUserMenu"
+        >
+          <User :size="18" :stroke-width="1.5" />
+          <span v-if="!collapsed" class="nav-label">{{ username || '用户' }}</span>
+        </button>
+
+        <div v-if="showUserMenu" class="user-menu-overlay" @click="showUserMenu = false" />
+        <div v-if="showUserMenu" class="user-menu">
+          <button class="user-menu-item" @click="handleChangePassword">
+            <KeyRound :size="14" :stroke-width="1.5" />
+            <span>修改密码</span>
+          </button>
+          <button class="user-menu-item" @click="handleLogoutAll">
+            <MonitorOff :size="14" :stroke-width="1.5" />
+            <span>登出所有设备</span>
+          </button>
+          <button class="user-menu-item user-menu-item-danger" @click="handleLogout">
+            <LogOut :size="14" :stroke-width="1.5" />
+            <span>退出登录</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <LlmSettings :open="showLlmSettings" @close="showLlmSettings = false" />
+    <ChangePasswordModal v-if="showChangePassword" @close="showChangePassword = false" />
   </aside>
 </template>
 
 <script setup lang="ts">
-import { Settings, ChevronLeft, ChevronRight, LogOut, MessageCircle } from 'lucide-vue-next';
+import { Settings, ChevronLeft, ChevronRight, LogOut, MessageCircle, User, KeyRound, MonitorOff } from 'lucide-vue-next';
 import { useXiaoshuangStore } from '~/stores/xiaoshuang';
+import ChangePasswordModal from '~/components/ChangePasswordModal.vue';
 
 defineProps<{
   collapsed: boolean;
@@ -78,11 +99,45 @@ defineEmits<{
 }>();
 
 const { currentToolId, tools } = useCurrentTool();
-const { logout } = useAuth();
+const { logout, logoutAllDevices, getToken } = useAuth();
 const { isModuleEnabled } = useModulePermissions();
 const showLlmSettings = ref(false);
+const showUserMenu = ref(false);
+const showChangePassword = ref(false);
 
 const xiaoshuangStore = useXiaoshuangStore();
+
+// Extract username from JWT
+const username = computed(() => {
+  const token = getToken();
+  if (!token) return '';
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.username || '';
+  } catch {
+    return '';
+  }
+});
+
+function handleChangePassword() {
+  showUserMenu.value = false;
+  showChangePassword.value = true;
+}
+
+async function handleLogoutAll() {
+  showUserMenu.value = false;
+  if (!confirm('确定要登出所有设备？当前设备也会退出登录。')) return;
+  try {
+    await logoutAllDevices();
+  } catch {
+    // logoutAllDevices already navigates to /login
+  }
+}
+
+function handleLogout() {
+  showUserMenu.value = false;
+  logout();
+}
 </script>
 
 <style scoped>
@@ -231,8 +286,59 @@ const xiaoshuangStore = useXiaoshuangStore();
   margin-bottom: var(--spacing-xs);
 }
 
-.logout-btn {
+/* User section */
+.user-section {
+  position: relative;
   margin-top: var(--spacing-xs);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--spacing-xs);
+}
+
+.user-btn {
+  font-weight: 500;
+}
+
+.user-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.user-menu {
+  position: absolute;
+  bottom: 100%;
+  left: var(--spacing-xs);
+  right: var(--spacing-xs);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow: hidden;
+  margin-bottom: var(--spacing-xs);
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.user-menu-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.user-menu-item-danger {
+  color: var(--color-danger);
 }
 
 @media (max-width: 768px) {

@@ -13,7 +13,7 @@
         </div>
         <button class="btn-add-user" @click="showCreateForm = true">
           <UserPlus :size="16" />
-          <span>添加用户</span>
+          <span>邀请用户</span>
         </button>
       </div>
       <div class="header-line" />
@@ -43,12 +43,15 @@
               v-else
               :users="userList"
               :expanded-id="expandedUserId"
+              :pending-invites="pendingInvites"
               @toggle-expand="toggleExpand"
               @delete="confirmDelete"
               @reset-password="openResetPassword"
+              @force-reset="handleForceReset"
               @module-change="handleModuleChange"
               @vocab-setting-change="handleVocabSettingChange"
               @email-change="handleEmailChange"
+              @invite-changed="fetchPendingInvites"
             />
           </div>
         </div>
@@ -59,14 +62,6 @@
       v-if="showCreateForm"
       @close="showCreateForm = false"
       @created="onUserCreated"
-    />
-
-    <UserForm
-      v-if="resetPasswordUser"
-      mode="reset-password"
-      :user="resetPasswordUser"
-      @close="resetPasswordUser = null"
-      @created="onPasswordReset"
     />
   </div>
 </template>
@@ -86,12 +81,20 @@ interface AdminUser {
   multiWordbookEnabled: boolean;
 }
 
+interface PendingInvite {
+  id: number;
+  email: string;
+  role: string | null;
+  expiresAt: number;
+  createdAt: number;
+}
+
 const userList = ref<AdminUser[]>([]);
+const pendingInvites = ref<PendingInvite[]>([]);
 const loading = ref(true);
 const error = ref('');
 const showCreateForm = ref(false);
 const expandedUserId = ref<number | null>(null);
-const resetPasswordUser = ref<AdminUser | null>(null);
 
 async function fetchUsers() {
   loading.value = true;
@@ -119,8 +122,21 @@ async function confirmDelete(user: AdminUser) {
   }
 }
 
-function openResetPassword(user: AdminUser) {
-  resetPasswordUser.value = user;
+function openResetPassword(_user: AdminUser) {
+  // Legacy — force-reset is now handled inline by UserList
+}
+
+function handleForceReset(_user: AdminUser) {
+  // Force reset is handled directly in UserList component
+}
+
+async function fetchPendingInvites() {
+  try {
+    pendingInvites.value = await $fetch<PendingInvite[]>('/api/admin/invites');
+  } catch {
+    // Non-critical — don't block the UI
+    pendingInvites.value = [];
+  }
 }
 
 async function handleModuleChange(userId: number, moduleId: string, enabled: boolean) {
@@ -162,13 +178,13 @@ async function handleVocabSettingChange(userId: number, key: string, value: stri
 function onUserCreated() {
   showCreateForm.value = false;
   fetchUsers();
+  fetchPendingInvites();
 }
 
-function onPasswordReset() {
-  resetPasswordUser.value = null;
-}
-
-onMounted(fetchUsers);
+onMounted(() => {
+  fetchUsers();
+  fetchPendingInvites();
+});
 </script>
 
 <style scoped>

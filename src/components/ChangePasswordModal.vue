@@ -3,63 +3,69 @@
     <div class="modal-overlay" @click.self="$emit('close')">
       <div class="modal">
         <div class="modal-header">
-          <h3>邀请新用户</h3>
+          <h3>修改密码</h3>
         </div>
 
-        <!-- Success state: show invite URL -->
-        <div v-if="inviteResult" class="invite-result">
-          <p class="result-label">邀请链接已生成</p>
-          <div class="invite-url-box">
-            <input
-              ref="urlInput"
-              type="text"
-              class="invite-url-input mono"
-              :value="inviteResult.inviteUrl"
-              readonly
-              @click="($event.target as HTMLInputElement).select()"
-            />
-            <button class="btn-copy" @click="copyUrl" :title="copied ? '已复制' : '复制链接'">
-              {{ copied ? '已复制' : '复制' }}
-            </button>
-          </div>
-          <p class="result-hint">
-            {{ inviteResult.emailSent ? '邀请邮件已发送至 ' + inviteResult.email : '邮件未发送，请手动分享链接' }}
-          </p>
-          <div class="form-actions">
-            <button class="btn-submit" @click="$emit('close')">完成</button>
-          </div>
+        <div v-if="success" class="success-state">
+          <p class="success-msg">密码修改成功</p>
+          <p class="success-hint">其他设备上的登录将会失效。</p>
+          <button class="btn-submit" @click="$emit('close')">关闭</button>
         </div>
 
-        <!-- Invite form -->
         <form v-else @submit.prevent="submit">
           <div class="field">
-            <label class="field-label">邮箱</label>
+            <label class="field-label">当前密码</label>
             <input
-              v-model="form.email"
-              type="email"
+              v-model="form.currentPassword"
+              type="password"
               class="field-input"
-              placeholder="user@example.com"
+              autocomplete="current-password"
               required
-              autocomplete="off"
+              :disabled="submitting"
             />
             <div class="field-line" />
           </div>
+
           <div class="field">
-            <label class="field-label">角色</label>
-            <select v-model="form.role" class="field-input">
-              <option value="user">普通用户</option>
-              <option value="admin">管理员</option>
-            </select>
+            <label class="field-label">新密码</label>
+            <input
+              v-model="form.newPassword"
+              type="password"
+              class="field-input"
+              autocomplete="new-password"
+              required
+              :disabled="submitting"
+            />
+            <div class="field-line" />
+            <div class="password-strength">
+              <div
+                class="strength-bar"
+                :class="passwordStrengthClass"
+              />
+              <span class="strength-hint">{{ passwordStrengthText }}</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">确认新密码</label>
+            <input
+              v-model="form.confirmPassword"
+              type="password"
+              class="field-input"
+              autocomplete="new-password"
+              required
+              :disabled="submitting"
+            />
             <div class="field-line" />
           </div>
 
           <div v-if="error" class="form-error">{{ error }}</div>
 
           <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="$emit('close')">取消</button>
-            <button type="submit" class="btn-submit" :disabled="submitting">
+            <button type="button" class="btn-cancel" @click="$emit('close')" :disabled="submitting">取消</button>
+            <button type="submit" class="btn-submit" :disabled="submitting || !canSubmit">
               <span v-if="submitting" class="spinner" />
-              {{ submitting ? '处理中...' : '发送邀请' }}
+              {{ submitting ? '处理中...' : '修改密码' }}
             </button>
           </div>
         </form>
@@ -69,54 +75,64 @@
 </template>
 
 <script setup lang="ts">
-const emit = defineEmits<{
+import { PASSWORD_MIN_LENGTH } from '~/utils/password-rules';
+
+defineEmits<{
   close: [];
-  created: [];
 }>();
 
+const { changePassword } = useAuth();
+
 const form = reactive({
-  email: '',
-  role: 'user',
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
 });
 
 const error = ref('');
 const submitting = ref(false);
-const copied = ref(false);
-const inviteResult = ref<{ inviteUrl: string; emailSent: boolean; email: string } | null>(null);
+const success = ref(false);
+
+const passwordStrengthClass = computed(() => {
+  const len = form.newPassword.length;
+  if (len === 0) return '';
+  if (len < PASSWORD_MIN_LENGTH) return 'strength-weak';
+  if (len < 12) return 'strength-fair';
+  return 'strength-strong';
+});
+
+const passwordStrengthText = computed(() => {
+  const len = form.newPassword.length;
+  if (len === 0) return `至少 ${PASSWORD_MIN_LENGTH} 个字符`;
+  if (len < PASSWORD_MIN_LENGTH) return `还需 ${PASSWORD_MIN_LENGTH - len} 个字符`;
+  if (len < 12) return '强度一般';
+  return '强度良好';
+});
+
+const canSubmit = computed(() => {
+  return form.currentPassword.length > 0
+    && form.newPassword.length >= PASSWORD_MIN_LENGTH
+    && form.newPassword === form.confirmPassword;
+});
 
 async function submit() {
+  if (!canSubmit.value) return;
+
+  if (form.newPassword !== form.confirmPassword) {
+    error.value = '两次输入的新密码不一致';
+    return;
+  }
+
   error.value = '';
   submitting.value = true;
 
   try {
-    const res = await $fetch<{ id: number; email: string; inviteUrl: string; emailSent: boolean }>('/api/admin/invites', {
-      method: 'POST',
-      body: {
-        email: form.email,
-        role: form.role,
-      },
-    });
-    inviteResult.value = {
-      inviteUrl: res.inviteUrl,
-      emailSent: res.emailSent,
-      email: res.email,
-    };
-    emit('created');
+    await changePassword(form.currentPassword, form.newPassword);
+    success.value = true;
   } catch (e: any) {
-    error.value = e?.data?.message || '操作失败';
+    error.value = e?.data?.message || '修改密码失败';
   } finally {
     submitting.value = false;
-  }
-}
-
-async function copyUrl() {
-  if (!inviteResult.value) return;
-  try {
-    await navigator.clipboard.writeText(inviteResult.value.inviteUrl);
-    copied.value = true;
-    setTimeout(() => { copied.value = false; }, 2000);
-  } catch {
-    // Fallback: the input is already selectable
   }
 }
 </script>
@@ -150,9 +166,6 @@ async function copyUrl() {
 
 /* Header */
 .modal-header {
-  display: flex;
-  align-items: baseline;
-  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--color-border);
@@ -198,8 +211,8 @@ h3 {
   border-bottom-color: var(--color-accent);
 }
 
-.field-input::placeholder {
-  color: var(--color-text-tertiary);
+.field-input:disabled {
+  opacity: 0.5;
 }
 
 .field-line {
@@ -216,69 +229,38 @@ h3 {
   width: 100%;
 }
 
-select.field-input {
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0 center;
-}
-
-/* Invite result */
-.invite-result {
-  text-align: center;
-}
-
-.result-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-.invite-url-box {
+/* Password strength */
+.password-strength {
   display: flex;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-sm);
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
 }
 
-.invite-url-input {
+.strength-bar {
+  height: 3px;
+  border-radius: 2px;
   flex: 1;
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  background: var(--color-bg-sidebar);
-  color: var(--color-text-primary);
-  outline: none;
+  background-color: var(--color-border);
+  transition: background-color var(--transition-fast);
 }
 
-.mono {
-  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+.strength-bar.strength-weak {
+  background-color: var(--color-danger);
 }
 
-.btn-copy {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-accent);
-  color: var(--color-accent-inverse);
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
+.strength-bar.strength-fair {
+  background-color: var(--color-text-secondary);
+}
+
+.strength-bar.strength-strong {
+  background-color: var(--color-accent);
+}
+
+.strength-hint {
   font-size: 12px;
-  font-weight: 500;
+  color: var(--color-text-tertiary);
   white-space: nowrap;
-  transition: opacity var(--transition-fast);
-}
-
-.btn-copy:hover {
-  opacity: 0.85;
-}
-
-.result-hint {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-md);
 }
 
 /* Error */
@@ -288,6 +270,25 @@ select.field-input {
   margin-bottom: var(--spacing-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-left: 2px solid var(--color-danger);
+}
+
+/* Success */
+.success-state {
+  text-align: center;
+  padding: var(--spacing-lg) 0;
+}
+
+.success-msg {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.success-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
 }
 
 /* Actions */
@@ -314,6 +315,11 @@ select.field-input {
 .btn-cancel:hover {
   border-color: var(--color-text-tertiary);
   color: var(--color-text-primary);
+}
+
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-submit {
@@ -363,18 +369,16 @@ select.field-input {
   transition: all 0.2s ease;
 }
 
-.modal-enter-from .modal-overlay,
-.modal-leave-to .modal-overlay {
+.modal-enter-from,
+.modal-leave-to {
   opacity: 0;
 }
 
 .modal-enter-from .modal {
-  opacity: 0;
   transform: translateY(12px);
 }
 
 .modal-leave-to .modal {
-  opacity: 0;
   transform: translateY(8px);
 }
 
