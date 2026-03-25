@@ -95,6 +95,7 @@
               </div>
             </div>
           </div>
+          <LoginLogs :user-id="user.id" />
         </div>
       </Transition>
     </div>
@@ -109,6 +110,7 @@
 <script setup lang="ts">
 import { ChevronDown, KeyRound, Trash2 } from 'lucide-vue-next';
 import ModuleToggles from './ModuleToggles.vue';
+import LoginLogs from './LoginLogs.vue';
 
 defineProps<{
   users: Array<{
@@ -486,7 +488,7 @@ function formatSize(bytes: number | null): string {
 .modules-enter-to,
 .modules-leave-from {
   opacity: 1;
-  max-height: 300px;
+  max-height: 600px;
 }
 
 /* Empty state */

@@ -25,6 +25,16 @@ export const userModules = sqliteTable('user_modules', {
   uniqueIndex('idx_user_modules_unique').on(table.userId, table.moduleId),
 ]);
 
+export const loginLogs = sqliteTable('login_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  username: text('username').notNull(),
+  method: text('method', { enum: ['password', 'token'] }).notNull(),
+  ip: text('ip'),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type UserModule = typeof userModules.$inferSelect;
+export type LoginLog = typeof loginLogs.$inferSelect;

@@ -2,7 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { useAdminDB } from '~/server/database';
-import { users, userModules } from '~/server/database/admin-schema';
+import { users, userModules, loginLogs } from '~/server/database/admin-schema';
 
 // ── Rate limiting: per-username, 5 attempts per 15 minutes ──
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
@@ -92,6 +92,16 @@ export default defineEventHandler(async (event) => {
   const enabledModules = modules
     .filter((m) => m.moduleId)
     .map((m) => m.moduleId);
+
+  // Log login (fire-and-forget)
+  const ip = getRequestIP(event, { xForwardedFor: true }) || getHeader(event, 'x-forwarded-for') || 'unknown';
+  db.insert(loginLogs).values({
+    userId: user.id,
+    username: user.username,
+    method: 'password',
+    ip,
+    createdAt: Date.now(),
+  }).run();
 
   return { token, role: user.role, enabledModules };
 });
