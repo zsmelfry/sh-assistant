@@ -13,7 +13,8 @@ INSERT INTO `wordbooks` (`id`, `name`, `language`, `is_active`, `word_count`, `c
   VALUES (1, '法语频率词', 'fr', 1, (SELECT COUNT(*) FROM `vocab_words`), unixepoch() * 1000);
 --> statement-breakpoint
 -- Add wordbook_id column to vocab_words, default to 1 (the French wordbook)
-ALTER TABLE `vocab_words` ADD COLUMN `wordbook_id` integer NOT NULL DEFAULT 1 REFERENCES `wordbooks`(`id`);
+-- Note: REFERENCES omitted because SQLite forbids NOT NULL DEFAULT + REFERENCES in ADD COLUMN. FK enforced at Drizzle schema level.
+ALTER TABLE `vocab_words` ADD COLUMN `wordbook_id` integer NOT NULL DEFAULT 1;
 --> statement-breakpoint
 -- Point all existing words to the default French wordbook
 UPDATE `vocab_words` SET `wordbook_id` = 1 WHERE `wordbook_id` IS NULL;
