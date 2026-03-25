@@ -93,6 +93,7 @@
             <span class="providerName">{{ p.name }}</span>
             <span v-if="p.isDefault" class="badge badgeDefault">默认</span>
             <span v-if="!p.isEnabled" class="badge badgeDisabled">已禁用</span>
+            <span v-if="needsApiKey(p)" class="badge badgeWarning">需配置 Key</span>
           </div>
           <div class="providerMeta">
             <span>{{ p.provider }}</span>
@@ -102,9 +103,37 @@
               <span class="metaDot">&middot;</span>
               <span class="providerEndpoint">{{ p.endpoint }}</span>
             </template>
+            <template v-if="p.apiKey">
+              <span class="metaDot">&middot;</span>
+              <span class="apiKeyMask">{{ p.apiKey }}</span>
+            </template>
+          </div>
+          <!-- Inline API Key 编辑 -->
+          <div v-if="editingKeyId === p.id" class="inlineKeyForm">
+            <input
+              v-model="editingKeyValue"
+              class="inlineKeyInput"
+              type="password"
+              placeholder="粘贴 API Key"
+              @keyup.enter="saveApiKey(p)"
+              @keyup.escape="cancelEditKey"
+            />
+            <button class="inlineKeyBtn" :disabled="!editingKeyValue.trim() || savingKey" @click="saveApiKey(p)">
+              <Check :size="14" :stroke-width="1.5" />
+            </button>
+            <button class="inlineKeyCancelBtn" @click="cancelEditKey">取消</button>
           </div>
         </div>
         <div class="providerActions">
+          <button
+            v-if="PROVIDERS_NEEDING_KEY.includes(p.provider)"
+            class="iconBtn"
+            :class="{ iconBtnWarning: needsApiKey(p) }"
+            :title="p.apiKey ? '修改 API Key' : '配置 API Key'"
+            @click="startEditKey(p)"
+          >
+            <Key :size="14" :stroke-width="1.5" />
+          </button>
           <button
             v-if="!p.isDefault && p.isEnabled"
             class="iconBtn"
@@ -138,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { Star, Trash2, Eye, EyeOff, RefreshCw, Plus } from 'lucide-vue-next';
+import { Star, Trash2, Eye, EyeOff, RefreshCw, Plus, Key, Check } from 'lucide-vue-next';
 import type { LlmProvider, ModelInfo, CreateProviderRequest } from '~/composables/useLlm';
 
 defineProps<{
@@ -168,12 +197,48 @@ const errorMsg = ref('');
 const discoveredModels = ref<ModelInfo[]>([]);
 
 const newProvider = ref<CreateProviderRequest>({
-  provider: 'claude',
+  provider: 'gemini',
   name: '',
   modelName: '',
   endpoint: '',
   apiKey: '',
 });
+
+// Inline API key editing
+const editingKeyId = ref<number | null>(null);
+const editingKeyValue = ref('');
+const savingKey = ref(false);
+
+const PROVIDERS_NEEDING_KEY = ['claude-api', 'openai', 'gemini'];
+
+function needsApiKey(p: LlmProvider): boolean {
+  return PROVIDERS_NEEDING_KEY.includes(p.provider) && !p.apiKey;
+}
+
+function startEditKey(p: LlmProvider) {
+  editingKeyId.value = p.id;
+  editingKeyValue.value = '';
+}
+
+function cancelEditKey() {
+  editingKeyId.value = null;
+  editingKeyValue.value = '';
+}
+
+async function saveApiKey(p: LlmProvider) {
+  if (!editingKeyValue.value.trim()) return;
+  savingKey.value = true;
+  errorMsg.value = '';
+  try {
+    await updateProvider(p.id, { apiKey: editingKeyValue.value.trim() });
+    editingKeyId.value = null;
+    editingKeyValue.value = '';
+  } catch {
+    errorMsg.value = 'API Key 保存失败';
+  } finally {
+    savingKey.value = false;
+  }
+}
 
 const canSave = computed(() =>
   newProvider.value.name.trim() && newProvider.value.modelName.trim(),
@@ -227,7 +292,7 @@ async function handleAdd() {
     }
     await addProvider(data);
     showAddForm.value = false;
-    newProvider.value = { provider: 'claude', name: '', modelName: '', endpoint: '', apiKey: '' };
+    newProvider.value = { provider: 'gemini', name: '', modelName: '', endpoint: '', apiKey: '' };
   } catch {
     errorMsg.value = '添加失败';
   } finally {
@@ -271,6 +336,7 @@ async function handleToggleEnabled(p: LlmProvider) {
 }
 
 async function handleDelete(p: LlmProvider) {
+  if (editingKeyId.value === p.id) cancelEditKey();
   errorMsg.value = '';
   try {
     await deleteProvider(p.id);
@@ -553,6 +619,81 @@ async function handleDelete(p: LlmProvider) {
 .badgeDisabled {
   background-color: var(--color-bg-hover);
   color: var(--color-text-secondary);
+}
+
+.badgeWarning {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { border-color: var(--color-accent); }
+  50% { border-color: transparent; }
+}
+
+.apiKeyMask {
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* Inline API Key 编辑 */
+.inlineKeyForm {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.inlineKeyInput {
+  flex: 1;
+  padding: 3px var(--spacing-sm);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.inlineKeyInput:focus {
+  outline: none;
+}
+
+.inlineKeyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  cursor: pointer;
+}
+
+.inlineKeyBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inlineKeyCancelBtn {
+  padding: 3px var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.inlineKeyCancelBtn:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.iconBtnWarning {
+  color: var(--color-accent);
 }
 
 .providerMeta {

@@ -5,18 +5,21 @@ import { LlmError, LlmErrorType } from './types';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const API_VERSION = '2023-06-01';
 
-/** Model mapping: short name → full model ID */
+/** Model mapping: short name or alias → full model ID */
 const MODEL_MAP: Record<string, string> = {
   'opus': 'claude-opus-4-20250514',
   'sonnet': 'claude-sonnet-4-20250514',
   'haiku': 'claude-haiku-4-5-20251001',
+  'claude-opus-4-6': 'claude-opus-4-20250514',
+  'claude-sonnet-4-6': 'claude-sonnet-4-20250514',
+  'claude-haiku-4-5-20251001': 'claude-haiku-4-5-20251001',
 };
 
-export type ClaudeApiModel = 'opus' | 'sonnet' | 'haiku';
+export type ClaudeApiModel = string;
 
 export class ClaudeApiProvider extends BaseLlmProvider {
   constructor(
-    private readonly model: ClaudeApiModel = 'haiku',
+    private readonly model: ClaudeApiModel = 'claude-opus-4-6',
     private readonly apiKey: string,
   ) {
     super();

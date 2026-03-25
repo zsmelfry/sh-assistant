@@ -3,20 +3,20 @@ import { eq } from 'drizzle-orm';
 import { llmProviders } from '../../../database/schemas/llm';
 import { decryptApiKey } from '~/server/utils/crypto';
 
-/** 默认 Provider 种子数据 */
+/** 默认 Provider 种子数据（需用户自行配置 API Key） */
 const DEFAULT_PROVIDERS = [
   {
-    provider: 'claude',
-    name: 'Claude Haiku 4.5',
-    modelName: 'haiku',
+    provider: 'gemini',
+    name: 'Gemini 2.5 Flash',
+    modelName: '2.5-flash',
     isDefault: true,
     isEnabled: true,
     params: JSON.stringify({ temperature: 0.7, maxTokens: 2000 }),
   },
   {
-    provider: 'claude',
-    name: 'Claude Sonnet 4.5',
-    modelName: 'sonnet',
+    provider: 'claude-api',
+    name: 'Claude Opus 4.6',
+    modelName: 'claude-opus-4-6',
     isDefault: false,
     isEnabled: true,
     params: JSON.stringify({ temperature: 0.7, maxTokens: 2000 }),

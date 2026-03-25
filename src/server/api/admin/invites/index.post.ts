@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   const enabledModules: string[] = Array.isArray(body.enabledModules)
     ? body.enabledModules.filter((m: string) => ALL_MODULE_IDS.includes(m as any))
-    : (role === 'admin' ? [...ALL_MODULE_IDS] : []);
+    : (role === 'admin' ? [...ALL_MODULE_IDS] : ['vocab-tracker']);
 
   const db = useAdminDB();
 

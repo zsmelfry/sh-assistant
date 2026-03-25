@@ -1,14 +1,20 @@
 import { OllamaProvider, GeminiProvider } from '../../lib/llm';
 
 export default defineEventHandler(async () => {
-  // Claude 模型（固定列表，总是可用）
-  const claudeModels = [
-    { provider: 'claude', modelName: 'haiku', displayName: 'Claude Haiku 4.5', available: true },
-    { provider: 'claude', modelName: 'sonnet', displayName: 'Claude Sonnet 4.5', available: true },
-    { provider: 'claude', modelName: 'opus', displayName: 'Claude Opus 4.6', available: true },
+  // Claude API 模型
+  const claudeApiModels = [
+    { provider: 'claude-api', modelName: 'claude-opus-4-6', displayName: 'Claude Opus 4.6', available: true },
+    { provider: 'claude-api', modelName: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6', available: true },
+    { provider: 'claude-api', modelName: 'claude-haiku-4-5-20251001', displayName: 'Claude Haiku 4.5', available: true },
   ];
 
-  // Gemini 模型（固定列表，免费可用）
+  // Claude CLI 模型
+  const claudeCliModels = [
+    { provider: 'claude', modelName: 'opus', displayName: 'Claude Opus (CLI)', available: true },
+    { provider: 'claude', modelName: 'sonnet', displayName: 'Claude Sonnet (CLI)', available: true },
+  ];
+
+  // Gemini 模型
   const geminiModels = GeminiProvider.listModels().map(m => ({
     provider: 'gemini',
     modelName: m.name,
@@ -32,6 +38,6 @@ export default defineEventHandler(async () => {
   }
 
   return {
-    models: [...claudeModels, ...geminiModels, ...ollamaModels],
+    models: [...claudeApiModels, ...claudeCliModels, ...geminiModels, ...ollamaModels],
   };
 });
