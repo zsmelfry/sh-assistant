@@ -93,12 +93,12 @@
       </div>
 
       <!-- 学习模式 Tab -->
-      <div v-show="activeTab === 'study'" class="tabContent">
+      <div v-if="activeTab === 'study'" class="tabContent">
         <StudyView />
       </div>
 
       <!-- 快速分类 Tab -->
-      <div v-show="activeTab === 'categorize'" class="tabContent">
+      <div v-if="activeTab === 'categorize'" class="tabContent">
         <CategorizeView />
       </div>
     </template>
