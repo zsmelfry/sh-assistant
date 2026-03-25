@@ -1,49 +1,67 @@
 <template>
   <div class="user-list">
-    <table>
-      <thead>
-        <tr>
-          <th>用户名</th>
-          <th>角色</th>
-          <th>创建时间</th>
-          <th>数据大小</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="user in users" :key="user.id">
-          <tr :class="{ expanded: expandedId === user.id }">
-            <td class="username">{{ user.username }}</td>
-            <td>
-              <span class="role-badge" :class="user.role">{{ user.role === 'admin' ? '管理员' : '普通用户' }}</span>
-            </td>
-            <td>{{ formatDate(user.createdAt) }}</td>
-            <td>{{ formatSize(user.dbSize) }}</td>
-            <td class="actions">
-              <button class="action-btn" title="模块权限" @click="$emit('toggleExpand', user.id)">
-                <ChevronDown :size="16" :class="{ rotated: expandedId === user.id }" />
-              </button>
-              <button class="action-btn" title="重置密码" @click="$emit('resetPassword', user)">
-                <KeyRound :size="16" />
-              </button>
-              <button class="action-btn danger" title="删除用户" @click="$emit('delete', user)">
-                <Trash2 :size="16" />
-              </button>
-            </td>
-          </tr>
-          <tr v-if="expandedId === user.id" class="modules-row">
-            <td colspan="5">
-              <ModuleToggles
-                :modules="user.modules"
-                @change="(moduleId: string, enabled: boolean) => $emit('moduleChange', user.id, moduleId, enabled)"
-              />
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div
+      v-for="user in users"
+      :key="user.id"
+      class="user-card"
+      :class="{ expanded: expandedId === user.id }"
+    >
+      <div class="user-row">
+        <div class="user-identity">
+          <div class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</div>
+          <div class="user-meta">
+            <span class="username">{{ user.username }}</span>
+            <span
+              class="role-badge"
+              :class="user.role"
+            >{{ user.role === 'admin' ? '管理员' : '用户' }}</span>
+          </div>
+        </div>
 
-    <div v-if="users.length === 0" class="empty">暂无用户</div>
+        <div class="user-stats">
+          <div class="stat">
+            <span class="stat-label">创建</span>
+            <span class="stat-value mono">{{ formatDate(user.createdAt) }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">数据</span>
+            <span class="stat-value mono">{{ formatSize(user.dbSize) }}</span>
+          </div>
+        </div>
+
+        <div class="user-actions">
+          <button
+            class="action-btn"
+            title="模块权限"
+            :class="{ active: expandedId === user.id }"
+            @click="$emit('toggleExpand', user.id)"
+          >
+            <ChevronDown :size="16" class="expand-icon" :class="{ rotated: expandedId === user.id }" />
+          </button>
+          <button class="action-btn" title="重置密码" @click="$emit('resetPassword', user)">
+            <KeyRound :size="16" />
+          </button>
+          <button class="action-btn danger" title="删除用户" @click="$emit('delete', user)">
+            <Trash2 :size="16" />
+          </button>
+        </div>
+      </div>
+
+      <Transition name="modules">
+        <div v-if="expandedId === user.id" class="modules-panel">
+          <div class="modules-divider" />
+          <ModuleToggles
+            :modules="user.modules"
+            @change="(moduleId: string, enabled: boolean) => $emit('moduleChange', user.id, moduleId, enabled)"
+          />
+        </div>
+      </Transition>
+    </div>
+
+    <div v-if="users.length === 0" class="empty">
+      <span class="empty-icon">-</span>
+      <span>暂无用户</span>
+    </div>
   </div>
 </template>
 
@@ -75,7 +93,7 @@ function formatDate(ts: number): string {
 }
 
 function formatSize(bytes: number | null): string {
-  if (bytes == null) return '-';
+  if (bytes == null) return '--';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -83,81 +101,242 @@ function formatSize(bytes: number | null): string {
 </script>
 
 <style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
+.user-list {
+  display: flex;
+  flex-direction: column;
 }
 
-th, td {
-  padding: var(--spacing-sm) var(--spacing-md);
-  text-align: left;
+.user-card {
   border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition-fast);
 }
 
-th {
-  font-weight: 600;
+.user-card:last-child {
+  border-bottom: none;
+}
+
+.user-card:hover {
+  background: var(--color-bg-hover);
+}
+
+.user-card.expanded {
+  background: var(--color-bg-sidebar);
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  gap: var(--spacing-md);
+}
+
+/* User identity */
+.user-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 160px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border-radius: var(--radius-sm);
   font-size: 13px;
-  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  flex-shrink: 0;
+}
+
+.user-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .username {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-primary);
 }
 
 .role-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  border-radius: 2px;
   border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  background: transparent;
 }
 
 .role-badge.admin {
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border-color: var(--color-accent);
   font-weight: 600;
 }
 
-.actions {
+/* Stats */
+.user-stats {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-lg);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.mono {
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  letter-spacing: -0.2px;
+}
+
+/* Actions */
+.user-actions {
+  display: flex;
+  gap: 4px;
 }
 
 .action-btn {
-  padding: 4px;
-  background: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
 }
 
 .action-btn:hover {
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-tertiary);
+}
+
+.action-btn.active {
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border-color: var(--color-accent);
 }
 
 .action-btn.danger:hover {
-  color: var(--color-danger, #c00);
-  border-color: var(--color-danger, #c00);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: var(--color-bg-primary);
 }
 
-.rotated {
+.expand-icon {
+  transition: transform 0.25s ease;
+}
+
+.expand-icon.rotated {
   transform: rotate(180deg);
-  transition: transform 0.2s;
 }
 
-.modules-row td {
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  background: var(--color-bg-secondary);
+/* Modules panel */
+.modules-panel {
+  padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
-.expanded {
-  background: var(--color-bg-secondary);
+.modules-divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-border),
+    var(--color-border),
+    transparent
+  );
+  margin-bottom: var(--spacing-md);
 }
 
+/* Modules transition */
+.modules-enter-active,
+.modules-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.modules-enter-from,
+.modules-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-bottom: 0;
+}
+
+.modules-enter-to,
+.modules-leave-from {
+  opacity: 1;
+  max-height: 300px;
+}
+
+/* Empty state */
 .empty {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-xl);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+}
+
+.empty-icon {
+  font-size: 24px;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .user-row {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .user-identity {
+    min-width: auto;
+    flex: 1;
+  }
+
+  .user-stats {
+    order: 3;
+    width: 100%;
+    gap: var(--spacing-md);
+    padding-left: 40px;
+  }
+
+  .user-actions {
+    order: 2;
+  }
 }
 </style>

@@ -1,22 +1,59 @@
 <template>
   <div class="admin-panel">
-    <div class="admin-header">
-      <h2>用户管理</h2>
-      <button class="btn-primary" @click="showCreateForm = true">添加用户</button>
+    <header class="admin-header">
+      <div class="header-content">
+        <div class="header-title-group">
+          <div class="header-icon">
+            <Shield :size="20" />
+          </div>
+          <div>
+            <h2>控制台</h2>
+            <p class="header-subtitle">用户管理 / 系统设置</p>
+          </div>
+        </div>
+        <button class="btn-add-user" @click="showCreateForm = true">
+          <UserPlus :size="16" />
+          <span>添加用户</span>
+        </button>
+      </div>
+      <div class="header-line" />
+    </header>
+
+    <div class="admin-body">
+      <SystemSettings class="admin-section" />
+
+      <section class="admin-section">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-title-row">
+              <div class="section-icon">
+                <Users :size="16" />
+              </div>
+              <h3>用户列表</h3>
+            </div>
+            <span class="user-count" v-if="!loading">{{ userList.length }} 用户</span>
+          </div>
+
+          <div class="section-card-body">
+            <div v-if="loading" class="status-message">
+              <span class="pulse-dot" />
+              <span>加载中...</span>
+            </div>
+            <div v-else-if="error" class="status-message error">{{ error }}</div>
+
+            <UserList
+              v-else
+              :users="userList"
+              :expanded-id="expandedUserId"
+              @toggle-expand="toggleExpand"
+              @delete="confirmDelete"
+              @reset-password="openResetPassword"
+              @module-change="handleModuleChange"
+            />
+          </div>
+        </div>
+      </section>
     </div>
-
-    <div v-if="loading" class="loading">加载中...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-
-    <UserList
-      v-else
-      :users="userList"
-      :expanded-id="expandedUserId"
-      @toggle-expand="toggleExpand"
-      @delete="confirmDelete"
-      @reset-password="openResetPassword"
-      @module-change="handleModuleChange"
-    />
 
     <UserForm
       v-if="showCreateForm"
@@ -35,8 +72,10 @@
 </template>
 
 <script setup lang="ts">
+import { Shield, Users, UserPlus } from 'lucide-vue-next';
 import UserList from './components/UserList.vue';
 import UserForm from './components/UserForm.vue';
+import SystemSettings from './components/SystemSettings.vue';
 
 interface AdminUser {
   id: number;
@@ -47,7 +86,6 @@ interface AdminUser {
   modules: Array<{ moduleId: string; enabled: boolean }>;
 }
 
-const { getAuthHeaders } = useAuth();
 const userList = ref<AdminUser[]>([]);
 const loading = ref(true);
 const error = ref('');
@@ -111,45 +149,202 @@ onMounted(fetchUsers);
 
 <style scoped>
 .admin-panel {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
+  padding: 0 var(--spacing-md);
 }
 
+/* Header */
 .admin-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) 0;
 }
 
-.admin-header h2 {
-  font-size: 20px;
-  font-weight: 600;
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
-.btn-primary {
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--color-text);
-  color: var(--color-bg);
-  border: 1px solid var(--color-text);
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border-radius: var(--radius-sm);
+}
+
+h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.header-line {
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent),
+    var(--color-accent),
+    var(--color-border),
+    transparent
+  );
+}
+
+/* Add User Button */
+.btn-add-user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.3px;
 }
 
-.btn-primary:hover {
+.btn-add-user:hover {
   opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.loading,
-.error {
-  text-align: center;
+/* Body */
+.admin-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.admin-section {
+  width: 100%;
+}
+
+/* Section card */
+.section-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.section-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-accent);
+  color: var(--color-accent-inverse);
+  border-radius: var(--radius-sm);
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+.user-count {
+  font-size: 12px;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  color: var(--color-text-tertiary);
+  padding: 2px var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.section-card-body {
+  padding: 0;
+}
+
+/* Status messages */
+.status-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-xl);
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
-.error {
-  color: var(--color-danger, #c00);
+.status-message.error {
+  color: var(--color-danger);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .admin-panel {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+
+  .btn-add-user {
+    width: 100%;
+    justify-content: center;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
 }
 </style>
