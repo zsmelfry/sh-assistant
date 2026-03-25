@@ -558,6 +558,68 @@ test.describe('Wordbooks API - Import Backward Compat', () => {
   });
 });
 
+// ─── 6b. API Tests: Import into empty active wordbook (multi mode) ───
+
+test.describe('Wordbooks API - Import Into Empty Wordbook', () => {
+  test('多词汇本模式下导入到空的活跃词汇本', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Default French wordbook has 0 words — import should fill it, not create new
+    const res = await importFrenchWords(request, token);
+    expect(res.ok()).toBeTruthy();
+
+    const listRes = await authFetch(request, token, 'GET', '/api/vocab/wordbooks');
+    const { wordbooks: wbs } = await listRes.json();
+
+    // Still only 1 wordbook (the default one, now filled)
+    expect(wbs).toHaveLength(1);
+    expect(wbs[0].wordCount).toBe(5);
+    expect(wbs[0].language).toBe('fr');
+    expect(wbs[0].isActive).toBe(true);
+  });
+
+  test('多词汇本模式下导入到非空词汇本时创建新词汇本', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // First import fills the default empty wordbook
+    await importFrenchWords(request, token);
+
+    // Second import should create a new wordbook (active wb now has words)
+    const res = await importEnglishWords(request, token, 'English Words');
+    expect(res.ok()).toBeTruthy();
+
+    const listRes = await authFetch(request, token, 'GET', '/api/vocab/wordbooks');
+    const { wordbooks: wbs } = await listRes.json();
+
+    // Now 2 wordbooks
+    expect(wbs).toHaveLength(2);
+    const englishWb = wbs.find((wb: any) => wb.language === 'en');
+    expect(englishWb).toBeDefined();
+    expect(englishWb.name).toBe('English Words');
+    expect(englishWb.wordCount).toBe(3);
+    expect(englishWb.isActive).toBe(true);
+  });
+
+  test('导入到空词汇本时可更新语言和名称', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Default is French with 0 words — import English into it with a custom name
+    const res = await importEnglishWords(request, token, 'My English Book');
+    expect(res.ok()).toBeTruthy();
+
+    const listRes = await authFetch(request, token, 'GET', '/api/vocab/wordbooks');
+    const { wordbooks: wbs } = await listRes.json();
+
+    expect(wbs).toHaveLength(1);
+    expect(wbs[0].language).toBe('en'); // language updated from fr to en
+    expect(wbs[0].name).toBe('My English Book'); // name updated
+    expect(wbs[0].wordCount).toBe(3);
+  });
+});
+
 // ─── 7. UI Tests: Wordbook Switching ───
 
 test.describe('Wordbooks UI - Wordbook Switching', () => {
