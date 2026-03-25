@@ -5,6 +5,7 @@ import { users, verificationTokens, loginLogs } from '~/server/database/admin-sc
 import { hashToken } from '~/server/utils/token';
 import { validatePassword } from '~/server/utils/password-validation';
 import { createRateLimiter } from '~/server/utils/rate-limiter';
+import { clearAuthCache } from '~/server/middleware/02.auth';
 
 const resetPasswordRateLimiter = createRateLimiter({
   maxAttempts: 5,
@@ -78,6 +79,9 @@ export default defineEventHandler(async (event) => {
   });
 
   transaction();
+
+  // Clear auth cache so token version check takes effect immediately
+  clearAuthCache(user.username);
 
   // Log password reset (fire-and-forget)
   try {
