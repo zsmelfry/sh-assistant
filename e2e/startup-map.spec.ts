@@ -13,7 +13,7 @@ test.beforeEach(async ({ request }) => {
 
 /** 通过 API 获取 JWT token */
 async function getAuthToken(request: APIRequestContext): Promise<string> {
-  const res = await request.post('/api/auth/login', { data: TEST_USER });
+  const res = await request.post('/api/auth/login', { data: { email: `${TEST_USER.username}@test.local`, password: TEST_USER.password } });
   const body = await res.json();
   return body.token;
 }
@@ -53,7 +53,7 @@ async function seedKnowledgeTree(request: APIRequestContext, token: string) {
 async function loginAndGoToStartupMap(page: Page) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#username', TEST_USER.username);
+  await page.fill('#email', `${TEST_USER.username}@test.local`);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   await page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -668,7 +668,7 @@ test.describe('创业地图 - 导航', () => {
   test('侧边栏显示创业地图入口', async ({ page }) => {
     await page.goto('/login');
     await page.waitForSelector('.login-form', { timeout: 10000 });
-    await page.fill('#username', TEST_USER.username);
+    await page.fill('#email', `${TEST_USER.username}@test.local`);
     await page.fill('#password', TEST_USER.password);
     await page.click('.submit-btn');
     await page.waitForURL('**/dashboard', { timeout: 10000 });

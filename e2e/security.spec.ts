@@ -18,7 +18,8 @@ async function getAuthToken(
   request: APIRequestContext,
   user = TEST_USER,
 ): Promise<string> {
-  const res = await request.post('/api/auth/login', { data: user });
+  const email = `${user.username}@test.local`;
+  const res = await request.post('/api/auth/login', { data: { email, password: user.password } });
   expect(res.status()).toBe(200);
   const body = await res.json();
   return body.token;
@@ -48,17 +49,19 @@ test.describe('Login Rate Limiting', () => {
     await request.post('/api/_test/reset');
     await request.post('/api/_test/seed-user', { data: RL_USER1 });
 
+    const email = `${RL_USER1.username}@test.local`;
+
     // Make 5 failed login attempts
     for (let i = 0; i < 5; i++) {
       const res = await request.post('/api/auth/login', {
-        data: { username: RL_USER1.username, password: 'wrong' },
+        data: { email, password: 'wrong' },
       });
       expect(res.status()).toBe(401);
     }
 
     // 6th attempt should be rate limited (429)
     const blocked = await request.post('/api/auth/login', {
-      data: { username: RL_USER1.username, password: 'wrong' },
+      data: { email, password: 'wrong' },
     });
     expect(blocked.status()).toBe(429);
     const body = await blocked.json();
@@ -69,15 +72,17 @@ test.describe('Login Rate Limiting', () => {
     await request.post('/api/_test/reset');
     await request.post('/api/_test/seed-user', { data: RL_USER2 });
 
+    const email = `${RL_USER2.username}@test.local`;
+
     // Trigger lockout
     for (let i = 0; i < 5; i++) {
       await request.post('/api/auth/login', {
-        data: { username: RL_USER2.username, password: 'wrong' },
+        data: { email, password: 'wrong' },
       });
     }
 
     // Correct password should also be blocked
-    const res = await request.post('/api/auth/login', { data: RL_USER2 });
+    const res = await request.post('/api/auth/login', { data: { email, password: RL_USER2.password } });
     expect(res.status()).toBe(429);
   });
 
@@ -85,21 +90,23 @@ test.describe('Login Rate Limiting', () => {
     await request.post('/api/_test/reset');
     await request.post('/api/_test/seed-user', { data: RL_USER3 });
 
+    const email = `${RL_USER3.username}@test.local`;
+
     // Make 3 failed attempts (under threshold)
     for (let i = 0; i < 3; i++) {
       await request.post('/api/auth/login', {
-        data: { username: RL_USER3.username, password: 'wrong' },
+        data: { email, password: 'wrong' },
       });
     }
 
     // Login successfully — should reset counter
-    const success = await request.post('/api/auth/login', { data: RL_USER3 });
+    const success = await request.post('/api/auth/login', { data: { email, password: RL_USER3.password } });
     expect(success.status()).toBe(200);
 
     // Should be able to fail again without being blocked (counter was reset)
     for (let i = 0; i < 4; i++) {
       const res = await request.post('/api/auth/login', {
-        data: { username: RL_USER3.username, password: 'wrong' },
+        data: { email, password: 'wrong' },
       });
       expect(res.status()).toBe(401);
     }

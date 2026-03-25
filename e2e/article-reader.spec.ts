@@ -15,7 +15,7 @@ test.beforeEach(async ({ request }) => {
 async function loginAndGotoReader(page: Page, request: APIRequestContext) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#username', TEST_USER.username);
+  await page.fill('#email', `${TEST_USER.username}@test.local`);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   await page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -33,7 +33,7 @@ async function loginAndGotoReader(page: Page, request: APIRequestContext) {
 async function loginAndGotoHome(page: Page) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#username', TEST_USER.username);
+  await page.fill('#email', `${TEST_USER.username}@test.local`);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   await page.waitForURL('**/dashboard', { timeout: 10000 });

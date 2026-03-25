@@ -28,11 +28,13 @@ export default defineEventHandler(async (event) => {
   const now = Date.now();
 
   // Insert user into admin.db
+  // Auto-generate email from username if not provided (needed for email-based login)
+  const email = body.email || `${body.username}@test.local`;
   const [user] = await db.insert(users).values({
     username: body.username,
     passwordHash,
     role: 'admin',
-    email: body.email || null,
+    email,
     createdAt: now,
   }).returning();
 

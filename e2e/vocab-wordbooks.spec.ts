@@ -12,7 +12,7 @@ test.beforeEach(async ({ request }) => {
 // ─── 工具函数 ───
 
 async function getAuthToken(request: APIRequestContext): Promise<string> {
-  const res = await request.post('/api/auth/login', { data: TEST_USER });
+  const res = await request.post('/api/auth/login', { data: { email: `${TEST_USER.username}@test.local`, password: TEST_USER.password } });
   const body = await res.json();
   return body.token;
 }
@@ -70,7 +70,7 @@ async function importEnglishWords(request: APIRequestContext, token: string, wor
 async function loginAndGoToVocab(page: Page) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#username', TEST_USER.username);
+  await page.fill('#email', `${TEST_USER.username}@test.local`);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   await page.waitForURL('**/*', { timeout: 10000 });

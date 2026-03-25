@@ -10,7 +10,7 @@ async function resetAndSeedUser(request: APIRequestContext) {
 }
 
 async function getAuthToken(request: APIRequestContext): Promise<string> {
-  const res = await request.post('/api/auth/login', { data: TEST_USER });
+  const res = await request.post('/api/auth/login', { data: { email: `${TEST_USER.username}@test.local`, password: TEST_USER.password } });
   const body = await res.json();
   return body.token;
 }

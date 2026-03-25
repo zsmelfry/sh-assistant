@@ -14,8 +14,9 @@ async function seedUser(request: APIRequestContext, user: { username: string; pa
   await request.post('/api/_test/seed-user', { data: user });
 }
 
-async function getAuthToken(request: APIRequestContext, user: { username: string; password: string }): Promise<string> {
-  const res = await request.post('/api/auth/login', { data: user });
+async function getAuthToken(request: APIRequestContext, user: { username: string; password: string; email?: string }): Promise<string> {
+  const email = user.email || `${user.username}@test.local`;
+  const res = await request.post('/api/auth/login', { data: { email, password: user.password } });
   const body = await res.json();
   return body.token;
 }
@@ -262,9 +263,9 @@ test.describe('Invite Flow API', () => {
       data: { token, username: 'logintest', password: 'securepass99' },
     });
 
-    // Login with the new credentials (login uses username, not email)
+    // Login with the new credentials (login uses email)
     const loginRes = await request.post('/api/auth/login', {
-      data: { username: 'logintest', password: 'securepass99' },
+      data: { email: INVITE_EMAIL, password: 'securepass99' },
     });
     expect(loginRes.status()).toBe(200);
     const body = await loginRes.json();

@@ -1,7 +1,7 @@
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
 
 // ─── Test constants ───
-const TEST_USER = { username: 'testuser', password: 'testpass123' };
+const TEST_USER = { username: 'testuser', password: 'testpass123', email: 'testuser@test.local' };
 
 // ─── Helpers ───
 
@@ -22,10 +22,10 @@ async function resetAndSeedUser(request: APIRequestContext) {
 }
 
 /** Login via UI and wait for redirect to home */
-async function loginViaUI(page: Page, username: string, password: string) {
+async function loginViaUI(page: Page, email: string, password: string) {
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#username', username);
+  await page.fill('#email', email);
   await page.fill('#password', password);
   await page.click('.submit-btn');
 }
@@ -35,7 +35,7 @@ async function loginAndGoto(page: Page, request: APIRequestContext, path: string
   await resetAndSeedUser(request);
   await page.goto('/login');
   await page.waitForSelector('.login-form', { timeout: 10000 });
-  await page.fill('#username', TEST_USER.username);
+  await page.fill('#email', TEST_USER.email);
   await page.fill('#password', TEST_USER.password);
   await page.click('.submit-btn');
   // Wait for redirect to home (first tool = dashboard)
@@ -63,7 +63,7 @@ test.describe('Authentication', () => {
   });
 
   test('login with correct credentials succeeds', async ({ page }) => {
-    await loginViaUI(page, TEST_USER.username, TEST_USER.password);
+    await loginViaUI(page, TEST_USER.email, TEST_USER.password);
     // Should redirect to home/first tool (dashboard)
     await page.waitForURL('**/dashboard', { timeout: 10000 });
     // Verify app content loaded (sidebar visible on desktop viewport)
@@ -71,23 +71,23 @@ test.describe('Authentication', () => {
   });
 
   test('login with wrong password shows error', async ({ page }) => {
-    await loginViaUI(page, TEST_USER.username, 'wrongpassword');
+    await loginViaUI(page, TEST_USER.email, 'wrongpassword');
     // Should stay on login page with error
     await expect(page.locator('.error-msg')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.error-msg')).toContainText('用户名或密码错误');
+    await expect(page.locator('.error-msg')).toContainText('邮箱或密码错误');
     // Should still be on login page
     expect(page.url()).toContain('/login');
   });
 
   test('login with non-existent user shows error', async ({ page }) => {
-    await loginViaUI(page, 'nonexistent', 'somepassword');
+    await loginViaUI(page, 'nonexistent@example.com', 'somepassword');
     await expect(page.locator('.error-msg')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.error-msg')).toContainText('用户名或密码错误');
+    await expect(page.locator('.error-msg')).toContainText('邮箱或密码错误');
   });
 
   test('token persists after page reload', async ({ page }) => {
     // Login first
-    await loginViaUI(page, TEST_USER.username, TEST_USER.password);
+    await loginViaUI(page, TEST_USER.email, TEST_USER.password);
     await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // Reload the page
@@ -108,7 +108,7 @@ test.describe('Authentication', () => {
   test('API requests with valid token succeed', async ({ request }) => {
     // Login via API to get token
     const loginRes = await request.post('/api/auth/login', {
-      data: TEST_USER,
+      data: { email: TEST_USER.email, password: TEST_USER.password },
     });
     expect(loginRes.status()).toBe(200);
     const { token } = await loginRes.json();
@@ -130,7 +130,7 @@ test.describe('Authentication', () => {
 
   test('authenticated user visiting /login is redirected to home', async ({ page }) => {
     // Login first
-    await loginViaUI(page, TEST_USER.username, TEST_USER.password);
+    await loginViaUI(page, TEST_USER.email, TEST_USER.password);
     await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // Try to visit login page
@@ -143,7 +143,7 @@ test.describe('Authentication', () => {
 
   test('logout clears token and redirects to login', async ({ page }) => {
     // Login
-    await loginViaUI(page, TEST_USER.username, TEST_USER.password);
+    await loginViaUI(page, TEST_USER.email, TEST_USER.password);
     await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // Click logout in sidebar

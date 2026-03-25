@@ -1,8 +1,7 @@
 import { eq, and, isNull } from 'drizzle-orm';
 import { useAdminDB } from '~/server/database';
 import { users, verificationTokens } from '~/server/database/admin-schema';
-import { generateToken } from '~/server/utils/token';
-import { RESET_EXPIRES_MINUTES } from '~/server/utils/token';
+import { generateToken, RESET_EXPIRES_MINUTES } from '~/server/utils/token';
 import { sendEmail } from '~/server/utils/email';
 import { resetEmailHtml } from '~/server/utils/email-templates';
 import { createRateLimiter } from '~/server/utils/rate-limiter';

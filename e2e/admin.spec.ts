@@ -14,8 +14,9 @@ async function seedUser(request: APIRequestContext, user: { username: string; pa
   await request.post('/api/_test/seed-user', { data: user });
 }
 
-async function getAuthToken(request: APIRequestContext, user: { username: string; password: string }): Promise<string> {
-  const res = await request.post('/api/auth/login', { data: user });
+async function getAuthToken(request: APIRequestContext, user: { username: string; password: string; email?: string }): Promise<string> {
+  const email = user.email || `${user.username}@test.local`;
+  const res = await request.post('/api/auth/login', { data: { email, password: user.password } });
   const body = await res.json();
   return body.token;
 }
@@ -112,9 +113,9 @@ test.describe('Admin User Management API', () => {
     });
     expect(resetRes.status()).toBe(200);
 
-    // Verify new password works
+    // Verify new password works (login uses email)
     const loginRes = await request.post('/api/auth/login', {
-      data: { username: 'pwduser', password: 'newpass456' },
+      data: { email: 'pwduser@example.com', password: 'newpass456' },
     });
     expect(loginRes.status()).toBe(200);
   });
@@ -296,13 +297,13 @@ test.describe('Admin User Management API', () => {
     expect(updateRes.status()).toBe(409);
   });
 
-  test('existing seeded users have null email', async ({ request }) => {
+  test('seeded users have auto-generated email', async ({ request }) => {
     const api = authFetch(request, adminToken);
 
     const listRes = await api.get('/api/admin/users');
     const users = await listRes.json();
     const seededAdmin = users.find((u: any) => u.username === ADMIN_USER.username);
-    expect(seededAdmin.email).toBeNull();
+    expect(seededAdmin.email).toBe(`${ADMIN_USER.username}@test.local`);
   });
 });
 
@@ -331,7 +332,7 @@ test.describe('Module Permission Enforcement', () => {
       enabledModules: ['dashboard'],
     });
 
-    const userToken = await getAuthToken(request, { username: 'limited', password: 'pass1234' });
+    const userToken = await getAuthToken(request, { username: 'limited', password: 'pass1234', email: 'limited@example.com' });
     const userApi = authFetch(request, userToken);
 
     // Accessing habits (habit-tracker module) should be 403
@@ -353,7 +354,7 @@ test.describe('Module Permission Enforcement', () => {
       email: 'normie@example.com',
     });
 
-    const userToken = await getAuthToken(request, { username: 'normie', password: 'pass1234' });
+    const userToken = await getAuthToken(request, { username: 'normie', password: 'pass1234', email: 'normie@example.com' });
     const userApi = authFetch(request, userToken);
 
     const res = await userApi.get('/api/admin/users');
@@ -393,8 +394,8 @@ test.describe('Data Isolation', () => {
       enabledModules: ['habit-tracker'],
     });
 
-    const aliceToken = await getAuthToken(request, { username: 'alice', password: 'pass1234' });
-    const bobToken = await getAuthToken(request, { username: 'bobuser', password: 'pass1234' });
+    const aliceToken = await getAuthToken(request, { username: 'alice', password: 'pass1234', email: 'alice@example.com' });
+    const bobToken = await getAuthToken(request, { username: 'bobuser', password: 'pass1234', email: 'bobuser@example.com' });
 
     const aliceApi = authFetch(request, aliceToken);
     const bobApi = authFetch(request, bobToken);
@@ -418,7 +419,7 @@ test.describe('Data Isolation', () => {
   });
 
   test('login returns role and enabledModules', async ({ request }) => {
-    const res = await request.post('/api/auth/login', { data: ADMIN_USER });
+    const res = await request.post('/api/auth/login', { data: { email: `${ADMIN_USER.username}@test.local`, password: ADMIN_USER.password } });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.token).toBeTruthy();
@@ -487,7 +488,7 @@ test.describe('Login Logs API', () => {
       role: 'user',
       email: 'loguser2@test.com',
     });
-    await getAuthToken(request, { username: 'loguser2', password: 'pass1234' });
+    await getAuthToken(request, { username: 'loguser2', password: 'pass1234', email: 'loguser2@test.com' });
 
     // Get user IDs
     const usersRes = await api.get('/api/admin/users');
@@ -524,7 +525,7 @@ test.describe('Login Logs API', () => {
       role: 'user',
       email: 'logorder@test.com',
     });
-    await getAuthToken(request, { username: 'logorder', password: 'pass1234' });
+    await getAuthToken(request, { username: 'logorder', password: 'pass1234', email: 'logorder@test.com' });
 
     // Fetch all logs (multiple logins happened: admin in beforeEach + logorder)
     const logsRes = await api.get('/api/admin/login-logs');
@@ -547,7 +548,7 @@ test.describe('Login Logs API', () => {
       role: 'user',
       email: 'limituser@test.com',
     });
-    await getAuthToken(request, { username: 'limituser', password: 'pass1234' });
+    await getAuthToken(request, { username: 'limituser', password: 'pass1234', email: 'limituser@test.com' });
 
     const logsRes = await api.get('/api/admin/login-logs?limit=1');
     expect(logsRes.status()).toBe(200);
@@ -588,7 +589,7 @@ test.describe('Login Logs API', () => {
       email: 'nonadmin@test.com',
     });
 
-    const userToken = await getAuthToken(request, { username: 'nonadmin', password: 'pass1234' });
+    const userToken = await getAuthToken(request, { username: 'nonadmin', password: 'pass1234', email: 'nonadmin@test.com' });
     const userApi = authFetch(request, userToken);
 
     const logsRes = await userApi.get('/api/admin/login-logs');
