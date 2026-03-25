@@ -685,7 +685,7 @@ test.describe('Wordbooks UI - Import Single Mode', () => {
 // ─── 9. UI Tests: Create wordbook via UI ───
 
 test.describe('Wordbooks UI - Create Wordbook', () => {
-  test('通过 UI 创建新词汇本', async ({ page, request }) => {
+  test('通过 UI "+" 按钮打开导入弹窗', async ({ page, request }) => {
     const token = await getAuthToken(request);
     await enableMultiWordbook(request);
 
@@ -697,29 +697,12 @@ test.describe('Wordbooks UI - Create Wordbook', () => {
     // WordbookSelector should be visible
     await expect(page.locator('.wordbookSelector')).toBeVisible({ timeout: 10000 });
 
-    // Click "+" button to show create form
+    // Click "+" button — should open ImportModal
     await page.locator('.wordbookTab.addBtn').click();
 
-    // Create form should be visible
-    await expect(page.locator('.createForm')).toBeVisible({ timeout: 5000 });
-
-    // Fill in the name
-    await page.locator('.createInput').fill('English Vocab');
-
-    // Select English language
-    await page.locator('.createSelect').selectOption('en');
-
-    // Click create button
-    await page.locator('.createBtn').click();
-
-    // Wait for the new wordbook tab to appear
-    await expect(page.locator('.wordbookTab').filter({ hasText: 'English Vocab' })).toBeVisible({ timeout: 10000 });
-
-    // The new wordbook should be active (since createWordbook activates it)
-    await expect(page.locator('.wordbookTab.active')).toContainText('English Vocab');
-
-    // Create form should be hidden after successful creation
-    await expect(page.locator('.createForm')).not.toBeVisible();
+    // ImportModal should be visible (it uses BaseModal with title "导入词汇 (CSV)")
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('导入词汇 (CSV)')).toBeVisible();
   });
 });
 

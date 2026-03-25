@@ -1,7 +1,7 @@
 <template>
   <div class="vocabTracker">
     <!-- 词汇本切换（始终显示，不依赖 hasWords） -->
-    <WordbookSelector />
+    <WordbookSelector @create="showImportModal = true" />
 
     <!-- 初始化错误 -->
     <div v-if="initError" class="emptyState">
