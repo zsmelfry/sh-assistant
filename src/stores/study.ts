@@ -245,6 +245,13 @@ export const useStudyStore = defineStore('study', () => {
     error.value = null;
   }
 
+  // Reload overview when active wordbook changes
+  watch(() => vocabStore.activeWordbookId, () => {
+    if (overview.value) {
+      loadOverview();
+    }
+  });
+
   return {
     cardQueue,
     currentIndex,

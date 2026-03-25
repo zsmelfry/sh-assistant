@@ -183,6 +183,12 @@ async function loadCards() {
 }
 
 onMounted(loadCards);
+
+// Reload when active wordbook changes
+watch(() => vocabStore.activeWordbookId, () => {
+  currentPage.value = 1;
+  loadCards();
+});
 </script>
 
 <style scoped>

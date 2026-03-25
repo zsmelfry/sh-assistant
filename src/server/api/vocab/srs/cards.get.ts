@@ -2,10 +2,14 @@ import { useDB } from '~/server/database';
 import { eq } from 'drizzle-orm';
 import { srsCards } from '../../../database/schemas/srs';
 import { vocabWords } from '../../../database/schemas/vocab';
+import { getActiveWordbook } from '~/server/utils/wordbook-helpers';
 
 export default defineEventHandler(async (event) => {
   const db = useDB(event);
   const now = Date.now();
+
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
 
   // Join srs_cards with vocab_words to get word text and rank
   const rows = await db
@@ -22,6 +26,7 @@ export default defineEventHandler(async (event) => {
     })
     .from(srsCards)
     .innerJoin(vocabWords, eq(srsCards.wordId, vocabWords.id))
+    .where(eq(vocabWords.wordbookId, activeWordbook.id))
     .orderBy(vocabWords.rank);
 
   // Compute SRS stage for each card
