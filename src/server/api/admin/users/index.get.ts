@@ -29,7 +29,7 @@ export default defineEventHandler(async () => {
     let multiWordbookEnabled = false;
     try {
       const userDb = useUserDB(u.username);
-      const rows = await userDb.select().from(vocabSettings).where(eq(vocabSettings.key, 'multi_wordbook_enabled')).limit(1);
+      const rows = userDb.select().from(vocabSettings).where(eq(vocabSettings.key, 'multi_wordbook_enabled')).limit(1).all();
       multiWordbookEnabled = rows.length > 0 && rows[0].value === 'true';
     } catch { /* user DB may not exist yet */ }
 
