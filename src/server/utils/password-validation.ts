@@ -6,7 +6,7 @@ const COMMON_PASSWORDS = new Set([
   'password1', 'iloveyou', 'sunshine', 'princess', 'football',
   'charlie', 'access14', 'trustno1', 'superman', 'michael',
   'master12', 'dragon12', 'qwertyui', 'baseball', 'abcdefgh',
-  'letmein1', 'monkey12', 'shadow12', 'master12', 'michael1',
+  'letmein1', 'monkey12', 'shadow12', 'jessica1', 'michael1',
   'jennifer', 'jordan23', 'harley12', 'ranger12', 'thomas12',
   'daniel12', 'matthew1', 'whatever', 'computer', 'internet',
   'starwars', 'mercedes', 'maverick', 'passw0rd', 'p@ssw0rd',

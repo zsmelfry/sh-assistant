@@ -3,6 +3,8 @@ interface RateLimiterOptions {
   maxAttempts: number;
   /** Time window in milliseconds */
   windowMs: number;
+  /** Custom message prefix for the 429 error (default: '请求次数过多') */
+  messagePrefix?: string;
 }
 
 interface RateLimiter {
@@ -19,7 +21,7 @@ interface RateLimiter {
  * Each limiter maintains its own attempt map.
  */
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
-  const { maxAttempts, windowMs } = options;
+  const { maxAttempts, windowMs, messagePrefix = '请求次数过多' } = options;
   const attempts = new Map<string, { count: number; firstAttempt: number }>();
 
   return {
@@ -37,7 +39,7 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
           const remainingSec = Math.ceil((windowMs - (now - record.firstAttempt)) / 1000);
           throw createError({
             statusCode: 429,
-            message: `请求次数过多，请 ${Math.ceil(remainingSec / 60)} 分钟后再试`,
+            message: `${messagePrefix}，请 ${Math.ceil(remainingSec / 60)} 分钟后再试`,
           });
         }
       }

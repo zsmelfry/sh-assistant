@@ -9,6 +9,7 @@ import { createRateLimiter } from '~/server/utils/rate-limiter';
 const loginRateLimiter = createRateLimiter({
   maxAttempts: 5,
   windowMs: 15 * 60 * 1000, // 15 minutes
+  messagePrefix: '登录尝试次数过多',
 });
 
 export default defineEventHandler(async (event) => {

@@ -2,6 +2,16 @@
  * Email templates — Chinese content, minimal HTML, mobile-friendly.
  */
 
+/** Escape HTML special characters to prevent XSS in email content */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function baseTemplate(content: string): string {
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -30,11 +40,12 @@ function baseTemplate(content: string): string {
  * @param expiresHours Number of hours until the invite expires
  */
 export function inviteEmailHtml(inviteUrl: string, expiresHours: number): string {
+  const safeUrl = escapeHtml(inviteUrl);
   return baseTemplate(`
     <h2 style="margin-top:0;">您收到了一份邀请</h2>
     <p>管理员邀请您加入「个人助手」。请点击下方按钮设置您的账户：</p>
-    <p><a href="${inviteUrl}" class="btn">设置账户</a></p>
-    <p class="link">如果按钮无法点击，请复制此链接到浏览器：<br>${inviteUrl}</p>
+    <p><a href="${safeUrl}" class="btn">设置账户</a></p>
+    <p class="link">如果按钮无法点击，请复制此链接到浏览器：<br>${safeUrl}</p>
     <div class="footer">
       <p>此邀请链接将在 ${expiresHours} 小时后过期。</p>
       <p>如果您没有预期收到此邮件，请忽略。</p>
@@ -48,11 +59,12 @@ export function inviteEmailHtml(inviteUrl: string, expiresHours: number): string
  * @param expiresMinutes Number of minutes until the reset link expires
  */
 export function resetEmailHtml(resetUrl: string, expiresMinutes: number): string {
+  const safeUrl = escapeHtml(resetUrl);
   return baseTemplate(`
     <h2 style="margin-top:0;">重置密码</h2>
     <p>我们收到了重置您密码的请求。请点击下方按钮设置新密码：</p>
-    <p><a href="${resetUrl}" class="btn">重置密码</a></p>
-    <p class="link">如果按钮无法点击，请复制此链接到浏览器：<br>${resetUrl}</p>
+    <p><a href="${safeUrl}" class="btn">重置密码</a></p>
+    <p class="link">如果按钮无法点击，请复制此链接到浏览器：<br>${safeUrl}</p>
     <div class="footer">
       <p>此链接将在 ${expiresMinutes} 分钟后过期。</p>
       <p>如果您没有请求重置密码，请忽略此邮件，您的密码不会被更改。</p>
