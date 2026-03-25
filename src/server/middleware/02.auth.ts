@@ -67,7 +67,9 @@ export default defineEventHandler((event) => {
     !pathname.startsWith('/api/') ||
     pathname === '/api/health' ||
     pathname.startsWith('/api/_test/') ||
-    (pathname === '/api/auth/login' && event.method === 'POST')
+    (pathname === '/api/auth/login' && event.method === 'POST') ||
+    (pathname === '/api/auth/accept-invite' && event.method === 'POST') ||
+    (pathname === '/api/auth/verify-token' && event.method === 'POST')
   ) {
     return;
   }

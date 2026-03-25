@@ -4,10 +4,10 @@ export default defineNuxtRouteMiddleware((to) => {
 
   const { isAuthenticated } = useAuth();
 
-  // Allow access to login page without auth
-  if (to.path === '/login') {
+  // Allow access to login and invite pages without auth
+  if (to.path === '/login' || to.path.startsWith('/invite/')) {
     // If already authenticated, redirect away from login
-    if (isAuthenticated.value) {
+    if (isAuthenticated.value && to.path === '/login') {
       return navigateTo('/');
     }
     return;
