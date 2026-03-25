@@ -227,6 +227,48 @@ test.describe('Reset Password API', () => {
     expect(loginRes.status()).toBe(401);
   });
 
+  test('forgot-password + reset works for user created via invite (not seed)', async ({ request }) => {
+    // Create admin token to send invite
+    const adminToken = await getAuthToken(request, ADMIN_EMAIL, ADMIN_USER.password);
+    const api = authFetch(request, adminToken);
+
+    // Send invite and accept it
+    const inviteEmail = 'invited-reset@test.com';
+    const sendRes = await api.post('/api/admin/invites', { email: inviteEmail });
+    const { inviteUrl } = await sendRes.json();
+    const inviteToken = inviteUrl.split('/invite/').pop()!;
+
+    await request.post('/api/auth/accept-invite', {
+      data: { token: inviteToken, username: 'invitedresetter', password: 'originalpass1' },
+    });
+
+    // Now request forgot-password
+    const forgotRes = await request.post('/api/auth/forgot-password', {
+      data: { email: inviteEmail },
+    });
+    expect(forgotRes.status()).toBe(200);
+
+    // Create reset token via test helper
+    const tokenRes = await request.post('/api/_test/create-reset-token', {
+      data: { email: inviteEmail },
+    });
+    expect(tokenRes.status()).toBe(200);
+    const { token: resetToken } = await tokenRes.json();
+
+    // Reset password
+    const resetRes = await request.post('/api/auth/reset-password', {
+      data: { token: resetToken, password: 'newresetpass1' },
+    });
+    expect(resetRes.status()).toBe(200);
+
+    // Login with new password
+    const loginRes = await request.post('/api/auth/login', {
+      data: { email: inviteEmail, password: 'newresetpass1' },
+    });
+    expect(loginRes.status()).toBe(200);
+    expect((await loginRes.json()).token).toBeTruthy();
+  });
+
   test('after reset, tokenVersion is bumped (old JWT invalidated)', async ({ request }) => {
     // Use a separate user to avoid login rate limit interference from other tests
     const TV_USER = { username: 'tvuser', password: 'tvpass12345' };
@@ -321,5 +363,35 @@ test.describe('Login Page UI', () => {
 
     // Back to login link should be visible
     await expect(page.locator('.back-link')).toBeVisible();
+  });
+});
+
+// ═══════════════════════════════════════
+// Security Header Tests
+// ═══════════════════════════════════════
+
+test.describe('Security Headers on Token Pages', () => {
+  test('invite page sets Cache-Control: no-store and Referrer-Policy: no-referrer', async ({ page }) => {
+    const response = await page.goto('/invite/some-token');
+    expect(response).not.toBeNull();
+    const headers = response!.headers();
+    expect(headers['cache-control']).toContain('no-store');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+  });
+
+  test('reset-password page sets Cache-Control: no-store and Referrer-Policy: no-referrer', async ({ page }) => {
+    const response = await page.goto('/reset-password/some-token');
+    expect(response).not.toBeNull();
+    const headers = response!.headers();
+    expect(headers['cache-control']).toContain('no-store');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+  });
+
+  test('normal page does NOT override Referrer-Policy to no-referrer', async ({ page }) => {
+    const response = await page.goto('/login');
+    expect(response).not.toBeNull();
+    const headers = response!.headers();
+    // Normal pages use the default policy, not no-referrer
+    expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   });
 });

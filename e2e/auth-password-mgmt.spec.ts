@@ -373,6 +373,31 @@ test.describe('Admin Force Reset API', () => {
     const resetRes = await api.post('/api/admin/users/99999/force-reset');
     expect(resetRes.status()).toBe(404);
   });
+
+  test('after force-reset, old JWT is rejected on real module endpoint (not just session-start)', async ({ request }) => {
+    // Create user via invite with dashboard module enabled
+    const user = await createUserViaInvite(request, adminToken, {
+      email: 'freset5@test.com',
+      username: 'freset5',
+      password: 'pass12345',
+    });
+
+    const oldToken = user.token;
+
+    // Get user ID from admin list
+    const adminApi = authFetch(request, adminToken);
+    const listRes = await adminApi.get('/api/admin/users');
+    const users = await listRes.json();
+    const targetUser = users.find((u: any) => u.username === 'freset5');
+
+    // Force-reset
+    await adminApi.post(`/api/admin/users/${targetUser.id}/force-reset`);
+
+    // Old token should be rejected on a real module endpoint
+    const oldApi = authFetch(request, oldToken);
+    const dashRes = await oldApi.get('/api/dashboard/summary');
+    expect(dashRes.status()).toBe(401);
+  });
 });
 
 // ═══════════════════════════════════════

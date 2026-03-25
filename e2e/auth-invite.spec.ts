@@ -272,6 +272,104 @@ test.describe('Invite Flow API', () => {
     expect(body.token).toBeTruthy();
     expect(body.role).toBeDefined();
   });
+
+  test('accept invite with email already registered as user is rejected', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a user with a specific email via admin API
+    await api.post('/api/admin/users', {
+      username: 'existinguser',
+      password: 'pass12345',
+      role: 'user',
+      email: 'taken@example.com',
+    });
+
+    // Send invite to the same email
+    // First, we need to work around the duplicate check on pending invites
+    // Use a different email for the invite, then the user already exists check fires at accept time
+    const sendRes = await api.post('/api/admin/invites', { email: 'fresh@example.com' });
+    const { inviteUrl } = await sendRes.json();
+    const token = extractToken(inviteUrl);
+
+    // Manually create a user with fresh@example.com email before accepting
+    await api.post('/api/admin/users', {
+      username: 'blocker',
+      password: 'pass12345',
+      role: 'user',
+      email: 'fresh@example.com',
+    });
+
+    // Accept invite — email collision should be rejected
+    const acceptRes = await request.post('/api/auth/accept-invite', {
+      data: { token, username: 'newperson', password: 'securepass99' },
+    });
+    expect(acceptRes.status()).toBe(409);
+  });
+
+  test('accept invite with revoked token fails', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Send invite
+    const sendRes = await api.post('/api/admin/invites', { email: 'revoked@example.com' });
+    const { inviteUrl, id } = await sendRes.json();
+    const token = extractToken(inviteUrl);
+
+    // Revoke the invite
+    const deleteRes = await api.delete(`/api/admin/invites/${id}`);
+    expect(deleteRes.status()).toBe(200);
+
+    // Try to accept revoked invite — should fail
+    const acceptRes = await request.post('/api/auth/accept-invite', {
+      data: { token, username: 'revokeduser', password: 'securepass99' },
+    });
+    expect(acceptRes.status()).toBe(400);
+  });
+
+  test('invite with role and modules propagates to accepted user', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Send invite with specific role and modules
+    const sendRes = await api.post('/api/admin/invites', {
+      email: 'roletest@example.com',
+      role: 'user',
+      enabledModules: ['dashboard', 'habit-tracker'],
+    });
+    expect(sendRes.status()).toBe(200);
+    const { inviteUrl } = await sendRes.json();
+    const token = extractToken(inviteUrl);
+
+    // Accept invite
+    const acceptRes = await request.post('/api/auth/accept-invite', {
+      data: { token, username: 'roleuser', password: 'securepass99' },
+    });
+    expect(acceptRes.status()).toBe(200);
+    const body = await acceptRes.json();
+    expect(body.role).toBe('user');
+    expect(body.enabledModules).toBeDefined();
+  });
+
+  test('non-admin cannot access invite management APIs', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a normal user
+    await api.post('/api/admin/users', {
+      username: 'normie',
+      password: 'pass12345',
+      role: 'user',
+      email: 'normie@example.com',
+    });
+
+    const userToken = await getAuthToken(request, { username: 'normie', password: 'pass12345', email: 'normie@example.com' });
+    const userApi = authFetch(request, userToken);
+
+    // Non-admin cannot list invites
+    const listRes = await userApi.get('/api/admin/invites');
+    expect(listRes.status()).toBe(403);
+
+    // Non-admin cannot send invites
+    const sendRes = await userApi.post('/api/admin/invites', { email: 'hacker@example.com' });
+    expect(sendRes.status()).toBe(403);
+  });
 });
 
 // ═══════════════════════════════════════
