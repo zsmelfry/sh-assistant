@@ -428,3 +428,232 @@ test.describe('Wordbooks UI - WordbookSelector', () => {
     await expect(page.locator('[role="dialog"]').locator('.fieldInput')).toBeVisible();
   });
 });
+
+// ─── 4. API Tests: Settings ───
+
+test.describe('Wordbooks API - Settings', () => {
+  test('PUT /api/vocab/settings 切换 multi_wordbook_enabled', async ({ request }) => {
+    const token = await getAuthToken(request);
+
+    // Initially multi_wordbook_enabled is false (default)
+    const getRes1 = await authFetch(request, token, 'GET', '/api/vocab/settings');
+    expect(getRes1.ok()).toBeTruthy();
+    const settings1 = await getRes1.json();
+    // Either key is missing or value is empty/falsy
+    expect(settings1.multi_wordbook_enabled || '').not.toBe('true');
+
+    // Enable multi_wordbook_enabled via PUT
+    const putRes = await authFetch(request, token, 'PUT', '/api/vocab/settings', {
+      key: 'multi_wordbook_enabled',
+      value: 'true',
+    });
+    expect(putRes.ok()).toBeTruthy();
+    const putBody = await putRes.json();
+    expect(putBody.ok).toBe(true);
+
+    // Verify it persisted
+    const getRes2 = await authFetch(request, token, 'GET', '/api/vocab/settings');
+    const settings2 = await getRes2.json();
+    expect(settings2.multi_wordbook_enabled).toBe('true');
+  });
+
+  test('PUT /api/vocab/settings 拒绝不支持的 key', async ({ request }) => {
+    const token = await getAuthToken(request);
+    const res = await authFetch(request, token, 'PUT', '/api/vocab/settings', {
+      key: 'unsupported_key',
+      value: 'whatever',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('PUT /api/vocab/settings 可以禁用 multi_wordbook_enabled', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Disable via PUT
+    const putRes = await authFetch(request, token, 'PUT', '/api/vocab/settings', {
+      key: 'multi_wordbook_enabled',
+      value: '',
+    });
+    expect(putRes.ok()).toBeTruthy();
+
+    // Verify disabled
+    const getRes = await authFetch(request, token, 'GET', '/api/vocab/settings');
+    const settings = await getRes.json();
+    expect(settings.multi_wordbook_enabled).toBe('');
+  });
+});
+
+// ─── 5. API Tests: Stats scoping by active wordbook ───
+
+test.describe('Wordbooks API - Stats Scoping', () => {
+  test('GET /api/vocab/stats 只返回活跃词汇本的统计', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Import French words (5 words) into a new wordbook
+    await importFrenchWords(request, token, 'French Words');
+
+    // Import English words (3 words) into another wordbook — this becomes active
+    await importEnglishWords(request, token, 'English Words');
+
+    // Stats should reflect the active (English) wordbook: 3 words
+    const statsRes = await authFetch(request, token, 'GET', '/api/vocab/stats');
+    expect(statsRes.ok()).toBeTruthy();
+    const stats = await statsRes.json();
+    expect(stats.total).toBe(3);
+
+    // Switch to the French wordbook that has words
+    const listRes = await authFetch(request, token, 'GET', '/api/vocab/wordbooks');
+    const { wordbooks: wbs } = await listRes.json();
+    const frenchWb = wbs.find((wb: any) => wb.language === 'fr' && wb.wordCount > 0);
+    expect(frenchWb).toBeDefined();
+
+    await authFetch(request, token, 'POST', `/api/vocab/wordbooks/${frenchWb.id}/activate`);
+
+    // Stats should now reflect the French wordbook: 5 words
+    const statsRes2 = await authFetch(request, token, 'GET', '/api/vocab/stats');
+    const stats2 = await statsRes2.json();
+    expect(stats2.total).toBe(5);
+  });
+});
+
+// ─── 6. API Tests: Import backward compatibility (single mode) ───
+
+test.describe('Wordbooks API - Import Backward Compat', () => {
+  test('单词汇本模式下导入替换现有词汇', async ({ request }) => {
+    const token = await getAuthToken(request);
+
+    // First import: 5 French words
+    const res1 = await importFrenchWords(request, token);
+    expect(res1.ok()).toBeTruthy();
+    const body1 = await res1.json();
+    expect(body1.imported).toBe(5);
+
+    // Verify 5 words exist
+    const wordsRes1 = await authFetch(request, token, 'GET', '/api/vocab/words');
+    const words1 = await wordsRes1.json();
+    expect(words1.total).toBe(5);
+
+    // Second import: 3 English words (replaces, since multi is disabled)
+    const res2 = await importEnglishWords(request, token);
+    expect(res2.ok()).toBeTruthy();
+    const body2 = await res2.json();
+    expect(body2.imported).toBe(3);
+
+    // Verify old words replaced — only 3 words now
+    const wordsRes2 = await authFetch(request, token, 'GET', '/api/vocab/words');
+    const words2 = await wordsRes2.json();
+    expect(words2.total).toBe(3);
+
+    // Still only 1 wordbook (the same default one, updated)
+    const listRes = await authFetch(request, token, 'GET', '/api/vocab/wordbooks');
+    const { wordbooks: wbs } = await listRes.json();
+    expect(wbs).toHaveLength(1);
+    expect(wbs[0].language).toBe('en'); // language updated to English
+    expect(wbs[0].wordCount).toBe(3);
+  });
+});
+
+// ─── 7. UI Tests: Wordbook Switching ───
+
+test.describe('Wordbooks UI - Wordbook Switching', () => {
+  test('切换词汇本后显示对应语言的词汇', async ({ page, request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Import French words (5 words)
+    await importFrenchWords(request, token, 'French Words');
+    // Import English words (3 words) — becomes active
+    await importEnglishWords(request, token, 'English Words');
+
+    await loginAndGoToVocab(page);
+
+    // WordbookSelector should be visible
+    await expect(page.locator('.wordbookSelector')).toBeVisible({ timeout: 10000 });
+
+    // Should see both wordbook tabs (plus the default empty French one and the "+" button)
+    const tabs = page.locator('.wordbookTab:not(.addBtn)');
+    const tabCount = await tabs.count();
+    expect(tabCount).toBeGreaterThanOrEqual(2);
+
+    // Active tab should be English Words (last imported)
+    const activeTab = page.locator('.wordbookTab.active');
+    await expect(activeTab).toContainText('English Words');
+
+    // Word list should show English words
+    await expect(page.locator('.vocabItem').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.vocabItem').first()).toContainText(/hello|thanks|yes/);
+
+    // Click on French Words tab to switch
+    await page.locator('.wordbookTab').filter({ hasText: 'French Words' }).click();
+
+    // Wait for the tab to become active
+    await expect(page.locator('.wordbookTab.active')).toContainText('French Words', { timeout: 10000 });
+
+    // Word list should now show French words
+    await expect(page.locator('.vocabItem').first()).toContainText(/bonjour|merci|oui|non|salut/, { timeout: 10000 });
+  });
+});
+
+// ─── 8. UI Tests: Import default behavior (multi disabled) ───
+
+test.describe('Wordbooks UI - Import Single Mode', () => {
+  test('单词汇本模式下导入弹窗不显示语言和名称字段', async ({ page, request }) => {
+    // Multi-wordbook is disabled by default — don't call enableMultiWordbook
+
+    await loginAndGoToVocab(page);
+
+    // Empty state should show "词库为空" with import button
+    await expect(page.getByText('词库为空')).toBeVisible({ timeout: 10000 });
+
+    // Click import button
+    await page.getByRole('button', { name: '导入 CSV' }).first().click();
+    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
+
+    // In single-wordbook mode, language/name fields should NOT be visible
+    await expect(page.locator('[role="dialog"]').locator('.fieldSelect')).not.toBeVisible();
+    await expect(page.locator('[role="dialog"]').locator('.fieldInput')).not.toBeVisible();
+  });
+});
+
+// ─── 9. UI Tests: Create wordbook via UI ───
+
+test.describe('Wordbooks UI - Create Wordbook', () => {
+  test('通过 UI 创建新词汇本', async ({ page, request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Import some words so the WordbookSelector shows
+    await importFrenchWords(request, token, 'French Words');
+
+    await loginAndGoToVocab(page);
+
+    // WordbookSelector should be visible
+    await expect(page.locator('.wordbookSelector')).toBeVisible({ timeout: 10000 });
+
+    // Click "+" button to show create form
+    await page.locator('.wordbookTab.addBtn').click();
+
+    // Create form should be visible
+    await expect(page.locator('.createForm')).toBeVisible({ timeout: 5000 });
+
+    // Fill in the name
+    await page.locator('.createInput').fill('English Vocab');
+
+    // Select English language
+    await page.locator('.createSelect').selectOption('en');
+
+    // Click create button
+    await page.locator('.createBtn').click();
+
+    // Wait for the new wordbook tab to appear
+    await expect(page.locator('.wordbookTab').filter({ hasText: 'English Vocab' })).toBeVisible({ timeout: 10000 });
+
+    // The new wordbook should be active (since createWordbook activates it)
+    await expect(page.locator('.wordbookTab.active')).toContainText('English Vocab');
+
+    // Create form should be hidden after successful creation
+    await expect(page.locator('.createForm')).not.toBeVisible();
+  });
+});
