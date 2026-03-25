@@ -60,6 +60,7 @@ test.describe('Admin User Management API', () => {
       username: 'newuser',
       password: 'pass1234',
       role: 'user',
+      email: 'newuser@example.com',
     });
     expect(res.status()).toBe(200);
     const created = await res.json();
@@ -80,6 +81,7 @@ test.describe('Admin User Management API', () => {
       username: 'moduser',
       password: 'pass1234',
       role: 'user',
+      email: 'moduser@example.com',
       enabledModules: ['dashboard', 'habit-tracker'],
     });
     const created = await createRes.json();
@@ -101,6 +103,7 @@ test.describe('Admin User Management API', () => {
       username: 'pwduser',
       password: 'oldpass123',
       role: 'user',
+      email: 'pwduser@example.com',
     });
     const created = await createRes.json();
 
@@ -123,6 +126,7 @@ test.describe('Admin User Management API', () => {
       username: 'deluser',
       password: 'pass1234',
       role: 'user',
+      email: 'deluser@example.com',
     });
     const created = await createRes.json();
 
@@ -145,6 +149,160 @@ test.describe('Admin User Management API', () => {
 
     const deleteRes = await api.delete(`/api/admin/users/${adminUser.id}`);
     expect(deleteRes.status()).toBe(400);
+  });
+
+  // ─── Email field tests ───
+
+  test('create user with email returns email in response', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+    const res = await api.post('/api/admin/users', {
+      username: 'emailuser',
+      password: 'pass1234',
+      role: 'user',
+      email: 'emailuser@example.com',
+    });
+    expect(res.status()).toBe(200);
+    const created = await res.json();
+    expect(created.email).toBe('emailuser@example.com');
+  });
+
+  test('create user rejects missing email', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+    const res = await api.post('/api/admin/users', {
+      username: 'noemail',
+      password: 'pass1234',
+      role: 'user',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('create user rejects invalid email format', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+    const res = await api.post('/api/admin/users', {
+      username: 'bademail',
+      password: 'pass1234',
+      role: 'user',
+      email: 'not-an-email',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('create user rejects duplicate email', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create first user with email
+    const res1 = await api.post('/api/admin/users', {
+      username: 'dupuser1',
+      password: 'pass1234',
+      role: 'user',
+      email: 'duplicate@example.com',
+    });
+    expect(res1.status()).toBe(200);
+
+    // Create second user with same email
+    const res2 = await api.post('/api/admin/users', {
+      username: 'dupuser2',
+      password: 'pass1234',
+      role: 'user',
+      email: 'duplicate@example.com',
+    });
+    expect(res2.status()).toBe(409);
+  });
+
+  test('user list includes email field', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a user with email
+    await api.post('/api/admin/users', {
+      username: 'listuser',
+      password: 'pass1234',
+      role: 'user',
+      email: 'listuser@example.com',
+    });
+
+    const listRes = await api.get('/api/admin/users');
+    expect(listRes.status()).toBe(200);
+    const users = await listRes.json();
+    const listUser = users.find((u: any) => u.username === 'listuser');
+    expect(listUser.email).toBe('listuser@example.com');
+  });
+
+  test('update user email succeeds with valid email', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create a user
+    const createRes = await api.post('/api/admin/users', {
+      username: 'updateemail',
+      password: 'pass1234',
+      role: 'user',
+      email: 'old@example.com',
+    });
+    const created = await createRes.json();
+
+    // Update email
+    const updateRes = await api.put(`/api/admin/users/${created.id}/email`, {
+      email: 'new@example.com',
+    });
+    expect(updateRes.status()).toBe(200);
+
+    // Verify via user list
+    const listRes = await api.get('/api/admin/users');
+    const users = await listRes.json();
+    const updated = users.find((u: any) => u.username === 'updateemail');
+    expect(updated.email).toBe('new@example.com');
+  });
+
+  test('update email rejects invalid format', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    const createRes = await api.post('/api/admin/users', {
+      username: 'badupdateemail',
+      password: 'pass1234',
+      role: 'user',
+      email: 'valid@example.com',
+    });
+    const created = await createRes.json();
+
+    const updateRes = await api.put(`/api/admin/users/${created.id}/email`, {
+      email: 'not-valid',
+    });
+    expect(updateRes.status()).toBe(400);
+  });
+
+  test('update email rejects duplicate email', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    // Create two users
+    const res1 = await api.post('/api/admin/users', {
+      username: 'emaildup1',
+      password: 'pass1234',
+      role: 'user',
+      email: 'taken@example.com',
+    });
+    const user1 = await res1.json();
+
+    const res2 = await api.post('/api/admin/users', {
+      username: 'emaildup2',
+      password: 'pass1234',
+      role: 'user',
+      email: 'other@example.com',
+    });
+    const user2 = await res2.json();
+
+    // Try to update user2's email to user1's email
+    const updateRes = await api.put(`/api/admin/users/${user2.id}/email`, {
+      email: 'taken@example.com',
+    });
+    expect(updateRes.status()).toBe(409);
+  });
+
+  test('existing seeded users have null email', async ({ request }) => {
+    const api = authFetch(request, adminToken);
+
+    const listRes = await api.get('/api/admin/users');
+    const users = await listRes.json();
+    const seededAdmin = users.find((u: any) => u.username === ADMIN_USER.username);
+    expect(seededAdmin.email).toBeNull();
   });
 });
 
@@ -169,6 +327,7 @@ test.describe('Module Permission Enforcement', () => {
       username: 'limited',
       password: 'pass1234',
       role: 'user',
+      email: 'limited@example.com',
       enabledModules: ['dashboard'],
     });
 
@@ -191,6 +350,7 @@ test.describe('Module Permission Enforcement', () => {
       username: 'normie',
       password: 'pass1234',
       role: 'user',
+      email: 'normie@example.com',
     });
 
     const userToken = await getAuthToken(request, { username: 'normie', password: 'pass1234' });
@@ -222,11 +382,13 @@ test.describe('Data Isolation', () => {
       username: 'alice',
       password: 'pass1234',
       role: 'user',
+      email: 'alice@example.com',
     });
     await api.post('/api/admin/users', {
       username: 'bobuser',
       password: 'pass1234',
       role: 'user',
+      email: 'bobuser@example.com',
     });
 
     const aliceToken = await getAuthToken(request, { username: 'alice', password: 'pass1234' });
