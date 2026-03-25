@@ -32,6 +32,13 @@ export function useAdminDB(): AdminDB {
   if (!_adminDb) {
     const dbPath = process.env.ADMIN_DB_PATH || resolve(getDataDir(), 'admin.db');
     const sqlite = createSqliteDb(dbPath);
+
+    // Auto-migrate: ensure all admin tables exist
+    const migrationsFolder = resolve('./src/server/database/admin-migrations');
+    if (existsSync(migrationsFolder)) {
+      migrate(drizzle(sqlite), { migrationsFolder });
+    }
+
     _adminDb = drizzle(sqlite, { schema: adminSchema });
   }
   return _adminDb;

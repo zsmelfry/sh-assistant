@@ -383,12 +383,14 @@ test.describe('Data Isolation', () => {
       password: 'pass1234',
       role: 'user',
       email: 'alice@example.com',
+      enabledModules: ['habit-tracker'],
     });
     await api.post('/api/admin/users', {
       username: 'bobuser',
       password: 'pass1234',
       role: 'user',
       email: 'bobuser@example.com',
+      enabledModules: ['habit-tracker'],
     });
 
     const aliceToken = await getAuthToken(request, { username: 'alice', password: 'pass1234' });
@@ -403,7 +405,7 @@ test.describe('Data Isolation', () => {
       frequency: 'daily',
       color: '#000000',
     });
-    expect(createRes.status()).toBe(200);
+    expect(createRes.status()).toBe(201);
 
     // Alice can see her habit
     const aliceHabits = await (await aliceApi.get('/api/habits')).json();
