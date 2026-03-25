@@ -1,5 +1,5 @@
 import { useDB } from '~/server/database';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { studySessions } from '../../../../database/schemas/srs';
 import { formatDate } from '../../../../utils/date';
 
@@ -8,9 +8,12 @@ export default defineEventHandler(async (event) => {
   const today = formatDate(new Date());
   const now = Date.now();
 
+  // Scope to active wordbook
+  const activeWordbook = getActiveWordbook(db);
+
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(eq(studySessions.date, today))
+    .where(and(eq(studySessions.date, today), eq(studySessions.wordbookId, activeWordbook.id)))
     .limit(1);
 
   if (sessionResult.length === 0) {

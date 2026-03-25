@@ -1,5 +1,5 @@
 import { useDB } from '~/server/database';
-import { eq, sql, gte } from 'drizzle-orm';
+import { eq, and, sql, gte } from 'drizzle-orm';
 import { studySessions } from '../../../database/schemas/srs';
 import { LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { formatDate } from '../../../utils/date';
@@ -33,10 +33,10 @@ export default defineEventHandler(async (event) => {
     totalCards += row.cnt;
   }
 
-  // 2. 今日会话统计
+  // 2. 今日会话统计（按词汇本隔离）
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(eq(studySessions.date, today))
+    .where(and(eq(studySessions.date, today), eq(studySessions.wordbookId, activeWordbook.id)))
     .limit(1);
   const todaySession = sessionResult[0] || null;
 
@@ -65,12 +65,10 @@ export default defineEventHandler(async (event) => {
     stat.avgQuality = stat.reviews > 0 ? Math.round((stat.avgQuality / stat.reviews) * 10) / 10 : 0;
   }
 
-  // 4. 最近 7 天会话
-  // TODO: studySessions cannot be scoped by wordbook without a schema change
-  // (study_sessions table has no wordbook_id column). Known limitation.
+  // 4. 最近 7 天会话（按词汇本隔离）
   const recentSessions = await db.select()
     .from(studySessions)
-    .where(gte(studySessions.startedAt, sevenDaysAgo));
+    .where(and(gte(studySessions.startedAt, sevenDaysAgo), eq(studySessions.wordbookId, activeWordbook.id)));
 
   // 5. 可学新词总数（LEARNING 状态但还没有 SRS 卡片的词，限定活跃词汇本）
   const availableCountResult = await db.all(sql`

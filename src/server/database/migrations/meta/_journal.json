@@ -204,6 +204,13 @@
       "when": 1773590000000,
       "tag": "0028_wordbooks",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1773680000000,
+      "tag": "0029_study_session_wordbook",
+      "breakpoints": true
     }
   ]
 }

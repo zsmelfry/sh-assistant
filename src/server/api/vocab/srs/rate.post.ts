@@ -1,5 +1,5 @@
 import { useDB } from '~/server/database';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { srsCards, reviewLogs, studySessions } from '../../../database/schemas/srs';
 import { vocabProgress, vocabWords, LEARNING_STATUS } from '../../../database/schemas/vocab';
 import { vocabStatusHistory } from '../../../database/schemas/vocab';
@@ -105,10 +105,10 @@ export default defineEventHandler(async (event) => {
     reviewedAt: now,
   });
 
-  // 更新/创建今日会话
+  // 更新/创建今日会话（按词汇本隔离）
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(eq(studySessions.date, today))
+    .where(and(eq(studySessions.date, today), eq(studySessions.wordbookId, activeWordbook.id)))
     .limit(1);
 
   if (sessionResult.length > 0) {
@@ -126,6 +126,7 @@ export default defineEventHandler(async (event) => {
     await db.insert(studySessions).values({
       userId: vocabUserId,
       date: today,
+      wordbookId: activeWordbook.id,
       newWordsStudied: isNew ? 1 : 0,
       reviewsCompleted: 1,
       startedAt: now,

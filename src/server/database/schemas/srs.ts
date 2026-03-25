@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { vocabUsers, vocabWords } from './vocab';
+import { vocabUsers, vocabWords, wordbooks } from './vocab';
 
 // ===== SRS 卡片表 =====
 export const srsCards = sqliteTable('srs_cards', {
@@ -48,10 +48,11 @@ export const studySessions = sqliteTable('study_sessions', {
   date: text('date').notNull(),                   // YYYY-MM-DD
   newWordsStudied: integer('new_words_studied').notNull().default(0),
   reviewsCompleted: integer('reviews_completed').notNull().default(0),
+  wordbookId: integer('wordbook_id').references(() => wordbooks.id),
   startedAt: integer('started_at', { mode: 'number' }).notNull(),
   completedAt: integer('completed_at', { mode: 'number' }),
 }, (table) => [
-  uniqueIndex('idx_study_sessions_user_date').on(table.userId, table.date),
+  uniqueIndex('idx_study_sessions_user_date_wb').on(table.userId, table.date, table.wordbookId),
   index('idx_study_sessions_user_id').on(table.userId),
 ]);
 

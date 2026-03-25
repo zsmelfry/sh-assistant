@@ -40,10 +40,10 @@ export default defineEventHandler(async (event) => {
     .sort((a, b) => a.card.nextReviewAt - b.card.nextReviewAt)
     .slice(0, MAX_REVIEWS_PER_SESSION);
 
-  // 2. 获取今日会话信息
+  // 2. 获取今日会话信息（按词汇本隔离）
   const sessionResult = await db.select()
     .from(studySessions)
-    .where(eq(studySessions.date, today))
+    .where(and(eq(studySessions.date, today), eq(studySessions.wordbookId, activeWordbook.id)))
     .limit(1);
 
   const todaySession = sessionResult[0] || null;
