@@ -94,12 +94,12 @@
 
       <!-- 学习模式 Tab -->
       <div v-if="activeTab === 'study'" class="tabContent">
-        <StudyView />
+        <StudyView :key="store.activeWordbookId" />
       </div>
 
       <!-- 快速分类 Tab -->
       <div v-if="activeTab === 'categorize'" class="tabContent">
-        <CategorizeView />
+        <CategorizeView :key="store.activeWordbookId" />
       </div>
     </template>
 
