@@ -27,8 +27,10 @@ export default defineNuxtPlugin(() => {
     },
   });
 
-  // Log session start after interceptor is set up (fire-and-forget)
-  if (getToken()) {
-    $fetch('/api/auth/session-start', { method: 'POST' }).catch(() => {});
+  // Log session start once per browser session (fire-and-forget)
+  if (getToken() && !sessionStorage.getItem('session-start-logged')) {
+    $fetch('/api/auth/session-start', { method: 'POST' })
+      .then(() => sessionStorage.setItem('session-start-logged', '1'))
+      .catch(() => {});
   }
 });

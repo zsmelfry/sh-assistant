@@ -15,14 +15,9 @@ export default defineEventHandler((event) => {
 
   const db = useAdminDB();
 
-  const qb = db.select()
-    .from(loginLogs)
-    .orderBy(desc(loginLogs.createdAt))
-    .limit(limit);
+  const baseQuery = userId
+    ? db.select().from(loginLogs).where(eq(loginLogs.userId, userId))
+    : db.select().from(loginLogs);
 
-  if (userId) {
-    return qb.where(eq(loginLogs.userId, userId));
-  }
-
-  return qb;
+  return baseQuery.orderBy(desc(loginLogs.createdAt)).limit(limit);
 });
