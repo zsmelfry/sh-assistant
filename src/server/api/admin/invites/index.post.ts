@@ -2,12 +2,10 @@ import { eq, and, gt, isNull } from 'drizzle-orm';
 import { useAdminDB } from '~/server/database';
 import { users, verificationTokens } from '~/server/database/admin-schema';
 import { validateEmail } from '~/server/utils/email-validation';
-import { generateToken } from '~/server/utils/token';
+import { generateToken, INVITE_EXPIRES_HOURS } from '~/server/utils/token';
 import { sendEmail } from '~/server/utils/email';
 import { inviteEmailHtml } from '~/server/utils/email-templates';
 import { ALL_MODULE_IDS } from '~/server/utils/module-ids';
-
-const INVITE_EXPIRES_HOURS = 72;
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

@@ -1,11 +1,9 @@
 import { eq, and, isNull, gt } from 'drizzle-orm';
 import { useAdminDB } from '~/server/database';
 import { verificationTokens } from '~/server/database/admin-schema';
-import { generateToken } from '~/server/utils/token';
+import { generateToken, INVITE_EXPIRES_HOURS } from '~/server/utils/token';
 import { sendEmail } from '~/server/utils/email';
 import { inviteEmailHtml } from '~/server/utils/email-templates';
-
-const INVITE_EXPIRES_HOURS = 72;
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'));
@@ -31,25 +29,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: '邀请不存在或已过期' });
   }
 
-  // Mark old token as used
-  db.update(verificationTokens)
-    .set({ usedAt: now })
-    .where(eq(verificationTokens.id, id))
-    .run();
-
   // Generate new token with same email/role/modules
   const { token, hash } = generateToken();
   const expiresAt = now + INVITE_EXPIRES_HOURS * 60 * 60 * 1000;
 
-  const [inserted] = await db.insert(verificationTokens).values({
-    email: oldInvite.email,
-    tokenHash: hash,
-    type: 'invite',
-    role: oldInvite.role,
-    modules: oldInvite.modules,
-    expiresAt,
-    createdAt: now,
-  }).returning();
+  // Transaction: mark old token as used + insert new token atomically
+  // @ts-expect-error - access underlying session for transaction
+  const sqlite = db._.session.client;
+  const txn = sqlite.transaction(() => {
+    sqlite.prepare('UPDATE verification_tokens SET used_at = ? WHERE id = ?').run(now, id);
+    const result = sqlite.prepare(
+      'INSERT INTO verification_tokens (email, token_hash, type, role, modules, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run(oldInvite.email, hash, 'invite', oldInvite.role, oldInvite.modules, expiresAt, now);
+    return { id: result.lastInsertRowid as number };
+  });
+  const inserted = txn();
 
   // Construct invite URL
   const baseUrl = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
