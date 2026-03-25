@@ -19,7 +19,7 @@
     </div>
 
     <!-- History tab -->
-    <div v-show="subTab === 'history'">
+    <div v-if="subTab === 'history'">
       <StudyHistory />
     </div>
 
