@@ -41,17 +41,6 @@
       <button class="cancelBtn" @click="showCreateForm = false">取消</button>
     </div>
 
-    <!-- Delete button for non-active, non-sole wordbooks -->
-    <div v-if="canDeleteAny" class="deleteRow">
-      <button
-        v-for="wb in deletableWordbooks"
-        :key="wb.id"
-        class="deleteBtn"
-        @click="handleDelete(wb)"
-      >
-        删除「{{ wb.name }}」
-      </button>
-    </div>
   </div>
 </template>
 
@@ -69,12 +58,6 @@ const isSwitching = ref(false);
 function languageLabel(code: string): string {
   return LANGUAGE_DISPLAY_MAP[code] ?? code;
 }
-
-const deletableWordbooks = computed(() =>
-  store.wordbooks.filter(wb => !wb.isActive && store.wordbooks.length > 1),
-);
-
-const canDeleteAny = computed(() => deletableWordbooks.value.length > 0);
 
 async function handleSwitch(id: number) {
   if (id === store.activeWordbookId || isSwitching.value) return;
@@ -98,14 +81,6 @@ async function handleCreate() {
   }
 }
 
-async function handleDelete(wb: { id: number; name: string }) {
-  if (!confirm(`确定删除词汇本「${wb.name}」？该操作不可恢复。`)) return;
-  try {
-    await store.deleteWordbook(wb.id);
-  } catch {
-    alert('删除词汇本失败，请稍后重试。');
-  }
-}
 </script>
 
 <style scoped>
@@ -246,28 +221,6 @@ async function handleDelete(wb: { id: number; name: string }) {
 
 .cancelBtn:hover {
   background-color: var(--color-bg-hover);
-}
-
-.deleteRow {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.deleteBtn {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-primary);
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
-}
-
-.deleteBtn:hover {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
 }
 
 @media (max-width: 768px) {
