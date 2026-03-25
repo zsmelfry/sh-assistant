@@ -12,7 +12,7 @@
     <div
       class="cardWrapper"
       :class="{ flipped: isFlipped, hasContent: isFlipped }"
-      @click="!isFlipped && handleFlip()"
+      @click="handleFlip()"
     >
       <div class="cardInner" :class="{ rotated: isFlipped }">
         <!-- Front: French word -->
@@ -180,7 +180,7 @@ async function handleRate(quality: 0 | 2 | 4 | 5) {
 }
 
 .cardWrapper.flipped {
-  cursor: default;
+  cursor: pointer;
 }
 
 .cardInner {
