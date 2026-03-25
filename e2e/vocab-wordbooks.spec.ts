@@ -808,3 +808,81 @@ test.describe('Admin API - Per-user vocab settings', () => {
     expect(res.status()).toBe(404);
   });
 });
+
+// ─── 11. Study Session Wordbook Isolation ───
+
+test.describe('Wordbooks API - Study Session Isolation', () => {
+  test('SRS overview todaySession 按词汇本隔离', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Import French words into the default empty wordbook
+    await importFrenchWords(request, token);
+
+    // Mark a word as learning so SRS can pick it up
+    const wordsRes = await authFetch(request, token, 'GET', '/api/vocab/words');
+    const { words } = await wordsRes.json();
+    const wordId = words[0].id;
+    await authFetch(request, token, 'POST', '/api/vocab/progress/status', {
+      wordId, status: 'learning',
+    });
+
+    // Start SRS: get daily plan (this creates new word cards)
+    const planRes = await authFetch(request, token, 'GET', '/api/vocab/srs/daily-plan');
+    expect(planRes.ok()).toBeTruthy();
+    const plan = await planRes.json();
+
+    // Rate a card if available
+    if (plan.newWords.length > 0) {
+      // The daily-plan returns new words; to actually study, we need to rate them
+      // Rate the first new word
+      await authFetch(request, token, 'POST', '/api/vocab/srs/rate', {
+        wordId: plan.newWords[0].wordId,
+        quality: 4,
+        isNew: true,
+      });
+    }
+
+    // Check overview — should have todaySession for this wordbook
+    const overviewRes = await authFetch(request, token, 'GET', '/api/vocab/srs/overview');
+    const overview = await overviewRes.json();
+
+    // Now import English words (creates new wordbook, becomes active)
+    await importEnglishWords(request, token, 'English Words');
+
+    // Check overview for the English wordbook — todaySession should be null (no study yet)
+    const enOverviewRes = await authFetch(request, token, 'GET', '/api/vocab/srs/overview');
+    const enOverview = await enOverviewRes.json();
+    expect(enOverview.todaySession).toBeNull();
+  });
+
+  test('daily-plan newWords quota 按词汇本独立', async ({ request }) => {
+    const token = await getAuthToken(request);
+    await enableMultiWordbook(request);
+
+    // Import French words
+    await importFrenchWords(request, token);
+
+    // Get daily plan for French wordbook
+    const frPlanRes = await authFetch(request, token, 'GET', '/api/vocab/srs/daily-plan');
+    const frPlan = await frPlanRes.json();
+    const frRemainingBefore = frPlan.stats.remainingNewWords;
+
+    // Import English words (creates new wordbook)
+    await importEnglishWords(request, token, 'English Words');
+
+    // Mark some English words as learning
+    const enWordsRes = await authFetch(request, token, 'GET', '/api/vocab/words');
+    const { words: enWords } = await enWordsRes.json();
+    for (const w of enWords.slice(0, 2)) {
+      await authFetch(request, token, 'POST', '/api/vocab/progress/status', {
+        wordId: w.id, status: 'learning',
+      });
+    }
+
+    // Get daily plan for English wordbook — should have full quota (independent of French)
+    const enPlanRes = await authFetch(request, token, 'GET', '/api/vocab/srs/daily-plan');
+    const enPlan = await enPlanRes.json();
+    expect(enPlan.stats.remainingNewWords).toBeGreaterThan(0);
+  });
+});
