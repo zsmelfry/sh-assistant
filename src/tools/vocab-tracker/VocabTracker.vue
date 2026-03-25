@@ -1,16 +1,7 @@
 <template>
   <div class="vocabTracker">
-    <!-- 顶部工具栏 -->
-    <div v-if="!store.hasWords" class="toolbar">
-      <div class="toolbarRight">
-        <button class="toolbarBtn" @click="showImportModal = true">
-          导入 CSV
-        </button>
-        <button class="toolbarBtn" @click="showSettings = !showSettings" :class="{ active: showSettings }">
-          设置
-        </button>
-      </div>
-    </div>
+    <!-- 词汇本切换（始终显示，不依赖 hasWords） -->
+    <WordbookSelector />
 
     <!-- 初始化错误 -->
     <div v-if="initError" class="emptyState">
@@ -20,6 +11,16 @@
 
     <!-- 无词汇状态 -->
     <div v-else-if="!store.hasWords && store.filter === 'all' && !store.searchQuery && activeTab === 'vocab'" class="emptyState">
+      <div class="toolbar">
+        <div class="toolbarRight">
+          <button class="toolbarBtn" @click="showImportModal = true">
+            导入 CSV
+          </button>
+          <button class="toolbarBtn" @click="showSettings = !showSettings" :class="{ active: showSettings }">
+            设置
+          </button>
+        </div>
+      </div>
       <p class="emptyTitle">词库为空</p>
       <p class="emptyHint">请先导入 CSV 词汇文件</p>
       <button class="primaryBtn" @click="showImportModal = true">
@@ -29,8 +30,6 @@
 
     <!-- 主内容（有用户有词汇） -->
     <template v-else>
-      <!-- 词汇本切换 -->
-      <WordbookSelector />
 
       <!-- Tab 切换 + 设置 -->
       <div class="tabRow">
