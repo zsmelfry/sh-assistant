@@ -12,10 +12,17 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
+  if (!body || typeof body !== 'object') {
+    throw createError({ statusCode: 400, message: '请求体无效' });
+  }
   const { key, value } = body;
 
   if (!key || !ALLOWED_KEYS.includes(key)) {
     throw createError({ statusCode: 400, message: `不支持的设置项: ${key}` });
+  }
+
+  if (value !== 'true' && value !== 'false' && value !== '') {
+    throw createError({ statusCode: 400, message: '值必须为 "true" 或 "false"' });
   }
 
   const strValue = String(value ?? '');
